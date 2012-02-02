@@ -9,7 +9,7 @@ class View(object):
     def get_all(self):
         raise NotImplementedError
 
-    def get(self, typ):
+    def get(self, typ=None):
         values = self.get_all()
 
         # Get the first value.
@@ -19,8 +19,8 @@ class View(object):
             raise NotFoundError()
 
         # Check the type.
-        if not isinstance(value, typ):
-            raise WrongTypeError()
+        if typ is not None and not isinstance(value, typ):
+                raise WrongTypeError()
 
         return value
 
@@ -32,7 +32,7 @@ class RootView(View):
     def __getitem__(self, key):
         return Subview(self, key)
 
-    def get_all(self, typ):
+    def get_all(self):
         return self.sources
 
 class Subview(View):
@@ -41,7 +41,7 @@ class Subview(View):
         self.parent = parent
         self.key = key
 
-    def get_all(self, typ):
+    def get_all(self):
         for collection in self.parent.get_all():
 
             try:
