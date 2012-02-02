@@ -1,0 +1,59 @@
+class ConfigError(Exception):
+    pass
+class NotFoundError(ConfigError):
+    pass
+class WrongTypeError(ConfigError):
+    pass
+
+class View(object):
+    def get_all(self):
+        raise NotImplementedError
+
+    def get(self, typ):
+        values = self.get_all()
+
+        # Get the first value.
+        try:
+            value = iter(values).next()
+        except StopIteration:
+            raise NotFoundError()
+
+        # Check the type.
+        if not isinstance(value, typ):
+            raise WrongTypeError()
+
+        return value
+
+class RootView(View):
+    def __init__(self, sources):
+        assert sources # Need at least one source.
+        self.sources = sources
+
+    def __getitem__(self, key):
+        return Subview(self, key)
+
+    def get_all(self, typ):
+        return self.sources
+
+class Subview(View):
+    """A subview accessed via a subscript of a parent view."""
+    def __init__(self, parent, key):
+        self.parent = parent
+        self.key = key
+
+    def get_all(self, typ):
+        for collection in self.parent.get_all():
+
+            try:
+                value = collection[self.key]
+            except IndexError:
+                # List index out of bounds.
+                continue
+            except KeyError:
+                # Dict key does not exist.
+                continue
+            except TypeError:
+                # Not subscriptable.
+                raise WrongTypeError()
+
+            yield value
