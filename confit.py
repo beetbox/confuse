@@ -5,7 +5,7 @@ class NotFoundError(ConfigError):
 class ConfigTypeError(ConfigError, TypeError):
     pass
 
-class View(object):
+class ConfigView(object):
     def get_all(self):
         raise NotImplementedError
 
@@ -27,6 +27,9 @@ class View(object):
                                  (self.name(), unicode(typ)))
 
         return value
+
+    def __repr__(self):
+        return '<ConfigView: %s>' % self.name()
 
     # Magical conversions.
 
@@ -70,7 +73,7 @@ class View(object):
                                      self.name())
         return False
 
-class RootView(View):
+class RootView(ConfigView):
     def __init__(self, sources):
         if not sources:
             raise ValueError('no sources supplied')
@@ -82,7 +85,7 @@ class RootView(View):
     def name(self):
         return u"root"
 
-class Subview(View):
+class Subview(ConfigView):
     """A subview accessed via a subscript of a parent view."""
     def __init__(self, parent, key):
         self.parent = parent
