@@ -163,3 +163,14 @@ class MultipleSourceTest(unittest.TestCase):
         config = _root({'foo': {'bar': 'baz'}}, {'foo': {'qux': 'fred'}})
         length = len(config['foo'])
         self.assertEqual(length, 2)
+
+    def test_merged_dicts_iteration_not_duplicated(self):
+        config = _root({'foo': {'bar': 'baz'}}, {'foo': {'bar': 'fred'}})
+        value = list(config['foo'])
+        self.assertEqual(value, ['bar'])
+
+    def test_merged_dicts_length_not_duplicated(self):
+        config = _root({'foo': {'bar': 'baz'}}, {'foo': {'bar': 'fred'}})
+        length = len(config['foo'])
+        self.assertEqual(length, 1)
+
