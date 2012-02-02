@@ -55,3 +55,34 @@ class TypeCheckTest(unittest.TestCase):
         config = _root({'foo': 'bar'})
         with self.assertRaises(confit.WrongTypeError):
             config['foo'].get(int)
+
+class ConverstionTest(unittest.TestCase):
+    def test_str_conversion_from_str(self):
+        config = _root({'foo': 'bar'})
+        value = str(config['foo'])
+        self.assertEqual(value, 'bar')
+
+    def test_str_conversion_from_int(self):
+        config = _root({'foo': 2})
+        value = str(config['foo'])
+        self.assertEqual(value, '2')
+
+    def test_unicode_conversion_from_int(self):
+        config = _root({'foo': 2})
+        value = unicode(config['foo'])
+        self.assertEqual(value, u'2')
+
+    def test_bool_conversion_from_bool(self):
+        config = _root({'foo': True})
+        value = bool(config['foo'])
+        self.assertEqual(value, True)
+
+    def test_bool_conversion_from_int(self):
+        config = _root({'foo': 0})
+        value = bool(config['foo'])
+        self.assertEqual(value, False)
+
+    def test_iterate_list(self):
+        config = _root({'foo': ['bar', 'baz']})
+        value = list(config['foo'])
+        self.assertEqual(value, ['bar', 'baz'])

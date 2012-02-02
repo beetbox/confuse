@@ -24,8 +24,40 @@ class View(object):
 
         return value
 
+    # Magical conversions.
+
     def __getitem__(self, key):
         return Subview(self, key)
+
+    def __str__(self):
+        return str(self.get())
+    
+    def __unicode__(self):
+        return unicode(self.get())
+    
+    def __nonzero__(self):
+        return bool(self.get())
+
+    def __iter__(self):
+        for container in self.get_all():
+            try:
+                it = iter(container)
+            except TypeError:
+                raise WrongTypeError()
+            for value in it:
+                yield value
+
+    def __len__(self):
+        return len(self.get())
+
+    def __contains__(self, item):
+        for container in self.get_all():
+            try:
+                if item in container:
+                    return True
+            except TypeError:
+                raise WrongTypeError()
+        return False
 
 class RootView(View):
     def __init__(self, sources):
