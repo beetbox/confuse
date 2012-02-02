@@ -24,13 +24,14 @@ class View(object):
 
         return value
 
-class RootView(View):
-    def __init__(self, sources):
-        assert sources # Need at least one source.
-        self.sources = sources
-
     def __getitem__(self, key):
         return Subview(self, key)
+
+class RootView(View):
+    def __init__(self, sources):
+        if not sources:
+            raise ValueError('no sources supplied')
+        self.sources = sources
 
     def get_all(self):
         return self.sources
