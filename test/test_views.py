@@ -86,3 +86,34 @@ class ConverstionTest(unittest.TestCase):
         config = _root({'foo': ['bar', 'baz']})
         value = list(config['foo'])
         self.assertEqual(value, ['bar', 'baz'])
+
+    def test_length_list(self):
+        config = _root({'foo': ['bar', 'baz']})
+        length = len(config['foo'])
+        self.assertEqual(length, 2)
+
+    def test_length_int(self):
+        config = _root({'foo': 2})
+        with self.assertRaises(confit.WrongTypeError):
+            len(config['foo'])
+
+class NameTest(unittest.TestCase):
+    def test_root_name(self):
+        config = _root(None)
+        name = config.name()
+        self.assertEqual(name, 'root')
+
+    def test_string_access_name(self):
+        config = _root(None)
+        name = config['foo'].name()
+        self.assertEqual(name, "root['foo']")
+
+    def test_int_access_name(self):
+        config = _root(None)
+        name = config[5].name()
+        self.assertEqual(name, "root[5]")
+
+    def test_nested_access_name(self):
+        config = _root(None)
+        name = config[5]['foo']['bar'][20].name()
+        self.assertEqual(name, "root[5]['foo']['bar'][20]")

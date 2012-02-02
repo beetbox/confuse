@@ -9,6 +9,9 @@ class View(object):
     def get_all(self):
         raise NotImplementedError
 
+    def name(self):
+        raise NotImplementedError
+
     def get(self, typ=None):
         values = self.get_all()
 
@@ -20,7 +23,8 @@ class View(object):
 
         # Check the type.
         if typ is not None and not isinstance(value, typ):
-                raise WrongTypeError()
+            raise WrongTypeError(u"%s must by of type %s" %
+                                 (self.name(), unicode(typ)))
 
         return value
 
@@ -43,12 +47,18 @@ class View(object):
             try:
                 it = iter(container)
             except TypeError:
-                raise WrongTypeError()
+                raise WrongTypeError(u'%s must be a container' %
+                                     self.name())
             for value in it:
                 yield value
 
     def __len__(self):
-        return len(self.get())
+        value = self.get()
+        try:
+            return len(value)
+        except TypeError:
+            raise WrongTypeError(u'%s (of type %s) has no length' %
+                                 (self.name(), unicode(type(value))))
 
     def __contains__(self, item):
         for container in self.get_all():
@@ -56,7 +66,8 @@ class View(object):
                 if item in container:
                     return True
             except TypeError:
-                raise WrongTypeError()
+                raise WrongTypeError(u'%s must be a container' %
+                                     self.name())
         return False
 
 class RootView(View):
@@ -67,6 +78,9 @@ class RootView(View):
 
     def get_all(self):
         return self.sources
+
+    def name(self):
+        return u"root"
 
 class Subview(View):
     """A subview accessed via a subscript of a parent view."""
@@ -87,6 +101,10 @@ class Subview(View):
                 continue
             except TypeError:
                 # Not subscriptable.
-                raise WrongTypeError()
+                raise WrongTypeError(u"%s must be a collection" %
+                                     self.parent.name())
 
             yield value
+
+    def name(self):
+        return u"%s[%s]" % (self.parent.name(), repr(self.key))
