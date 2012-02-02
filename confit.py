@@ -1,5 +1,21 @@
 """Worry-free YAML configuration files.
 """
+import platform
+import os
+import pkgutil
+import sys
+
+UNIX_DIR_VAR = 'XDG_CONFIG_HOME'
+UNIX_DIR_FALLBACK = '~/.config'
+WINDOWS_DIR_VAR = 'APPDATA'
+WINDOWS_DIR_FALLBACK = '~\\AppData\\Roaming'
+MAC_DIR = '~/Library/Application Support'
+
+CONFIG_FILENAME = 'config.yaml'
+DEFAULT_FILENAME = 'config_default.yaml'
+
+
+# Views and data access logic.
 
 class ConfigError(Exception):
     """Base class for exceptions raised when querying a configuration.
@@ -183,3 +199,71 @@ class Subview(ConfigView):
 
     def name(self):
         return u"%s[%s]" % (self.parent.name(), repr(self.key))
+
+
+# Config file paths, including platform-specific paths and in-package
+# defaults.
+
+# Based on get_root_path from Flask by Armin Ronacher.
+def _package_path(name):
+    """Returns the path to the package containing the named module or
+    None if the path could not be identified (e.g., if
+    ``name == "__main__"``).
+    """
+    loader = pkgutil.get_loader(name)
+    if loader is None or name == '__main__':
+        return None
+
+    if hasattr(loader, 'get_filename'):
+        filepath = loader.get_filename(name)
+    else:
+        # Fall back to importing the specified module.
+        __import__(name)
+        filepath = sys.modules[name].__file__
+
+    return os.path.dirname(os.path.abspath(filepath))
+
+def config_dirs():
+    """Returns a list of user configuration directories to be searched.
+    """
+    if platform.system() == 'Darwin':
+        paths = [MAC_DIR, UNIX_DIR_FALLBACK]
+    elif platform.system() == 'Windows':
+        if WINDOWS_DIR_VAR in os.environ:
+            paths = [os.environ[WINDOWS_DIR_VAR]]
+        else:
+            paths = [WINDOWS_DIR_FALLBACK]
+    else:
+        # Assume Unix.
+        paths = [UNIX_DIR_FALLBACK]
+        if UNIX_DIR_VAR in os.environ:
+            paths.insert(0, os.environ[UNIX_DIR_VAR])
+    return [os.path.expanduser(p) for p in paths]
+
+def config_filenames(name, modname=None, filename=CONFIG_FILENAME,
+                     default_filename=DEFAULT_FILENAME):
+    """Returns a list of filenames for configuration files. The files
+    must actually exist and are in the order that they should be
+    prioritized. ``name`` is the name of the application; it is used as
+    the name of the subdirectory in which configuration directories are
+    placed. ``modname``, if specified, should be the import name of a
+    module (i.e., ``__name__``) whose package will be searched for a
+    default config file.
+
+    ``filename`` may be the base name of the config files to be searched
+    for in the standard directories. ``default_filename`` is the name
+    for the in-package defaults file.
+    """
+    out = []
+
+    # Search standard directories.
+    for confdir in config_dirs():
+        out.append(os.path.join(confdir, name, filename))
+
+    # Search the package for a defaults file.
+    if modname:
+        pkg_path = _package_path(modname)
+        if pkg_path:
+            out.append(os.path.join(pkg_path, default_filename))
+
+    return [p for p in out if os.path.isfile(p)]
