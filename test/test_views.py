@@ -35,6 +35,41 @@ class SingleSourceTest(unittest.TestCase):
         with self.assertRaises(confit.NotFoundError):
             config[5].get()
 
+    def test_dict_keys(self):
+        config = _root({'foo': 'bar', 'baz': 'qux'})
+        keys = config.keys()
+        self.assertEqual(set(keys), set(['foo', 'baz']))
+
+    def test_dict_values(self):
+        config = _root({'foo': 'bar', 'baz': 'qux'})
+        values = [value.get() for value in config.values()]
+        self.assertEqual(set(values), set(['bar', 'qux']))
+
+    def test_dict_items(self):
+        config = _root({'foo': 'bar', 'baz': 'qux'})
+        items = [(key, value.get()) for (key, value) in config.items()]
+        self.assertEqual(set(items), set([('foo', 'bar'), ('baz', 'qux')]))
+
+    def test_list_keys_error(self):
+        config = _root(['foo', 'bar'])
+        with self.assertRaises(confit.ConfigTypeError):
+            config.keys()
+
+    def test_dict_contents(self):
+        config = _root({'foo': 'bar', 'baz': 'qux'})
+        contents = config.all_contents()
+        self.assertEqual(set(contents), set(['foo', 'baz']))
+
+    def test_list_contents(self):
+        config = _root(['foo', 'bar'])
+        contents = config.all_contents()
+        self.assertEqual(list(contents), ['foo', 'bar'])
+
+    def test_int_contents(self):
+        config = _root(2)
+        with self.assertRaises(confit.ConfigTypeError):
+            list(config.all_contents())
+
 class TypeCheckTest(unittest.TestCase):
     def test_str_type_correct(self):
         config = _root({'foo': 'bar'})
@@ -81,21 +116,6 @@ class ConverstionTest(unittest.TestCase):
         config = _root({'foo': 0})
         value = bool(config['foo'])
         self.assertEqual(value, False)
-
-    def test_iterate_list(self):
-        config = _root({'foo': ['bar', 'baz']})
-        value = list(config['foo'])
-        self.assertEqual(value, ['bar', 'baz'])
-
-    def test_length_list(self):
-        config = _root({'foo': ['bar', 'baz']})
-        length = len(config['foo'])
-        self.assertEqual(length, 2)
-
-    def test_length_int(self):
-        config = _root({'foo': 2})
-        with self.assertRaises(confit.ConfigTypeError):
-            len(config['foo'])
 
 class NameTest(unittest.TestCase):
     def test_root_name(self):
@@ -154,23 +174,58 @@ class MultipleSourceTest(unittest.TestCase):
         value = config['foo'].get()
         self.assertEqual(value, {'bar': 'baz'})
 
-    def test_access_dict_iteration_merged(self):
+    def test_dict_keys_merged(self):
         config = _root({'foo': {'bar': 'baz'}}, {'foo': {'qux': 'fred'}})
-        keys = list(config['foo'])
+        keys = config['foo'].keys()
         self.assertEqual(set(keys), set(['bar', 'qux']))
 
-    def test_access_dict_length_merged(self):
+    def test_dict_keys_replaced(self):
+        config = _root({'foo': {'bar': 'baz'}}, {'foo': {'bar': 'fred'}})
+        keys = config['foo'].keys()
+        self.assertEqual(list(keys), ['bar'])
+
+    def test_dict_values_merged(self):
         config = _root({'foo': {'bar': 'baz'}}, {'foo': {'qux': 'fred'}})
-        length = len(config['foo'])
-        self.assertEqual(length, 2)
+        values = [value.get() for value in config['foo'].values()]
+        self.assertEqual(set(values), set(['baz', 'fred']))
 
-    def test_merged_dicts_iteration_not_duplicated(self):
+    def test_dict_values_replaced(self):
         config = _root({'foo': {'bar': 'baz'}}, {'foo': {'bar': 'fred'}})
-        value = list(config['foo'])
-        self.assertEqual(value, ['bar'])
+        values = [value.get() for value in config['foo'].values()]
+        self.assertEqual(list(values), ['baz'])
 
-    def test_merged_dicts_length_not_duplicated(self):
+    def test_dict_items_merged(self):
+        config = _root({'foo': {'bar': 'baz'}}, {'foo': {'qux': 'fred'}})
+        items = [(key, value.get()) for (key, value) in config['foo'].items()]
+        self.assertEqual(set(items), set([('bar', 'baz'), ('qux', 'fred')]))
+
+    def test_dict_items_replaced(self):
         config = _root({'foo': {'bar': 'baz'}}, {'foo': {'bar': 'fred'}})
-        length = len(config['foo'])
-        self.assertEqual(length, 1)
+        items = [(key, value.get()) for (key, value) in config['foo'].items()]
+        self.assertEqual(list(items), [('bar', 'baz')])
+
+    def test_dict_contents_concatenated(self):
+        config = _root({'foo': {'bar': 'baz'}}, {'foo': {'qux': 'fred'}})
+        contents = config['foo'].all_contents()
+        self.assertEqual(set(contents), set(['bar', 'qux']))
+
+    def test_dict_contents_concatenated_not_replaced(self):
+        config = _root({'foo': {'bar': 'baz'}}, {'foo': {'bar': 'fred'}})
+        contents = config['foo'].all_contents()
+        self.assertEqual(list(contents), ['bar', 'bar'])
+
+    def test_list_contents_concatenated(self):
+        config = _root({'foo': ['bar', 'baz']}, {'foo': ['qux', 'fred']})
+        contents = config['foo'].all_contents()
+        self.assertEqual(list(contents), ['bar', 'baz', 'qux', 'fred'])
+
+    def test_int_contents_error(self):
+        config = _root({'foo': ['bar', 'baz']}, {'foo': 5})
+        with self.assertRaises(confit.ConfigTypeError):
+            list(config['foo'].all_contents())
+
+    def test_list_and_dict_contents_concatenated(self):
+        config = _root({'foo': ['bar', 'baz']}, {'foo': {'qux': 'fred'}})
+        contents = config['foo'].all_contents()
+        self.assertEqual(list(contents), ['bar', 'baz', 'qux'])
 

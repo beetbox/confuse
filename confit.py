@@ -83,51 +83,59 @@ class ConfigView(object):
         """Gets the value for this view as a boolean."""
         return bool(self.get())
 
-    # Collection methods. These allow a view to behave as a Python
-    # iterable, containing all the objects that *all* sources contain.
-    # Note that this differs from resolving the view and then iterating
-    # over the result. That is, ``list(view)`` will result in a
-    # different set of values from ``view.get(list)``. Namely, the
-    # former gives everything contained in every list from every source,
-    # while the latter gets the list in the first source.
+    # Dictionary emulation methods.
 
-    def __iter__(self):
-        """Iterates over all of the values accessible through this view
-        (from all sources).
+    def keys(self):
+        """Returns an iterable containing all the keys available as
+        subviews of the current views. This enumerates all the keys in
+        *all* dictionaries matching the current view, in contrast to
+        ``dict(view).keys()``, which gets all the keys for the *first*
+        dict matching the view. If the object for this view in any
+        source is not a dict, then a ConfigTypeError is raised.
+        """
+        keys = set()
+        for dic in self.get_all():
+            try:
+                keyit = dic.iterkeys()
+            except AttributeError:
+                raise ConfigTypeError(u'%s must be a dict, not %s' %
+                                      (self.name(), unicode(type(dic))))
+            keys.update(keyit)
+        return keys
+
+    def items(self):
+        """Iterates over (key, subview) pairs contained in dictionaries
+        from *all* sources at this view. If the object for this view in
+        any source is not a dict, then a ConfigTypeError is raised.
+        """
+        for key in self.keys():
+            yield key, self[key]
+
+    def values(self):
+        """Iterates over all the subviews contained in dictionaries from
+        *all* sources at this view. If the object for this view in any
+        source is not a dict, then a ConfigTypeError is raised.
+        """
+        for key in self.keys():
+            yield self[key]
+
+    # List/sequence emulation.
+
+    def all_contents(self):
+        """Iterates over all subviews from collections at this view from
+        *all* sources. If the object for this view in any source is not
+        iterable, then a ConfigTypeError is raised. This method is
+        intended to be used when the view indicates a list; this method
+        will concatenate the contents of the list from all sources.
         """
         for collection in self.get_all():
             try:
                 it = iter(collection)
             except TypeError:
-                raise ConfigTypeError(u'%s must be a collection, not %s' %
+                raise ConfigTypeError(u'%s must be an iterable, not %s' %
                                       (self.name(), unicode(type(collection))))
             for value in it:
                 yield value
-
-    def __len__(self):
-        """Gives the number of the values accessible as children of this
-        view.
-        """
-        length = 0
-        for collection in self.get_all():
-            try:
-                length += len(collection)
-            except TypeError:
-                raise ConfigTypeError(u'%s (of type %s) has no length' %
-                                    (self.name(), unicode(type(collection))))
-        return length
-
-    def __contains__(self, item):
-        """Determines whether a value is a child of this view.
-        """
-        for collection in self.get_all():
-            try:
-                if item in collection:
-                    return True
-            except TypeError:
-                raise ConfigTypeError(u'%s must be a collection, not %s' %
-                                      (self.name(), unicode(type(collection))))
-        return False
 
 class RootView(ConfigView):
     """The base of a view hierarchy. This view keeps track of the
