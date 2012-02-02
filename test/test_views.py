@@ -117,3 +117,49 @@ class NameTest(unittest.TestCase):
         config = _root(None)
         name = config[5]['foo']['bar'][20].name()
         self.assertEqual(name, "root[5]['foo']['bar'][20]")
+
+class MultipleSourceTest(unittest.TestCase):
+    def test_dict_access_shadowed(self):
+        config = _root({'foo': 'bar'}, {'foo': 'baz'})
+        value = config['foo'].get()
+        self.assertEqual(value, 'bar')
+
+    def test_dict_access_fall_through(self):
+        config = _root({'qux': 'bar'}, {'foo': 'baz'})
+        value = config['foo'].get()
+        self.assertEqual(value, 'baz')
+
+    def test_dict_access_missing(self):
+        config = _root({'qux': 'bar'}, {'foo': 'baz'})
+        with self.assertRaises(confit.NotFoundError):
+            config['fred'].get()
+
+    def test_list_access_shadowed(self):
+        config = _root(['a', 'b'], ['c', 'd', 'e'])
+        value = config[1].get()
+        self.assertEqual(value, 'b')
+
+    def test_list_access_fall_through(self):
+        config = _root(['a', 'b'], ['c', 'd', 'e'])
+        value = config[2].get()
+        self.assertEqual(value, 'e')
+
+    def test_list_access_missing(self):
+        config = _root(['a', 'b'], ['c', 'd', 'e'])
+        with self.assertRaises(confit.NotFoundError):
+            config[3].get()
+
+    def test_access_dict_replaced(self):
+        config = _root({'foo': {'bar': 'baz'}}, {'foo': {'qux': 'fred'}})
+        value = config['foo'].get()
+        self.assertEqual(value, {'bar': 'baz'})
+
+    def test_access_dict_iteration_merged(self):
+        config = _root({'foo': {'bar': 'baz'}}, {'foo': {'qux': 'fred'}})
+        keys = list(config['foo'])
+        self.assertEqual(set(keys), set(['bar', 'qux']))
+
+    def test_access_dict_length_merged(self):
+        config = _root({'foo': {'bar': 'baz'}}, {'foo': {'qux': 'fred'}})
+        length = len(config['foo'])
+        self.assertEqual(length, 2)

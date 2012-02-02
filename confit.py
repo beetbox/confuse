@@ -19,7 +19,7 @@ class ConfigView(object):
         try:
             value = iter(values).next()
         except StopIteration:
-            raise NotFoundError()
+            raise NotFoundError(u"%s not found" % self.name())
 
         # Check the type.
         if typ is not None and not isinstance(value, typ):
@@ -56,12 +56,14 @@ class ConfigView(object):
                 yield value
 
     def __len__(self):
-        value = self.get()
-        try:
-            return len(value)
-        except TypeError:
-            raise ConfigTypeError(u'%s (of type %s) has no length' %
-                                 (self.name(), unicode(type(value))))
+        length = 0
+        for container in self.get_all():
+            try:
+                length += len(container)
+            except TypeError:
+                raise ConfigTypeError(u'%s (of type %s) has no length' %
+                                    (self.name(), unicode(type(container))))
+        return length
 
     def __contains__(self, item):
         for container in self.get_all():
