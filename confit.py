@@ -2,7 +2,7 @@ class ConfigError(Exception):
     pass
 class NotFoundError(ConfigError):
     pass
-class WrongTypeError(ConfigError):
+class ConfigTypeError(ConfigError, TypeError):
     pass
 
 class View(object):
@@ -23,7 +23,7 @@ class View(object):
 
         # Check the type.
         if typ is not None and not isinstance(value, typ):
-            raise WrongTypeError(u"%s must by of type %s" %
+            raise ConfigTypeError(u"%s must by of type %s" %
                                  (self.name(), unicode(typ)))
 
         return value
@@ -47,7 +47,7 @@ class View(object):
             try:
                 it = iter(container)
             except TypeError:
-                raise WrongTypeError(u'%s must be a container' %
+                raise ConfigTypeError(u'%s must be a container' %
                                      self.name())
             for value in it:
                 yield value
@@ -57,7 +57,7 @@ class View(object):
         try:
             return len(value)
         except TypeError:
-            raise WrongTypeError(u'%s (of type %s) has no length' %
+            raise ConfigTypeError(u'%s (of type %s) has no length' %
                                  (self.name(), unicode(type(value))))
 
     def __contains__(self, item):
@@ -66,7 +66,7 @@ class View(object):
                 if item in container:
                     return True
             except TypeError:
-                raise WrongTypeError(u'%s must be a container' %
+                raise ConfigTypeError(u'%s must be a container' %
                                      self.name())
         return False
 
@@ -101,7 +101,7 @@ class Subview(View):
                 continue
             except TypeError:
                 # Not subscriptable.
-                raise WrongTypeError(u"%s must be a collection" %
+                raise ConfigTypeError(u"%s must be a collection" %
                                      self.parent.name())
 
             yield value

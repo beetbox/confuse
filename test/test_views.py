@@ -43,7 +43,7 @@ class TypeCheckTest(unittest.TestCase):
 
     def test_str_type_incorrect(self):
         config = _root({'foo': 2})
-        with self.assertRaises(confit.WrongTypeError):
+        with self.assertRaises(confit.ConfigTypeError):
             config['foo'].get(str)
 
     def test_int_type_correct(self):
@@ -53,7 +53,7 @@ class TypeCheckTest(unittest.TestCase):
 
     def test_int_type_incorrect(self):
         config = _root({'foo': 'bar'})
-        with self.assertRaises(confit.WrongTypeError):
+        with self.assertRaises(confit.ConfigTypeError):
             config['foo'].get(int)
 
 class ConverstionTest(unittest.TestCase):
@@ -94,7 +94,7 @@ class ConverstionTest(unittest.TestCase):
 
     def test_length_int(self):
         config = _root({'foo': 2})
-        with self.assertRaises(confit.WrongTypeError):
+        with self.assertRaises(confit.ConfigTypeError):
             len(config['foo'])
 
 class NameTest(unittest.TestCase):
