@@ -238,7 +238,14 @@ def config_dirs():
         paths = [UNIX_DIR_FALLBACK]
         if UNIX_DIR_VAR in os.environ:
             paths.insert(0, os.environ[UNIX_DIR_VAR])
-    return [os.path.expanduser(p) for p in paths]
+
+    # Expand and deduplicate paths.
+    out = []
+    for path in paths:
+        path = os.path.abspath(os.path.expanduser(path))
+        if path not in out:
+            out.append(path)
+    return  out
 
 def config_filenames(name, modname=None, filename=CONFIG_FILENAME,
                      default_filename=DEFAULT_FILENAME):
