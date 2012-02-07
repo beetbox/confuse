@@ -229,3 +229,8 @@ class MultipleSourceTest(unittest.TestCase):
         contents = config['foo'].all_contents()
         self.assertEqual(list(contents), ['bar', 'baz', 'qux'])
 
+    def test_add_source(self):
+        config = _root({'foo': 'bar'})
+        config.add({'baz': 'qux'})
+        self.assertEqual(config['foo'].get(), 'bar')
+        self.assertEqual(config['baz'].get(), 'qux')

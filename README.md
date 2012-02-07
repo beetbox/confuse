@@ -15,18 +15,24 @@ is a great syntax for writing down data.
 [ConfigParser]: http://docs.python.org/library/configparser.html
 [YAML]: http://yaml.org/
 
-Goals
------
+Here's What Confit Does
+-----------------------
 
 * Seamless layering and overriding between multiple config files.
 * Sensible errors are raised when config files are missing values or have
   incorrect types. No need to write ad-hoc validation code.
 * Configuration defaults can be specified via an in-package
   `config_default.yaml` file.
-* Declarative integration with command-line options ([optparse][] or
-  [argparse][]).
 * Platform-specific configuration paths (`$XDG_CONFIG_HOME` or `~/.config`
   on Unix; "Application Support" on Mac OS X; `%APPDATA%` on Windows).
+
+What Confit Will Do
+-------------------
+
+* Declarative integration with command-line options ([optparse][] or
+  [argparse][]).
+* Read and write arbitrary files in your application's configuration directory.
+* Easy modification of config files.
 
 [optparse]: http://docs.python.org/dev/library/optparse.html
 [argparse]: http://docs.python.org/dev/library/argparse.html

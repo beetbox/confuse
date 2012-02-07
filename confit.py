@@ -4,6 +4,7 @@ import platform
 import os
 import pkgutil
 import sys
+import yaml
 
 UNIX_DIR_VAR = 'XDG_CONFIG_HOME'
 UNIX_DIR_FALLBACK = '~/.config'
@@ -29,6 +30,9 @@ class ConfigTypeError(ConfigError, TypeError):
     """The value in the configuration did not match the expected type.
     """
     pass
+class ConfigFileError(ConfigError):
+    """A configuration file could not be opened or parsed as YAML.
+    """
 
 class ConfigView(object):
     """A configuration "view" is a query into a program's configuration
@@ -162,9 +166,16 @@ class RootView(ConfigView):
         least one source must be provided. The first source in the list
         has the highest priority.
         """
-        if not sources:
-            raise ValueError('no sources supplied')
-        self.sources = sources
+        self.sources = list(sources)
+
+    def add(self, obj):
+        """Add the object (probably a dict) as a source for
+        configuration data. The object as added as the lowest-priority
+        source. This can be used to dynamically extend the defaults
+        (i.e., when loading a plugin that shares the main application's
+        config file).
+        """
+        self.sources.append(obj)
 
     def get_all(self):
         return self.sources
@@ -274,3 +285,24 @@ def config_filenames(name, modname=None, filename=CONFIG_FILENAME,
             out.append(os.path.join(pkg_path, default_filename))
 
     return [p for p in out if os.path.isfile(p)]
+
+
+# Convenience functions.
+
+def get_config(name, modname=None):
+    """Search for and parse YAML configuration files, returning a root
+    ConfigView object.
+    """
+    sources = []
+    for fn in config_filenames(name, modname):
+        try:
+            with open(fn) as f:
+                obj = yaml.load(f)
+        except IOError, exc:
+            raise ConfigFileError('config file %s could not be opened: %s' %
+                                  (fn, str(exc)))
+        except yaml.parser.ParserError, exc:
+            raise ConfigFileError('config file %s could not be parsed: %s' %
+                                  (fn, str(exc)))
+        sources.append(obj)
+    return RootView(sources)
