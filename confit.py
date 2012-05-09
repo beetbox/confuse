@@ -4,8 +4,9 @@ import platform
 import os
 import pkgutil
 import sys
+import yaml
 
-UNIX_DIR_VAR = 'XDG_CONFIG_HOME'
+UNIX_DIR_VAR = 'XDG_DATA_HOME'
 UNIX_DIR_FALLBACK = '~/.config'
 WINDOWS_DIR_VAR = 'APPDATA'
 WINDOWS_DIR_FALLBACK = '~\\AppData\\Roaming'
@@ -29,6 +30,15 @@ class ConfigTypeError(ConfigError, TypeError):
     """The value in the configuration did not match the expected type.
     """
     pass
+class ConfigReadError(ConfigError):
+    """A configuration file could not be read."""
+    def __init__(self, filename, reason=None):
+        self.filename = filename
+        self.reason = reason
+        message = u'file {0} could not be read'.format(filename)
+        if reason:
+            message += u': {0}'.format(reason)
+        super(ConfigReadError, self).__init__(message)
 
 class ConfigView(object):
     """A configuration "view" is a query into a program's configuration
@@ -251,9 +261,9 @@ def config_filenames(name, modname=None, filename=CONFIG_FILENAME,
                      default_filename=DEFAULT_FILENAME):
     """Returns a list of filenames for configuration files. The files
     must actually exist and are in the order that they should be
-    prioritized. ``name`` is the name of the application; it is used as
+    prioritized. `name` is the name of the application; it is used as
     the name of the subdirectory in which configuration directories are
-    placed. ``modname``, if specified, should be the import name of a
+    placed. `modname`, if specified, should be the import name of a
     module (i.e., ``__name__``) whose package will be searched for a
     default config file.
 
@@ -274,3 +284,29 @@ def config_filenames(name, modname=None, filename=CONFIG_FILENAME,
             out.append(os.path.join(pkg_path, default_filename))
 
     return [p for p in out if os.path.isfile(p)]
+
+
+# Convenience wrappers.
+
+def config_with_files(filenames):
+    """Create a root configuration view object by reading the specified
+    YAML files. Each file must exist and be readable.
+    """
+    sources = []
+    for filename in filenames:
+        try:
+            with open(filename, 'r') as f:
+                data = yaml.load(f)
+        except (IOError, yaml.error.YAMLError) as exc:
+            raise ConfigReadError(filename, exc)
+        sources.append(data)
+    return RootView(sources)
+
+def config(name, modname=None):
+    """Create a root configuration view object by reading the
+    automatically-discovered config files for the application for a
+    given name. If `modname` is specified, it should be the import name
+    of a module whose package will be searched for a default config
+    file. (Otherwise, no defaults are used.)
+    """
+    return config_with_files(config_filenames(name, modname))
