@@ -1,5 +1,8 @@
 import unittest
 import confit
+import sys
+
+PY3 = sys.version_info[0] == 3
 
 def _root(*sources):
     return confit.RootView(sources)
@@ -103,9 +106,10 @@ class ConverstionTest(unittest.TestCase):
         self.assertEqual(value, '2')
 
     def test_unicode_conversion_from_int(self):
-        config = _root({'foo': 2})
-        value = unicode(config['foo'])
-        self.assertEqual(value, u'2')
+        if not PY3:
+            config = _root({'foo': 2})
+            value = unicode(config['foo'])
+            self.assertEqual(value, unicode('2'))
 
     def test_bool_conversion_from_bool(self):
         config = _root({'foo': True})

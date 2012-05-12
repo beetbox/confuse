@@ -13,7 +13,7 @@ def _mock_system(plat):
 def _mock_environ(home='/home'):
     old = os.environ
     os.environ = {
-        'XDG_CONFIG_HOME': '~/xdgconfig',
+        'XDG_DATA_HOME': '~/xdgconfig',
         'APPDATA': '~\\winconfig',
         'HOME': home,
     }
@@ -39,12 +39,12 @@ class ConfigDirsUnixTest(unittest.TestCase):
         self.assertEqual(dirs, ['/home/xdgconfig', '/home/.config'])
 
     def test_fallback_only(self):
-        del os.environ['XDG_CONFIG_HOME']
+        del os.environ['XDG_DATA_HOME']
         dirs = confit.config_dirs()
         self.assertEqual(dirs, ['/home/.config'])
 
     def test_xdg_matching_fallback_not_duplicated(self):
-        os.environ['XDG_CONFIG_HOME'] = '~/.config'
+        os.environ['XDG_DATA_HOME'] = '~/.config'
         dirs = confit.config_dirs()
         self.assertEqual(dirs, ['/home/.config'])
 

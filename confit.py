@@ -20,6 +20,7 @@ DEFAULT_FILENAME = 'config_default.yaml'
 # Utilities.
 
 PY3 = sys.version_info[0] == 3
+STRING = str if PY3 else unicode
 
 def iter_first(sequence):
     """Get the first element from an iterable or raise a ValueError if
@@ -92,8 +93,8 @@ class ConfigView(object):
         # Check the type.
         if typ is not None and not isinstance(value, typ):
             raise ConfigTypeError("%s must by of type %s, not %s" %
-                                  (self.name(), unicode(typ),
-                                  unicode(type(value))))
+                                  (self.name(), STRING(typ),
+                                  STRING(type(value))))
 
         return value
 
@@ -121,11 +122,19 @@ class ConfigView(object):
         return str(self.get())
     
     def __unicode__(self):
-        """Gets the value for this view as a unicode string."""
+        """Gets the value for this view as a unicode string. (Python 2
+        only.)
+        """
         return unicode(self.get())
     
     def __nonzero__(self):
-        """Gets the value for this view as a boolean."""
+        """Gets the value for this view as a boolean. (Python 2 only.)
+        """
+        return self.__bool__()
+
+    def __bool__(self):
+        """Gets the value for this view as a boolean. (Python 3 only.)
+        """
         return bool(self.get())
 
     # Dictionary emulation methods.
@@ -141,11 +150,11 @@ class ConfigView(object):
         keys = set()
         for dic in self.get_all():
             try:
-                keyit = dic.iterkeys()
+                cur_keys = dic.keys()
             except AttributeError:
                 raise ConfigTypeError('%s must be a dict, not %s' %
-                                      (self.name(), unicode(type(dic))))
-            keys.update(keyit)
+                                      (self.name(), STRING(type(dic))))
+            keys.update(cur_keys)
         return keys
 
     def items(self):
@@ -178,7 +187,7 @@ class ConfigView(object):
                 it = iter(collection)
             except TypeError:
                 raise ConfigTypeError('%s must be an iterable, not %s' %
-                                      (self.name(), unicode(type(collection))))
+                                      (self.name(), STRING(type(collection))))
             for value in it:
                 yield value
 
@@ -223,7 +232,7 @@ class Subview(ConfigView):
                 # Not subscriptable.
                 raise ConfigTypeError("%s must be a collection, not %s" %
                                       (self.parent.name(),
-                                       unicode(type(collection))))
+                                       STRING(type(collection))))
             yield value
 
     def name(self):
