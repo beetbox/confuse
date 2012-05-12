@@ -1,5 +1,6 @@
 """Worry-free YAML configuration files.
 """
+from __future__ import unicode_literals
 import platform
 import os
 import pkgutil
@@ -14,6 +15,24 @@ MAC_DIR = '~/Library/Application Support'
 
 CONFIG_FILENAME = 'config.yaml'
 DEFAULT_FILENAME = 'config_default.yaml'
+
+
+# Utilities.
+
+PY3 = sys.version_info[0] == 3
+
+def iter_first(sequence):
+    """Get the first element from an iterable or raise a ValueError if
+    the iterator generates no values.
+    """
+    it = iter(sequence)
+    try:
+        if PY3:
+            return next(it)
+        else:
+            return it.next()
+    except StopIteration:
+        raise ValueError()
 
 
 # Views and data access logic.
@@ -35,9 +54,9 @@ class ConfigReadError(ConfigError):
     def __init__(self, filename, reason=None):
         self.filename = filename
         self.reason = reason
-        message = u'file {0} could not be read'.format(filename)
+        message = 'file {0} could not be read'.format(filename)
         if reason:
-            message += u': {0}'.format(reason)
+            message += ': {0}'.format(reason)
         super(ConfigReadError, self).__init__(message)
 
 class ConfigView(object):
@@ -66,13 +85,13 @@ class ConfigView(object):
 
         # Get the first value.
         try:
-            value = iter(values).next()
-        except StopIteration:
-            raise NotFoundError(u"%s not found" % self.name())
+            value = iter_first(values)
+        except ValueError:
+            raise NotFoundError("%s not found" % self.name())
 
         # Check the type.
         if typ is not None and not isinstance(value, typ):
-            raise ConfigTypeError(u"%s must by of type %s, not %s" %
+            raise ConfigTypeError("%s must by of type %s, not %s" %
                                   (self.name(), unicode(typ),
                                   unicode(type(value))))
 
@@ -124,7 +143,7 @@ class ConfigView(object):
             try:
                 keyit = dic.iterkeys()
             except AttributeError:
-                raise ConfigTypeError(u'%s must be a dict, not %s' %
+                raise ConfigTypeError('%s must be a dict, not %s' %
                                       (self.name(), unicode(type(dic))))
             keys.update(keyit)
         return keys
@@ -158,7 +177,7 @@ class ConfigView(object):
             try:
                 it = iter(collection)
             except TypeError:
-                raise ConfigTypeError(u'%s must be an iterable, not %s' %
+                raise ConfigTypeError('%s must be an iterable, not %s' %
                                       (self.name(), unicode(type(collection))))
             for value in it:
                 yield value
@@ -180,7 +199,7 @@ class RootView(ConfigView):
         return self.sources
 
     def name(self):
-        return u"root"
+        return "root"
 
 class Subview(ConfigView):
     """A subview accessed via a subscript of a parent view."""
@@ -202,13 +221,13 @@ class Subview(ConfigView):
                 continue
             except TypeError:
                 # Not subscriptable.
-                raise ConfigTypeError(u"%s must be a collection, not %s" %
+                raise ConfigTypeError("%s must be a collection, not %s" %
                                       (self.parent.name(),
                                        unicode(type(collection))))
             yield value
 
     def name(self):
-        return u"%s[%s]" % (self.parent.name(), repr(self.key))
+        return "%s[%s]" % (self.parent.name(), repr(self.key))
 
 
 # Config file paths, including platform-specific paths and in-package
