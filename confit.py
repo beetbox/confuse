@@ -1,12 +1,13 @@
 """Worry-free YAML configuration files.
 """
+from __future__ import unicode_literals
 import platform
 import os
 import pkgutil
 import sys
 import yaml
 
-UNIX_DIR_VAR = 'XDG_CONFIG_HOME'
+UNIX_DIR_VAR = 'XDG_DATA_HOME'
 UNIX_DIR_FALLBACK = '~/.config'
 WINDOWS_DIR_VAR = 'APPDATA'
 WINDOWS_DIR_FALLBACK = '~\\AppData\\Roaming'
@@ -14,6 +15,25 @@ MAC_DIR = '~/Library/Application Support'
 
 CONFIG_FILENAME = 'config.yaml'
 DEFAULT_FILENAME = 'config_default.yaml'
+
+
+# Utilities.
+
+PY3 = sys.version_info[0] == 3
+STRING = str if PY3 else unicode
+
+def iter_first(sequence):
+    """Get the first element from an iterable or raise a ValueError if
+    the iterator generates no values.
+    """
+    it = iter(sequence)
+    try:
+        if PY3:
+            return next(it)
+        else:
+            return it.next()
+    except StopIteration:
+        raise ValueError()
 
 
 # Views and data access logic.
@@ -30,9 +50,15 @@ class ConfigTypeError(ConfigError, TypeError):
     """The value in the configuration did not match the expected type.
     """
     pass
-class ConfigFileError(ConfigError):
-    """A configuration file could not be opened or parsed as YAML.
-    """
+class ConfigReadError(ConfigError):
+    """A configuration file could not be read."""
+    def __init__(self, filename, reason=None):
+        self.filename = filename
+        self.reason = reason
+        message = 'file {0} could not be read'.format(filename)
+        if reason:
+            message += ': {0}'.format(reason)
+        super(ConfigReadError, self).__init__(message)
 
 class ConfigView(object):
     """A configuration "view" is a query into a program's configuration
@@ -60,15 +86,15 @@ class ConfigView(object):
 
         # Get the first value.
         try:
-            value = iter(values).next()
-        except StopIteration:
-            raise NotFoundError(u"%s not found" % self.name())
+            value = iter_first(values)
+        except ValueError:
+            raise NotFoundError("%s not found" % self.name())
 
         # Check the type.
         if typ is not None and not isinstance(value, typ):
-            raise ConfigTypeError(u"%s must by of type %s, not %s" %
-                                  (self.name(), unicode(typ),
-                                  unicode(type(value))))
+            raise ConfigTypeError("%s must by of type %s, not %s" %
+                                  (self.name(), STRING(typ),
+                                  STRING(type(value))))
 
         return value
 
@@ -96,11 +122,19 @@ class ConfigView(object):
         return str(self.get())
     
     def __unicode__(self):
-        """Gets the value for this view as a unicode string."""
+        """Gets the value for this view as a unicode string. (Python 2
+        only.)
+        """
         return unicode(self.get())
     
     def __nonzero__(self):
-        """Gets the value for this view as a boolean."""
+        """Gets the value for this view as a boolean. (Python 2 only.)
+        """
+        return self.__bool__()
+
+    def __bool__(self):
+        """Gets the value for this view as a boolean. (Python 3 only.)
+        """
         return bool(self.get())
 
     # Dictionary emulation methods.
@@ -116,11 +150,11 @@ class ConfigView(object):
         keys = set()
         for dic in self.get_all():
             try:
-                keyit = dic.iterkeys()
+                cur_keys = dic.keys()
             except AttributeError:
-                raise ConfigTypeError(u'%s must be a dict, not %s' %
-                                      (self.name(), unicode(type(dic))))
-            keys.update(keyit)
+                raise ConfigTypeError('%s must be a dict, not %s' %
+                                      (self.name(), STRING(type(dic))))
+            keys.update(cur_keys)
         return keys
 
     def items(self):
@@ -152,8 +186,8 @@ class ConfigView(object):
             try:
                 it = iter(collection)
             except TypeError:
-                raise ConfigTypeError(u'%s must be an iterable, not %s' %
-                                      (self.name(), unicode(type(collection))))
+                raise ConfigTypeError('%s must be an iterable, not %s' %
+                                      (self.name(), STRING(type(collection))))
             for value in it:
                 yield value
 
@@ -181,7 +215,7 @@ class RootView(ConfigView):
         return self.sources
 
     def name(self):
-        return u"root"
+        return "root"
 
 class Subview(ConfigView):
     """A subview accessed via a subscript of a parent view."""
@@ -203,13 +237,13 @@ class Subview(ConfigView):
                 continue
             except TypeError:
                 # Not subscriptable.
-                raise ConfigTypeError(u"%s must be a collection, not %s" %
+                raise ConfigTypeError("%s must be a collection, not %s" %
                                       (self.parent.name(),
-                                       unicode(type(collection))))
+                                       STRING(type(collection))))
             yield value
 
     def name(self):
-        return u"%s[%s]" % (self.parent.name(), repr(self.key))
+        return "%s[%s]" % (self.parent.name(), repr(self.key))
 
 
 # Config file paths, including platform-specific paths and in-package
@@ -262,9 +296,9 @@ def config_filenames(name, modname=None, filename=CONFIG_FILENAME,
                      default_filename=DEFAULT_FILENAME):
     """Returns a list of filenames for configuration files. The files
     must actually exist and are in the order that they should be
-    prioritized. ``name`` is the name of the application; it is used as
+    prioritized. `name` is the name of the application; it is used as
     the name of the subdirectory in which configuration directories are
-    placed. ``modname``, if specified, should be the import name of a
+    placed. `modname`, if specified, should be the import name of a
     module (i.e., ``__name__``) whose package will be searched for a
     default config file.
 
@@ -287,22 +321,27 @@ def config_filenames(name, modname=None, filename=CONFIG_FILENAME,
     return [p for p in out if os.path.isfile(p)]
 
 
-# Convenience functions.
+# Convenience wrappers.
 
-def get_config(name, modname=None):
-    """Search for and parse YAML configuration files, returning a root
-    ConfigView object.
+def config_with_files(filenames):
+    """Create a root configuration view object by reading the specified
+    YAML files. Each file must exist and be readable.
     """
     sources = []
-    for fn in config_filenames(name, modname):
+    for filename in filenames:
         try:
-            with open(fn) as f:
-                obj = yaml.load(f)
-        except IOError, exc:
-            raise ConfigFileError('config file %s could not be opened: %s' %
-                                  (fn, str(exc)))
-        except yaml.parser.ParserError, exc:
-            raise ConfigFileError('config file %s could not be parsed: %s' %
-                                  (fn, str(exc)))
-        sources.append(obj)
+            with open(filename, 'r') as f:
+                data = yaml.load(f)
+        except (IOError, yaml.error.YAMLError) as exc:
+            raise ConfigReadError(filename, exc)
+        sources.append(data)
     return RootView(sources)
+
+def config(name, modname=None):
+    """Create a root configuration view object by reading the
+    automatically-discovered config files for the application for a
+    given name. If `modname` is specified, it should be the import name
+    of a module whose package will be searched for a default config
+    file. (Otherwise, no defaults are used.)
+    """
+    return config_with_files(config_filenames(name, modname))
