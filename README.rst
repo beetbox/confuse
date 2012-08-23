@@ -35,8 +35,8 @@ Here’s what Confit brings to the table:
    directory, which you can use to store additional (non-configuration)
    data.
 
--  Integration with **command-line arguments** via `argparse`_ from
-   the standard library. Use argparse's declarative API to allow
+-  Integration with **command-line arguments** via `argparse`_ or `optparse`_
+   from the standard library. Use argparse's declarative API to allow
    command-line options to override configured defaults.
 
 And what it will do (some not-yet-implemented goals):

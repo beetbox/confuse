@@ -133,22 +133,29 @@ for configuration options. Just as options in a user-specific
 configuration file should override those from a system-wide config,
 command-line options should take priority over all configuration files.
 
-You can use the `argparse`_ module from the standard library with Confit
-to accomplish this. Root view objects have a ``arg_namespace`` property
-that can be used with an ArgumentParser's `parse_args`_ method. Just
-call it like this::
+You can use the `argparse`_ and `optparse`_ modules from the standard
+library with Confit to accomplish this. Just call the ``add_args``
+method on root view objects and pass in the object returned by the
+command-line parsing library. For example, with argparse::
 
-    parser.parse_args(namespace=config.arg_namespace)
+    args = parser.parse_args()
+    config.add_args(args)
 
-and all of the options will become a top-level source in your
-configuration. The key associated with each option in the parser will
-become a key available in your configuration. For example, consider this
-script::
+Correspondingly, with optparse::
+
+    options, args = parser.parse_args()
+    config.add_args(options)
+
+This call will turn all of the command-line options into a top-level
+source in your configuration. The key associated with each option in the
+parser will become a key available in your configuration. For example,
+consider this argparse script::
 
     config = confit.config('myapp')
     parser = argparse.ArgumentParser()
     parser.add_argument('--foo', help='a parameter')
-    parser.parse_args(namespace=config.arg_namespace)
+    args = parser.parse_args()
+    config.add_args(args)
     print(config['foo'].get())
 
 This will allow the user to override the configured value for key
@@ -156,3 +163,12 @@ This will allow the user to override the configured value for key
 
 .. _argparse: http://docs.python.org/dev/library/argparse.html
 .. _parse_args: http://docs.python.org/library/argparse.html#the-parse-args-method
+.. _optparse: http://docs.python.org/library/optparse.html
+
+Note that, while you can use the full power of your favorite
+command-line parsing library, you'll probably want to avoid specifying
+defaults in your argparse or optparse setup. This way, Confit can use
+other configuration sources---possibly your
+``config_defaults.yaml``---to fill in values for unspecified
+command-line switches. Otherwise, the argparse/optparse default value
+will hide options configured elsewhere.
