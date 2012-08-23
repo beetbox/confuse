@@ -6,6 +6,7 @@ for Python.
 
 .. _Confit: https://github.com/sampsyo/confit
 
+
 Using Confit
 ------------
 
@@ -45,6 +46,7 @@ the key doesn’t exist in any configuration file, Confit will raise a
 ``NotFoundError``. Together, catching these exceptions (both subclasses
 of ``confit.ConfigError``) lets you painlessly validate the user’s
 configuration as you go.
+
 
 View Theory
 -----------
@@ -88,3 +90,35 @@ each other.
 
 .. _XPath: http://www.w3.org/TR/xpath/
 
+
+Command-Line Options
+--------------------
+
+Arguments to command-line programs can be seen as just another *source*
+for configuration options. Just as options in a user-specific
+configuration file should override those from a system-wide config,
+command-line options should take priority over all configuration files.
+
+You can use the `argparse`_ module from the standard library with Confit
+to accomplish this. Root view objects have a ``arg_namespace`` property
+that can be used with an ArgumentParser's `parse_args`_ method. Just
+call it like this::
+
+    parser.parse_args(namespace=config.arg_namespace)
+
+and all of the options will become a top-level source in your
+configuration. The key associated with each option in the parser will
+become a key available in your configuration. For example, consider this
+script::
+
+    config = confit.config('myapp')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--foo', help='a parameter')
+    parser.parse_args(namespace=config.arg_namespace)
+    print(config['foo'].get())
+
+This will allow the user to override the configured value for key
+``foo`` by passing ``--foo <something>`` on the command line.
+
+.. _argparse: http://docs.python.org/dev/library/argparse.html
+.. _parse_args: http://docs.python.org/library/argparse.html#the-parse-args-method

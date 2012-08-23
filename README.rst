@@ -21,6 +21,7 @@ Here’s what Confit brings to the table:
    but providing **transparent validation** without lots of boilerplate
    code. Type ``config['num_goats'].get(int)`` to get the configured
    number of goats and ensure that it’s an integer.
+
 -  Combine configuration data from **multiple sources**. Using
    *layering*, Confit allows user-specific configuration to seamlessly
    override system-wide configuration, which in turn overrides built-in
@@ -34,13 +35,14 @@ Here’s what Confit brings to the table:
    directory, which you can use to store additional (non-configuration)
    data.
 
+-  Integration with **command-line arguments** via `argparse`_ from
+   the standard library. Use argparse's declarative API to allow
+   command-line options to override configured defaults.
+
 And what it will do (some not-yet-implemented goals):
 
 -  Extensible validation. It should be easy to ensure that a file or
    directory exists, for example.
--  Declarative integration with command-line options (`optparse`_ or
-   `argparse`_). Command-line options should be able to easily form
-   another “layer” on top of config files.
 -  Helpers to create a platform-specific data directory if it doesn’t
    exist yet.
 -  A pattern for easily creating singleton configuration objects. It
@@ -54,6 +56,8 @@ And what it will do (some not-yet-implemented goals):
    -  Encourage developers to put ``config = confit.make_config(...)``
       in their root module (or somewhere else well-known). Then each
       client can just say ``import myapp; myapp.config``.
+
+- Customizable configuration file locations using environment variables.
 
 Using Confit
 ------------

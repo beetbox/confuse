@@ -201,6 +201,7 @@ class RootView(ConfigView):
         has the highest priority.
         """
         self.sources = list(sources)
+        self._arg_namespace = None
 
     def add(self, obj):
         """Add the object (probably a dict) as a source for
@@ -216,6 +217,17 @@ class RootView(ConfigView):
 
     def name(self):
         return "root"
+
+    @property
+    def arg_namespace(self):
+        """An object to be used as a ``Namespace`` with the `argparse`
+        command-line option parser. Values set in this namespace will be
+        treated as a first-level overlay to the configuration.
+        """
+        if self._arg_namespace is None:
+            self._arg_namespace = ArgNamespaceSource()
+            self.sources.insert(0, self._arg_namespace)
+        return self._arg_namespace
 
 class Subview(ConfigView):
     """A subview accessed via a subscript of a parent view."""
@@ -319,6 +331,28 @@ def config_filenames(name, modname=None, filename=CONFIG_FILENAME,
             out.append(os.path.join(pkg_path, default_filename))
 
     return [p for p in out if os.path.isfile(p)]
+
+
+# Command-line argument overlay (for argparse).
+
+class ArgNamespaceSource(object):
+    """An object that behaves like ``Namespace`` from argparse but adds
+    parsed command-line options to a configuration overlay.
+    """
+    def __init__(self):
+        self._data = {}
+
+    # Behave as a Namespace (write-only) for argparse.
+    def __setattr__(self, key, value):
+        if key != '_data':
+            if value is not None:  # Avoid "unset" values from argparse.
+                self._data[key] = value
+        else:
+            super(ArgNamespaceSource, self).__setattr__(key, value)
+
+    # Behave as a dictionary (read-only) for Confit.
+    def __getitem__(self, key):
+        return self._data[key]
 
 
 # Convenience wrappers.
