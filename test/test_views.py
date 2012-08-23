@@ -1,11 +1,9 @@
 import unittest
 import confit
 import sys
+from . import _root
 
 PY3 = sys.version_info[0] == 3
-
-def _root(*sources):
-    return confit.RootView(sources)
 
 class SingleSourceTest(unittest.TestCase):
     def test_dict_access(self):
@@ -72,27 +70,6 @@ class SingleSourceTest(unittest.TestCase):
         config = _root(2)
         with self.assertRaises(confit.ConfigTypeError):
             list(config.all_contents())
-
-class TypeCheckTest(unittest.TestCase):
-    def test_str_type_correct(self):
-        config = _root({'foo': 'bar'})
-        value = config['foo'].get(str)
-        self.assertEqual(value, 'bar')
-
-    def test_str_type_incorrect(self):
-        config = _root({'foo': 2})
-        with self.assertRaises(confit.ConfigTypeError):
-            config['foo'].get(str)
-
-    def test_int_type_correct(self):
-        config = _root({'foo': 2})
-        value = config['foo'].get(int)
-        self.assertEqual(value, 2)
-
-    def test_int_type_incorrect(self):
-        config = _root({'foo': 'bar'})
-        with self.assertRaises(confit.ConfigTypeError):
-            config['foo'].get(int)
 
 class ConverstionTest(unittest.TestCase):
     def test_str_conversion_from_str(self):

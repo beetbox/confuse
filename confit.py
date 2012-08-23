@@ -36,20 +36,23 @@ def iter_first(sequence):
         raise ValueError()
 
 
-# Views and data access logic.
+# Exceptions.
 
 class ConfigError(Exception):
     """Base class for exceptions raised when querying a configuration.
     """
-    pass
+
 class NotFoundError(ConfigError):
     """A requested value could not be found in the configuration trees.
     """
-    pass
+
 class ConfigTypeError(ConfigError, TypeError):
     """The value in the configuration did not match the expected type.
     """
-    pass
+
+class ConfigValueError(ConfigError, ValueError):
+    """The value in the configuration is illegal."""
+
 class ConfigReadError(ConfigError):
     """A configuration file could not be read."""
     def __init__(self, filename, reason=None):
@@ -59,6 +62,9 @@ class ConfigReadError(ConfigError):
         if reason:
             message += ': {0}'.format(reason)
         super(ConfigReadError, self).__init__(message)
+
+
+# Views and data access logic.
 
 class ConfigView(object):
     """A configuration "view" is a query into a program's configuration
@@ -88,13 +94,21 @@ class ConfigView(object):
         try:
             value = iter_first(values)
         except ValueError:
-            raise NotFoundError("%s not found" % self.name())
+            raise NotFoundError("{0} not found".format(self.name()))
 
-        # Check the type.
-        if typ is not None and not isinstance(value, typ):
-            raise ConfigTypeError("%s must by of type %s, not %s" %
-                                  (self.name(), STRING(typ),
-                                  STRING(type(value))))
+        # Validate/convert.
+        if isinstance(typ, type):
+            # Check type of value.
+            if not isinstance(value, typ):
+                raise ConfigTypeError(
+                    "{0} must by of type {1}, not {2}".format(
+                        self.name(), typ, type(value)
+                    )
+                )
+
+        elif typ is not None:
+            # typ must a callable that takes this view and the value.
+            value = typ(self, value)
 
         return value
 
@@ -353,6 +367,30 @@ class ArgNamespaceSource(object):
     # Behave as a dictionary (read-only) for Confit.
     def __getitem__(self, key):
         return self._data[key]
+
+
+# Validation and conversion helpers.
+
+def as_filename(view, value):
+    """Gets a string as a normalized filename, made absolute and with
+    tilde expanded.
+    """
+    value = STRING(value)
+    return os.path.abspath(os.path.expanduser(value))
+
+def as_choice(choices):
+    """Returns a function that ensures that the value is one of a
+    collection of choices.
+    """
+    def f(view, value):
+        if value not in choices:
+            raise ConfigValueError(
+                '{0} must be one of {1}, not {2}'.format(
+                    view.name(), repr(value), repr(list(choices))
+                )
+            )
+        return value
+    return f
 
 
 # Convenience wrappers.

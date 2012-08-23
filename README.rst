@@ -41,23 +41,9 @@ Here’s what Confit brings to the table:
 
 And what it will do (some not-yet-implemented goals):
 
--  Extensible validation. It should be easy to ensure that a file or
-   directory exists, for example.
 -  Helpers to create a platform-specific data directory if it doesn’t
    exist yet.
--  A pattern for easily creating singleton configuration objects. It
-   should be easy for any part of the code to access the current
-   configuration—and even for code that *uses the configured program as
-   a library* to get its configuration. There are two ways I can imagine
-   doing this:
-
-   -  Like `logging`_, provide a ``confit.get_config(name)`` function to
-      get singleton configuration objects by name.
-   -  Encourage developers to put ``config = confit.make_config(...)``
-      in their root module (or somewhere else well-known). Then each
-      client can just say ``import myapp; myapp.config``.
-
-- Customizable configuration file locations using environment variables.
+-  Customizable configuration file locations using environment variables.
 
 Using Confit
 ------------
