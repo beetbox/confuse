@@ -10,10 +10,10 @@ for Python.
 Using Confit
 ------------
 
-To set up your configuration object, which provides unified access to
-all of your application’s config settings, use ``confit.config()``::
+Set up your Configuration object, which provides unified access to
+all of your application’s config settings::
 
-    config = confit.config('MyGreatApp', __name__)
+    config = confit.Configuration('MyGreatApp', __name__)
 
 The first parameter is required; it’s the name of your application that
 will be used to search the system for config files. The second parameter
@@ -135,7 +135,7 @@ command-line options should take priority over all configuration files.
 
 You can use the `argparse`_ and `optparse`_ modules from the standard
 library with Confit to accomplish this. Just call the ``add_args``
-method on root view objects and pass in the object returned by the
+method on your Configuration object and pass in the object returned by the
 command-line parsing library. For example, with argparse::
 
     args = parser.parse_args()
@@ -151,7 +151,7 @@ source in your configuration. The key associated with each option in the
 parser will become a key available in your configuration. For example,
 consider this argparse script::
 
-    config = confit.config('myapp')
+    config = confit.Configuration('myapp')
     parser = argparse.ArgumentParser()
     parser.add_argument('--foo', help='a parameter')
     args = parser.parse_args()

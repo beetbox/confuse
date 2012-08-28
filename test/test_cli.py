@@ -5,7 +5,7 @@ import optparse
 
 class ArgparseTest(unittest.TestCase):
     def setUp(self):
-        self.config = confit.RootView([])
+        self.config = confit.Configuration('test', read=False)
         self.parser = argparse.ArgumentParser()
 
     def _parse(self, args):
@@ -37,7 +37,7 @@ class ArgparseTest(unittest.TestCase):
 
 class OptparseTest(unittest.TestCase):
     def setUp(self):
-        self.config = confit.RootView([])
+        self.config = confit.Configuration('test', read=False)
         self.parser = optparse.OptionParser()
 
     def _parse(self, args):

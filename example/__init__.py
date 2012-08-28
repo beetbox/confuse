@@ -5,7 +5,7 @@ import confit
 import argparse
 
 def main():
-    config = confit.config('ConfitExample', __name__)
+    config = confit.Configuration('ConfitExample', __name__)
 
     parser = argparse.ArgumentParser(description='example Confit program')
     parser.add_argument('--library', '-l', dest='library', metavar='LIBPATH',
@@ -16,7 +16,8 @@ def main():
     parser.add_argument('--verbose', '-v', dest='verbose', action='store_true',
                         help='print debugging messages')
 
-    parser.parse_args(namespace=config.arg_namespace)
+    args = parser.parse_args()
+    config.add_args(args)
 
     if config['verbose'].get(bool):
         print('verbose mode')

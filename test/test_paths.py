@@ -96,14 +96,14 @@ class ConfigFilenamesTest(unittest.TestCase):
         os.path.isfile = self.old_isfile
     
     def test_search_all_conf_dirs(self):
-        fns = confit.config_filenames('myapp')
+        fns = confit.Configuration('myapp', read=False)._filenames()
         self.assertEqual(fns, [
             '/home/xdgconfig/myapp/config.yaml',
             '/home/.config/myapp/config.yaml',
         ])
     
     def test_search_package(self):
-        fns = confit.config_filenames('myapp', __name__)
+        fns = confit.Configuration('myapp', __name__, read=False)._filenames()
         self.assertEqual(fns, [
             '/home/xdgconfig/myapp/config.yaml',
             '/home/.config/myapp/config.yaml',
