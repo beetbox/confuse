@@ -347,27 +347,29 @@ class Configuration(RootView):
         if read:
             self._read()
 
-    def _filenames(self, filename=CONFIG_FILENAME,
-                   default_filename=DEFAULT_FILENAME):
+    def _search_dirs(self):
+        """Yield directories that will be searched for configuration
+        files for this application.
+        """
+        for confdir in config_dirs():
+            yield os.path.join(confdir, self.appname)
+
+    def _filenames(self):
         """Get a list of filenames for configuration files. The files
         actually exist and are in the order that they should be
         prioritized.
-
-        ``filename`` may be the base name of the config files to be
-        searched for in the standard directories. ``default_filename``
-        is the name for the in-package defaults file.
         """
         out = []
 
         # Search standard directories.
-        for confdir in config_dirs():
-            out.append(os.path.join(confdir, self.appname, filename))
+        for appdir in self._search_dirs():
+            out.append(os.path.join(appdir, CONFIG_FILENAME))
 
         # Search the package for a defaults file.
         if self.modname:
             pkg_path = _package_path(self.modname)
             if pkg_path:
-                out.append(os.path.join(pkg_path, default_filename))
+                out.append(os.path.join(pkg_path, DEFAULT_FILENAME))
 
         return [p for p in out if os.path.isfile(p)]
 
@@ -394,3 +396,21 @@ class Configuration(RootView):
             if value is not None:  # Avoid unset options.
                 arg_source[key] = value
         self.sources.insert(0, arg_source)
+
+    def config_dir(self):
+        """Get the path to the directory containing the highest-priority
+        user configuration. If no user configuration is present, create a
+        suitable directory before returning it.
+        """
+        dirs = list(self._search_dirs())
+
+        # First, look for an existant configuration file.
+        for appdir in dirs:
+            if os.path.isfile(os.path.join(appdir, CONFIG_FILENAME)):
+                return appdir
+
+        # As a fallback, create the first-listed directory name.
+        appdir = dirs[0]
+        if not os.path.isdir(appdir):
+            os.makedirs(appdir)
+        return appdir

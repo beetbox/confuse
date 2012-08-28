@@ -172,3 +172,25 @@ other configuration sources---possibly your
 ``config_defaults.yaml``---to fill in values for unspecified
 command-line switches. Otherwise, the argparse/optparse default value
 will hide options configured elsewhere.
+
+
+Your Application Directory
+--------------------------
+
+Confit provides a simple helper, ``Configuration.config_dir()``, that
+gives you a directory used to store your application's configuration. If
+a configuration file exists in any of the searched locations, then the
+highest-priority directory containing a config file is used. Otherwise,
+a directory is created for you and returned. So you can always expect
+this method to give you a directory that actually exists.
+
+As an example, you may want to migrate a user's settings to Confit from
+an older configuration system such as `ConfigParser`_. Just do something
+like this::
+
+    config_filename = os.path.join(config.config_dir(),
+                                   confit.CONFIG_FILENAME)
+    with open(config_filename, 'w') as f:
+        yaml.dump(migrated_config, f)
+
+.. _ConfigParser: http://docs.python.org/library/configparser.html

@@ -2,6 +2,8 @@ import unittest
 import confit
 import os
 import platform
+import tempfile
+import shutil
 
 def _mock_system(plat):
     def system():
@@ -23,6 +25,9 @@ def _mock_path(modname):
     old = os.path
     os.path = __import__(modname)
     return old
+
+def _touch(path):
+    open(path, 'a').close()
 
 class ConfigDirsUnixTest(unittest.TestCase):
     def setUp(self):
@@ -109,3 +114,46 @@ class ConfigFilenamesTest(unittest.TestCase):
             '/home/.config/myapp/config.yaml',
             os.path.join(os.path.dirname(__file__), 'config_default.yaml'),
         ])
+
+class PrimaryConfigDirTest(unittest.TestCase):
+    def setUp(self):
+        self.home = tempfile.mkdtemp()
+
+        self.old_system = _mock_system('Linux')
+        self.old_environ = _mock_environ(home=self.home)
+        self.old_path = _mock_path('posixpath')
+
+        self.config = confit.Configuration('test', read=False)
+
+    def tearDown(self):
+        platform.system = self.old_system
+        os.envrion = self.old_environ
+        os.path = self.old_path
+
+        if os.path.exists(self.home):
+            shutil.rmtree(self.home)
+
+    def test_create_dir_if_none_exists(self):
+        path = os.path.join(self.home, 'xdgconfig', 'test')
+        assert not os.path.exists(path)
+
+        self.assertEqual(self.config.config_dir(), path)
+        self.assertTrue(os.path.isdir(path))
+
+    def test_return_existing_dir(self):
+        path = os.path.join(self.home, 'xdgconfig', 'test')
+        os.makedirs(path)
+        _touch(os.path.join(path, confit.CONFIG_FILENAME))
+        self.assertEqual(self.config.config_dir(), path)
+
+    def test_do_not_create_dir_if_lower_priority_exists(self):
+        path1 = os.path.join(self.home, 'xdgconfig', 'test')
+        path2 = os.path.join(self.home, '.config', 'test')
+        os.makedirs(path2)
+        _touch(os.path.join(path2, confit.CONFIG_FILENAME))
+        assert not os.path.exists(path1)
+        assert os.path.exists(path2)
+
+        self.assertEqual(self.config.config_dir(), path2)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))

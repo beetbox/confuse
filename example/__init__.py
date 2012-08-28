@@ -19,6 +19,8 @@ def main():
     args = parser.parse_args()
     config.add_args(args)
 
+    print('configuration directory is', config.config_dir())
+
     if config['verbose'].get(bool):
         print('verbose mode')
     print('directory is', config['directory'].get(confit.as_filename))
