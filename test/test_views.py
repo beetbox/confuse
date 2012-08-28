@@ -101,22 +101,21 @@ class ConverstionTest(unittest.TestCase):
 class NameTest(unittest.TestCase):
     def test_root_name(self):
         config = _root(None)
-        name = config.name()
-        self.assertEqual(name, 'root')
+        self.assertEqual(config.name, 'root')
 
     def test_string_access_name(self):
         config = _root(None)
-        name = config['foo'].name()
+        name = config['foo'].name
         self.assertEqual(name, "root['foo']")
 
     def test_int_access_name(self):
         config = _root(None)
-        name = config[5].name()
+        name = config[5].name
         self.assertEqual(name, "root[5]")
 
     def test_nested_access_name(self):
         config = _root(None)
-        name = config[5]['foo']['bar'][20].name()
+        name = config[5]['foo']['bar'][20].name
         self.assertEqual(name, "root[5]['foo']['bar'][20]")
 
 class MultipleSourceTest(unittest.TestCase):
@@ -215,3 +214,29 @@ class MultipleSourceTest(unittest.TestCase):
         config.add({'baz': 'qux'})
         self.assertEqual(config['foo'].get(), 'bar')
         self.assertEqual(config['baz'].get(), 'qux')
+
+class TransientOverlayTest(unittest.TestCase):
+    def test_set_missing_top_level_key(self):
+        config = _root({})
+        config['foo'] = 'bar'
+        self.assertEqual(config['foo'].get(), 'bar')
+
+    def test_override_top_level_key(self):
+        config = _root({'foo': 'bar'})
+        config['foo'] = 'baz'
+        self.assertEqual(config['foo'].get(), 'baz')
+
+    def test_set_second_level_key(self):
+        config = _root({})
+        config['foo']['bar'] = 'baz'
+        self.assertEqual(config['foo']['bar'].get(), 'baz')
+
+    def test_override_second_level_key(self):
+        config = _root({'foo': {'bar': 'qux'}})
+        config['foo']['bar'] = 'baz'
+        self.assertEqual(config['foo']['bar'].get(), 'baz')
+
+    def test_override_list_index(self):
+        config = _root({'foo': ['a', 'b', 'c']})
+        config['foo'][1] = 'bar'
+        self.assertEqual(config['foo'][1].get(), 'bar')

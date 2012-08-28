@@ -27,7 +27,8 @@ Here’s what Confit brings to the table:
    override system-wide configuration, which in turn overrides built-in
    defaults. An in-package ``config_default.yaml`` can be used to
    provide bottom-layer defaults using the same syntax that users will
-   see.
+   see. A runtime overlay allows the program to programmatically
+   override and add configuration values.
 
 -  Look for configuration files in **platform-specific paths**. Like
    ``$XDG_DATA_HOME`` or ``~/.config`` on Unix; “Application Support” on

@@ -194,3 +194,27 @@ like this::
         yaml.dump(migrated_config, f)
 
 .. _ConfigParser: http://docs.python.org/library/configparser.html
+
+
+Transient Updates
+-----------------
+
+Occasionally, a program will need to modify its configuration while it's
+running. For example, an interactive prompt from the user might cause
+the program to change a setting for the current execution only. Or the
+program might need to add a *derived* configuration value that the user
+doesn't specify.
+
+To facilitate this, Confit uses a *transient overlay* system. You can
+set the value at any view using ordinary Python assignment. This setting
+will add to an overlay that precedes all other configuration sources in
+priority. Here's an example of programmatically setting a configuration
+value based on a ``DEBUG`` constant::
+
+    if DEBUG:
+        config['verbosity'] = 100
+    ...
+    my_logger.setLevel(config['verbosity'].get(int))
+
+This example allows the constant to override the default verbosity
+level, which would otherwise come from a configuration file.

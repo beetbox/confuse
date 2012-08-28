@@ -74,6 +74,17 @@ class ConfigView(object):
     the tree (subviews) by subscripting the parent view (i.e.,
     ``view[key]``).
     """
+
+    name = None
+    """The name of the view, depicting the path taken through the
+    configuration in Python-like syntax (e.g., ``foo['bar'][42]``).
+    """
+
+    overlay = None
+    """The portion of the transient overlay corresponding to this
+    view.
+    """
+
     def get_all(self):
         """Generates all available values for the view in the order of
         the configuration's sources. (Each source may have at most one
@@ -94,7 +105,7 @@ class ConfigView(object):
         try:
             value = iter_first(values)
         except ValueError:
-            raise NotFoundError("{0} not found".format(self.name()))
+            raise NotFoundError("{0} not found".format(self.name))
 
         # Validate/convert.
         if isinstance(typ, type):
@@ -102,7 +113,7 @@ class ConfigView(object):
             if not isinstance(value, typ):
                 raise ConfigTypeError(
                     "{0} must by of type {1}, not {2}".format(
-                        self.name(), typ, type(value)
+                        self.name, typ, type(value)
                     )
                 )
 
@@ -112,19 +123,18 @@ class ConfigView(object):
 
         return value
 
-    def name(self):
-        """Returns the name of the view, depicting the path taken
-        through the configuration in Python-like syntax (e.g.,
-        ``foo['bar'][42]``).
-        """
-        raise NotImplementedError
-
     def __repr__(self):
-        return '<ConfigView: %s>' % self.name()
+        return '<ConfigView: %s>' % self.name
 
     def __getitem__(self, key):
         """Get a subview of this view."""
         return Subview(self, key)
+
+    def __setitem__(self, key, value):
+        """Set a value in the transient overlay for a certain key under
+        this view.
+        """
+        self.overlay[key] = value
 
     # Magical conversions. These special methods make it possible to use
     # View objects somewhat transparently in certain circumstances. For
@@ -167,7 +177,7 @@ class ConfigView(object):
                 cur_keys = dic.keys()
             except AttributeError:
                 raise ConfigTypeError('%s must be a dict, not %s' %
-                                      (self.name(), STRING(type(dic))))
+                                      (self.name, STRING(type(dic))))
             keys.update(cur_keys)
         return keys
 
@@ -201,7 +211,7 @@ class ConfigView(object):
                 it = iter(collection)
             except TypeError:
                 raise ConfigTypeError('%s must be an iterable, not %s' %
-                                      (self.name(), STRING(type(collection))))
+                                      (self.name, STRING(type(collection))))
             for value in it:
                 yield value
 
@@ -215,6 +225,8 @@ class RootView(ConfigView):
         has the highest priority.
         """
         self.sources = list(sources)
+        self.overlay = {}
+        self.name = 'root'
 
     def add(self, obj):
         """Add the object (probably a dict) as a source for
@@ -226,10 +238,7 @@ class RootView(ConfigView):
         self.sources.append(obj)
 
     def get_all(self):
-        return self.sources
-
-    def name(self):
-        return "root"
+        return [self.overlay] + self.sources
 
 class Subview(ConfigView):
     """A subview accessed via a subscript of a parent view."""
@@ -238,6 +247,7 @@ class Subview(ConfigView):
         """
         self.parent = parent
         self.key = key
+        self.name = '{0}[{1}]'.format(self.parent.name, repr(self.key))
 
     def get_all(self):
         for collection in self.parent.get_all():
@@ -252,12 +262,16 @@ class Subview(ConfigView):
             except TypeError:
                 # Not subscriptable.
                 raise ConfigTypeError("%s must be a collection, not %s" %
-                                      (self.parent.name(),
+                                      (self.parent.name,
                                        STRING(type(collection))))
             yield value
 
-    def name(self):
-        return "%s[%s]" % (self.parent.name(), repr(self.key))
+    @property
+    def overlay(self):
+        parent_overlay = self.parent.overlay
+        if self.key not in parent_overlay:
+            parent_overlay[self.key] = {}
+        return parent_overlay[self.key]
 
 
 # Config file paths, including platform-specific paths and in-package
@@ -324,7 +338,7 @@ def as_choice(choices):
         if value not in choices:
             raise ConfigValueError(
                 '{0} must be one of {1}, not {2}'.format(
-                    view.name(), repr(value), repr(list(choices))
+                    view.name, repr(value), repr(list(choices))
                 )
             )
         return value

@@ -21,7 +21,14 @@ def main():
 
     print('configuration directory is', config.config_dir())
 
+    # Use a boolean flag and the transient overlay.
     if config['verbose'].get(bool):
         print('verbose mode')
+        config['log']['level'] = 2
+    else:
+        config['log']['level'] = 0
+    print('logging level is', config['log']['level'].get(int))
+
+    # Some validated/converted values.
     print('directory is', config['directory'].get(confit.as_filename))
     print('library is', config['library'].get(confit.as_filename))
