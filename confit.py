@@ -348,7 +348,7 @@ def as_choice(choices):
 # Main interface.
 
 class Configuration(RootView):
-    def __init__(self, appname, modname=None, read=True):
+    def __init__(self, name, modname=None, read=True):
         """Create a configuration object by reading the
         automatically-discovered config files for the application for a
         given name. If `modname` is specified, it should be the import
@@ -356,7 +356,7 @@ class Configuration(RootView):
         config file. (Otherwise, no defaults are used.)
         """
         super(Configuration, self).__init__([])
-        self.appname = appname
+        self.name = name
         self.modname = modname
         if read:
             self._read()
@@ -366,7 +366,7 @@ class Configuration(RootView):
         files for this application.
         """
         for confdir in config_dirs():
-            yield os.path.join(confdir, self.appname)
+            yield os.path.join(confdir, self.name)
 
     def _filenames(self):
         """Get a list of filenames for configuration files. The files
