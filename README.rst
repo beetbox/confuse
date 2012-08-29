@@ -33,17 +33,15 @@ Here’s what Confit brings to the table:
 -  Look for configuration files in **platform-specific paths**. Like
    ``$XDG_DATA_HOME`` or ``~/.config`` on Unix; “Application Support” on
    Mac OS X; ``%APPDATA%`` on Windows. Your program gets its own
-   directory, which you can use to store additional (non-configuration)
-   data. You can transparently create this directory on demand if, for
-   example, you need to initialize the configuration file on first run.
+   directory, which you can use to store additional data. You can
+   transparently create this directory on demand if, for example, you
+   need to initialize the configuration file on first run. And an
+   environment variable can be used to override the directory's
+   location.
 
 -  Integration with **command-line arguments** via `argparse`_ or `optparse`_
    from the standard library. Use argparse's declarative API to allow
    command-line options to override configured defaults.
-
-And what it will do (some not-yet-implemented goals):
-
--  Customizable configuration file locations using environment variables.
 
 Using Confit
 ------------

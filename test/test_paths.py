@@ -115,6 +115,32 @@ class ConfigFilenamesTest(unittest.TestCase):
             os.path.join(os.path.dirname(__file__), 'config_default.yaml'),
         ])
 
+class EnvVarTest(unittest.TestCase):
+    def setUp(self):
+        self.old_system = _mock_system('Linux')
+        self.old_environ = _mock_environ()
+        self.old_path = _mock_path('posixpath')
+
+        self.config = confit.Configuration('myapp', read=False)
+        os.environ['MYAPPDIR'] = '~/test/dir'
+
+    def tearDown(self):
+        platform.system = self.old_system
+        os.envrion = self.old_environ
+        os.path = self.old_path
+
+    def test_env_var_name(self):
+        self.assertEqual(self.config._env_var, 'MYAPPDIR')
+
+    def test_env_var_dir_has_first_priority(self):
+        first_dir = list(self.config._search_dirs())[0]
+        self.assertEqual(first_dir, '/home/test/dir')
+
+    def test_env_var_missing(self):
+        del os.environ['MYAPPDIR']
+        first_dir = list(self.config._search_dirs())[0]
+        self.assertNotEqual(first_dir, '/home/test/dir')
+
 class PrimaryConfigDirTest(unittest.TestCase):
     def setUp(self):
         self.home = tempfile.mkdtemp()

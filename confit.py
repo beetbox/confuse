@@ -318,7 +318,7 @@ def config_dirs():
         path = os.path.abspath(os.path.expanduser(path))
         if path not in out:
             out.append(path)
-    return  out
+    return out
 
 
 # Validation and conversion helpers.
@@ -358,6 +358,9 @@ class Configuration(RootView):
         super(Configuration, self).__init__([])
         self.name = name
         self.modname = modname
+
+        self._env_var = '{0}DIR'.format(self.name.upper())
+
         if read:
             self._read()
 
@@ -365,6 +368,12 @@ class Configuration(RootView):
         """Yield directories that will be searched for configuration
         files for this application.
         """
+        # Application's environment variable.
+        if self._env_var in os.environ:
+            path = os.environ[self._env_var]
+            yield os.path.abspath(os.path.expanduser(path))
+
+        # Standard configuration directories.
         for confdir in config_dirs():
             yield os.path.join(confdir, self.name)
 

@@ -174,6 +174,22 @@ command-line switches. Otherwise, the argparse/optparse default value
 will hide options configured elsewhere.
 
 
+Search Paths
+------------
+
+Confit looks in a number of locations for your application's
+configurations. The locations are determined by the platform. For each
+platform, Confit has a list of directories in which it looks for a
+directory named after the application. For example, the first search
+location on Unix-y systems is ``$XDG_DATA_HOME/AppName`` for an
+application called ``AppName``.
+
+Users can also add an override configuration directory with an
+environment variable. The variable name is the application name in
+capitals with "DIR" appended: for an application named ``AppName``, the
+environment variable is ``APPNAMEDIR``.
+
+
 Your Application Directory
 --------------------------
 
