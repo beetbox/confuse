@@ -1,3 +1,17 @@
+# This file is part of Confit.
+# Copyright 2012, Adrian Sampson.
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+
 """Worry-free YAML configuration files.
 """
 from __future__ import unicode_literals
@@ -112,7 +126,7 @@ class ConfigView(object):
             # Check type of value.
             if not isinstance(value, typ):
                 raise ConfigTypeError(
-                    "{0} must by of type {1}, not {2}".format(
+                    "{0} must be of type {1}, not {2}".format(
                         self.name, typ, type(value)
                     )
                 )
