@@ -39,3 +39,22 @@ class BuiltInValidatorTest(unittest.TestCase):
         config = _root({'foo': 'bar'})
         with self.assertRaises(confit.ConfigValueError):
             config['foo'].get(confit.as_choice(['foo', 'baz']))
+
+    def test_as_number_float(self):
+        config = _root({'f': 1.0})
+        config['f'].get(confit.as_number)
+
+    def test_as_number_int(self):
+        config = _root({'i': 2})
+        config['i'].get(confit.as_number)
+
+    def test_as_number_long_in_py2(self):
+        # A no-op on Python 3, which doesn't have a long type.
+        if not confit.PY3:
+            config = _root({'l': long(3)})
+            config['l'].get(confit.as_number)
+
+    def test_as_number_string(self):
+        config = _root({'s': 'a'})
+        with self.assertRaises(confit.ConfigTypeError):
+            config['s'].get(confit.as_number)

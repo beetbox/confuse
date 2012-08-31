@@ -35,6 +35,7 @@ DEFAULT_FILENAME = 'config_default.yaml'
 
 PY3 = sys.version_info[0] == 3
 STRING = str if PY3 else unicode
+NUMERIC_TYPES = [int, float] if PY3 else [int, float, long]
 
 def iter_first(sequence):
     """Get the first element from an iterable or raise a ValueError if
@@ -365,6 +366,17 @@ def as_choice(choices):
             )
         return value
     return f
+
+def as_number(view, value):
+    """Ensure that a value is of numeric type."""
+    for typ in NUMERIC_TYPES:
+        if isinstance(value, typ):
+            return value
+    raise ConfigTypeError(
+        '{0} must be numeric, not {1}'.format(
+            view.name, type(value).__name__
+        )
+    )
 
 
 # YAML.

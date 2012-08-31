@@ -105,6 +105,8 @@ common kinds of validation:
   absolute-ifying relative paths.
 * ``as_choice(choices)``: Checks that a value is one of the provided
   choices. The argument should be a list of possible values.
+* ``as_number``: Raises an exception unless the value is of a numeric
+  type.
 
 For example, calling ``config['path'].get(confit.as_filename)`` will
 make sure you get a reasonable filename string from the configuration.
