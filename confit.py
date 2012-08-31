@@ -127,7 +127,7 @@ class ConfigView(object):
             if not isinstance(value, typ):
                 raise ConfigTypeError(
                     "{0} must be of type {1}, not {2}".format(
-                        self.name, typ, type(value)
+                        self.name, typ.__name__, type(value).__name__
                     )
                 )
 
@@ -190,8 +190,11 @@ class ConfigView(object):
             try:
                 cur_keys = dic.keys()
             except AttributeError:
-                raise ConfigTypeError('%s must be a dict, not %s' %
-                                      (self.name, STRING(type(dic))))
+                raise ConfigTypeError(
+                    '{0} must be a dict, not {1}'.format(
+                        self.name, type(dic).__name__
+                    )
+                )
             keys.update(cur_keys)
         return keys
 
@@ -224,8 +227,11 @@ class ConfigView(object):
             try:
                 it = iter(collection)
             except TypeError:
-                raise ConfigTypeError('%s must be an iterable, not %s' %
-                                      (self.name, STRING(type(collection))))
+                raise ConfigTypeError(
+                    '{0} must be an iterable, not {1}'.format(
+                        self.name, type(collection).__name__
+                    )
+                )
             for value in it:
                 yield value
 
@@ -275,9 +281,11 @@ class Subview(ConfigView):
                 continue
             except TypeError:
                 # Not subscriptable.
-                raise ConfigTypeError("%s must be a collection, not %s" %
-                                      (self.parent.name,
-                                       STRING(type(collection))))
+                raise ConfigTypeError(
+                    "{0} must be a collection, not {1}".format(
+                        self.parent.name, type(collection).__name__
+                    )
+                )
             yield value
 
     @property
