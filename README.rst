@@ -1,13 +1,13 @@
 Confit: painless YAML config files that Just Work
 =================================================
 
-I’m tired of fiddling around with `ConfigParser`_. I don’t even really
-like INI syntax. I’m tired of writing boilerplate code to check for
+I'm tired of fiddling around with `ConfigParser`_. I don’t even really
+like INI syntax. I'm tired of writing boilerplate code to check for
 missing values, fall back to defaults, override config values with
 command-line options, and all that. I think a configuration library
 should be able to handle a lot more for me.
 
-So I’m writing **Confit** to magically take care of defaults, overrides,
+So I'm writing **Confit** to magically take care of defaults, overrides,
 type checking, command-line integration, human-readable errors, and
 standard OS-specific locations. The configuration files will be based on
 `YAML`_, which is a great syntax for writing down data.
@@ -31,7 +31,7 @@ Here’s what Confit brings to the table:
    override and add configuration values.
 
 -  Look for configuration files in **platform-specific paths**. Like
-   ``$XDG_DATA_HOME`` or ``~/.config`` on Unix; “Application Support” on
+   ``$XDG_CONFIG_HOME`` or ``~/.config`` on Unix; "Application Support" on
    Mac OS X; ``%APPDATA%`` on Windows. Your program gets its own
    directory, which you can use to store additional data. You can
    transparently create this directory on demand if, for example, you
@@ -52,7 +52,7 @@ Author
 ------
 
 Confit is being developed by `Adrian Sampson`_. It’s not done yet, but
-you’re welcome to use it under the terms of the `MIT license`_. I’m
+you’re welcome to use it under the terms of the `MIT license`_. I'm
 building Confit to use it with a future version of `beets`_.
 
 .. _ConfigParser: http://docs.python.org/library/configparser.html

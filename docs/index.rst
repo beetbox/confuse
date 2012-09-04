@@ -175,7 +175,7 @@ Confit looks in a number of locations for your application's
 configurations. The locations are determined by the platform. For each
 platform, Confit has a list of directories in which it looks for a
 directory named after the application. For example, the first search
-location on Unix-y systems is ``$XDG_DATA_HOME/AppName`` for an
+location on Unix-y systems is ``$XDG_CONFIG_HOME/AppName`` for an
 application called ``AppName``.
 
 Users can also add an override configuration directory with an

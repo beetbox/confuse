@@ -22,7 +22,7 @@ import sys
 import yaml
 import types
 
-UNIX_DIR_VAR = 'XDG_DATA_HOME'
+UNIX_DIR_VAR = 'XDG_CONFIG_HOME'
 UNIX_DIR_FALLBACK = '~/.config'
 WINDOWS_DIR_VAR = 'APPDATA'
 WINDOWS_DIR_FALLBACK = '~\\AppData\\Roaming'
