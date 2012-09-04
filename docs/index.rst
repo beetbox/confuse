@@ -102,10 +102,15 @@ conversion:
 
 * ``as_filename()``: Normalize a filename, substituting tildes and
   absolute-ifying relative paths.
-* ``as_choice(choices)``: Checks that a value is one of the provided
+* ``as_choice(choices)``: Check that a value is one of the provided
   choices. The argument should be a list of possible values.
-* ``as_number()``: Raises an exception unless the value is of a numeric
+* ``as_number()``: Raise an exception unless the value is of a numeric
   type.
+* ``as_pairs()``: Get a collection as a list of pairs. The collection
+  should be a list of elements that are either pairs (i.e., two-element
+  lists) already or single-entry dicts. This can be helpful because, in
+  YAML, lists of single-element mappings have a simple syntax (``- key:
+  value``) and, unlike real mappings, preserve order.
 
 For example, ``config['path'].as_filename()`` ensures that you get a
 reasonable filename string from the configuration. And calling

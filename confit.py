@@ -269,6 +269,31 @@ class ConfigView(object):
             )
         )
 
+    def as_pairs(self, all_sources=False):
+        """Ensure that the value is a list whose elements are either
+        pairs (two-element lists) or single-entry dictionaries (which
+        have a slightly nicer syntax in YAML). Return a list of pairs
+        (tuples). If `all_sources`, then the values from all sources are
+        concatenated.
+        """
+        if all_sources:
+            it = self.all_contents()
+        else:
+            it = self.get(list)
+
+        out = []
+        for item in it:
+            if isinstance(item, list) and len(item) == 2:
+                out.append(tuple(item))
+            elif isinstance(item, dict) and len(item) == 1:
+                out.append(iter_first(item.items()))
+            else:
+                raise ConfigValueError(
+                    '{0} must be a list of pairs'.format(self.name)
+                )
+        
+        return out
+
 class RootView(ConfigView):
     """The base of a view hierarchy. This view keeps track of the
     sources that may be accessed by subviews.
