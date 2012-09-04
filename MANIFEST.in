@@ -1,0 +1,8 @@
+include README.rst
+
+# Include the Sphinx documentation.
+recursive-include docs *.rst *.py Makefile *.png
+prune docs/_build
+
+# Exclude junk.
+global-exclude .DS_Store
