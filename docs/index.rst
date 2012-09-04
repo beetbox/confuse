@@ -96,35 +96,22 @@ Validation
 
 We saw above that you can easily assert that a configuration value has a
 certain type by passing that type to ``get()``. But sometimes you need
-to do more than just type checking. For this reason, you can also pass a
-function to ``get`` that will do some validation---and possibly
-conversion---for you. Confit includes some useful functions for doing
-common kinds of validation:
+to do more than just type checking. For this reason, Confit provides a
+few methods on views that perform fancier validation or even
+conversion:
 
-* ``as_filename``: Normalize a filename, substituting tildes and
+* ``as_filename()``: Normalize a filename, substituting tildes and
   absolute-ifying relative paths.
 * ``as_choice(choices)``: Checks that a value is one of the provided
   choices. The argument should be a list of possible values.
-* ``as_number``: Raises an exception unless the value is of a numeric
+* ``as_number()``: Raises an exception unless the value is of a numeric
   type.
 
-For example, calling ``config['path'].get(confit.as_filename)`` will
-make sure you get a reasonable filename string from the configuration.
-And calling ``config['direction'].get(confit.as_choice(['up',
-'down']))`` will raise a ``ConfigValueError`` unless the ``direction``
-value is either "up" or "down".
-
-You can write your own validation function. A validator is just a
-callable that takes a view object and a value and returns the validated
-value. For example, here's how you might write a validator for even
-numbers::
-
-    def as_even(view, value):
-        if not isinstance(value, int) or value % 2 != 0:
-            raise confit.ConfigTypeError(
-                '{} must be an even integer'.format(view.name())
-            )
-        return value
+For example, ``config['path'].as_filename()`` ensures that you get a
+reasonable filename string from the configuration. And calling
+``config['direction'].as_choice(['up', 'down'])`` will raise a
+``ConfigValueError`` unless the ``direction`` value is either "up" or
+"down".
 
 
 Command-Line Options
