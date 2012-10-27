@@ -129,8 +129,10 @@ command-line options should take priority over all configuration files.
 
 You can use the `argparse`_ and `optparse`_ modules from the standard
 library with Confit to accomplish this. Just call the ``add_args``
-method on your Configuration object and pass in the object returned by the
-command-line parsing library. For example, with argparse::
+method on any view and pass in the object returned by the command-line
+parsing library. Values from the command-line option namespace object
+will be added to the overlay for the view in question. For example, with
+argparse::
 
     args = parser.parse_args()
     config.add_args(args)

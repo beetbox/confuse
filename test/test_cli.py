@@ -66,3 +66,19 @@ class OptparseTest(unittest.TestCase):
         self.parser.add_option('--foo', metavar='BAR')
         self._parse('--foo bar')
         self.assertEqual(self.config['foo'].get(), 'bar')
+
+class Namespace(object):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+class GenericNamespaceTest(unittest.TestCase):
+    def setUp(self):
+        self.config = confit.Configuration('test', read=False)
+
+    def test_value_added_to_root(self):
+        self.config.add_args(Namespace(foo='bar'))
+        self.assertEqual(self.config['foo'].get(), 'bar')
+
+    def test_value_added_to_subview(self):
+        self.config['baz'].add_args(Namespace(foo='bar'))
+        self.assertEqual(self.config['baz']['foo'].get(), 'bar')
