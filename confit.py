@@ -21,6 +21,10 @@ import pkgutil
 import sys
 import yaml
 import types
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
 
 UNIX_DIR_VAR = 'XDG_CONFIG_HOME'
 UNIX_DIR_FALLBACK = '~/.config'
@@ -171,13 +175,13 @@ class ConfigView(object):
     def __str__(self):
         """Gets the value for this view as a byte string."""
         return str(self.get())
-    
+
     def __unicode__(self):
         """Gets the value for this view as a unicode string. (Python 2
         only.)
         """
         return unicode(self.get())
-    
+
     def __nonzero__(self):
         """Gets the value for this view as a boolean. (Python 2 only.)
         """
@@ -303,7 +307,7 @@ class ConfigView(object):
                 raise ConfigValueError(
                     '{0} must be a list of pairs'.format(self.name)
                 )
-        
+
         return out
 
     def as_str_seq(self):
@@ -451,11 +455,47 @@ def config_dirs():
 
 class Loader(yaml.SafeLoader):
     """A customized YAML safe loader that reads all strings as Unicode
-    objects.
+    objects and all maps as OrderedDicts.
     """
     def _construct_unicode(self, node):
         return self.construct_scalar(node)
+
+    # Use ordered dictionaries for every YAML map.
+    # From https://gist.github.com/844388
+    def construct_yaml_map(self, node):
+        data = OrderedDict()
+        yield data
+        value = self.construct_mapping(node)
+        data.update(value)
+
+    def construct_mapping(self, node, deep=False):
+        if isinstance(node, yaml.MappingNode):
+            self.flatten_mapping(node)
+        else:
+            raise yaml.constructor.ConstructorError(
+                None, None,
+                'expected a mapping node, but found %s' % node.id,
+                node.start_mark
+            )
+
+        mapping = OrderedDict()
+        for key_node, value_node in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            try:
+                hash(key)
+            except TypeError as exc:
+                raise yaml.constructor.ConstructorError(
+                    'while constructing a mapping',
+                    node.start_mark, 'found unacceptable key (%s)' % exc,
+                    key_node.start_mark
+                )
+            value = self.construct_object(value_node, deep=deep)
+            mapping[key] = value
+        return mapping
+
 Loader.add_constructor('tag:yaml.org,2002:str', Loader._construct_unicode)
+Loader.add_constructor('tag:yaml.org,2002:map', Loader.construct_yaml_map)
+Loader.add_constructor('tag:yaml.org,2002:omap', Loader.construct_yaml_map)
 
 def load_yaml(filename):
     """Read a YAML document from a file. If the file cannot be read or
