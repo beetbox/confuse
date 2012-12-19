@@ -429,9 +429,14 @@ def config_dirs():
 # YAML.
 
 class Loader(yaml.SafeLoader):
-    """A customized YAML safe loader that reads all strings as Unicode
-    objects and all maps as OrderedDicts.
+    """A customized YAML loader. This loader deviates from the official
+    YAML spec in a few convenient ways:
+
+    - All strings as are Unicode objects.
+    - All maps are OrderedDicts.
+    - Strings can begin with % without quotation.
     """
+    # All strings should be Unicode objects, regardless of contents.
     def _construct_unicode(self, node):
         return self.construct_scalar(node)
 
@@ -467,6 +472,11 @@ class Loader(yaml.SafeLoader):
             value = self.construct_object(value_node, deep=deep)
             mapping[key] = value
         return mapping
+
+    # Allow bare strings to begin with %. Directives are still detected.
+    def check_plain(self):
+        plain = super(Loader, self).check_plain()
+        return plain or self.peek() == '%'
 
 Loader.add_constructor('tag:yaml.org,2002:str', Loader._construct_unicode)
 Loader.add_constructor('tag:yaml.org,2002:map', Loader.construct_yaml_map)

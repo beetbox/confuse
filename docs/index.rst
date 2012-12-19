@@ -232,3 +232,21 @@ value based on a ``DEBUG`` constant::
 
 This example allows the constant to override the default verbosity
 level, which would otherwise come from a configuration file.
+
+
+YAML Tweaks
+-----------
+
+Confit uses the `PyYAML`_ module to parse YAML configuration files. However, it
+deviates very slightly from the official YAML specification to provide a few
+niceties suited to human-written configuration files. Those tweaks are:
+
+.. _pyyaml: http://pyyaml.org/
+
+- All strings are returned as Python Unicode objects.
+- YAML maps are parsed as Python `OrderedDict`_ objects. This means that you
+  can recover the order that the user wrote down a dictionary.
+- Bare strings can begin with the % character. In stock PyYAML, this will throw
+  a parse error.
+
+.. _OrderedDict: http://docs.python.org/2/library/collections.html#collections.OrderedDict

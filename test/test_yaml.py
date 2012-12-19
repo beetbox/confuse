@@ -10,3 +10,7 @@ class ParseTest(unittest.TestCase):
         v = load("a: b\nc: d")
         self.assertTrue(isinstance(v, confit.OrderedDict))
         self.assertEqual(list(v), ['a', 'c'])
+
+    def test_string_beginning_with_percent(self):
+        v = load("foo: %bar")
+        self.assertEqual(v['foo'], '%bar')
