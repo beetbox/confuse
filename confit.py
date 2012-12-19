@@ -499,7 +499,11 @@ class Configuration(RootView):
         automatically-discovered config files for the application for a
         given name. If `modname` is specified, it should be the import
         name of a module whose package will be searched for a default
-        config file. (Otherwise, no defaults are used.)
+        config file. (Otherwise, no defaults are used.) Pass `False` for
+        `read` to disable automatic reading of all discovered
+        configuration files. Use this when creating a configuration
+        object at module load time and then call the `read` method
+        later.
         """
         super(Configuration, self).__init__([])
         self.appname = appname
@@ -508,7 +512,7 @@ class Configuration(RootView):
         self._env_var = '{0}DIR'.format(self.appname.upper())
 
         if read:
-            self._read()
+            self.read()
 
     def _search_dirs(self):
         """Yield directories that will be searched for configuration
@@ -523,31 +527,37 @@ class Configuration(RootView):
         for confdir in config_dirs():
             yield os.path.join(confdir, self.appname)
 
-    def _filenames(self):
+    def _filenames(self, user=True, defaults=True):
         """Get a list of filenames for configuration files. The files
-        actually exist and are in the order that they should be
-        prioritized.
+        must actually exist and are placed in the order that they should
+        be prioritized. The `user` and `defaults` flags control whether
+        files should be used from discovered configuration directories
+        and from the in-package defaults directory; set either of these
+        to `False` to disable searching for them.
         """
         out = []
 
         # Search standard directories.
-        for appdir in self._search_dirs():
-            out.append(os.path.join(appdir, CONFIG_FILENAME))
+        if user:
+            for appdir in self._search_dirs():
+                out.append(os.path.join(appdir, CONFIG_FILENAME))
 
         # Search the package for a defaults file.
-        if self.modname:
+        if defaults and self.modname:
             pkg_path = _package_path(self.modname)
             if pkg_path:
                 out.append(os.path.join(pkg_path, DEFAULT_FILENAME))
 
         return [p for p in out if os.path.isfile(p)]
 
-    def _read(self):
-        """Read the default files for this configuration and set them as
-        the sources for this configuration.
+    def read(self, user=True, defaults=True):
+        """Find and read the files for this configuration and set them
+        as the sources for this configuration. To disable either
+        discovered user configuration files or the in-package defaults,
+        set `user` or `defaults` to `False`.
         """
         self.sources = []
-        for filename in self._filenames():
+        for filename in self._filenames(user, defaults):
             self.sources.append(load_yaml(filename))
 
     def config_dir(self):
