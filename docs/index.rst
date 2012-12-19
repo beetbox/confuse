@@ -219,11 +219,11 @@ the program to change a setting for the current execution only. Or the
 program might need to add a *derived* configuration value that the user
 doesn't specify.
 
-To facilitate this, Confit uses a *transient overlay* system. You can
-set the value at any view using ordinary Python assignment. This setting
-will add to an overlay that precedes all other configuration sources in
-priority. Here's an example of programmatically setting a configuration
-value based on a ``DEBUG`` constant::
+To facilitate this, Confit lets you *assign* to view objects using
+ordinary Python assignment. Assignment will add an overlay source that
+precedes all other configuration sources in priority. Here's an example
+of programmatically setting a configuration value based on a ``DEBUG``
+constant::
 
     if DEBUG:
         config['verbosity'] = 100

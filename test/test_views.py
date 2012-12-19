@@ -214,7 +214,7 @@ class MultipleSourceTest(unittest.TestCase):
         self.assertEqual(config['foo'].get(), 'bar')
         self.assertEqual(config['baz'].get(), 'qux')
 
-class TransientOverlayTest(unittest.TestCase):
+class SetTest(unittest.TestCase):
     def test_set_missing_top_level_key(self):
         config = _root({})
         config['foo'] = 'bar'
