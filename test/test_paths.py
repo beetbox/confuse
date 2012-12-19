@@ -1,9 +1,9 @@
-import unittest
 import confit
 import os
 import platform
 import tempfile
 import shutil
+from . import unittest
 
 def _mock_system(plat):
     def system():

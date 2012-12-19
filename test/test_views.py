@@ -1,7 +1,6 @@
-import unittest
 import confit
 import sys
-from . import _root
+from . import _root, unittest
 
 PY3 = sys.version_info[0] == 3
 

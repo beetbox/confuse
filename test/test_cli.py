@@ -1,7 +1,7 @@
-import unittest
 import confit
 import argparse
 import optparse
+from . import unittest
 
 class ArgparseTest(unittest.TestCase):
     def setUp(self):

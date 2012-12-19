@@ -1,7 +1,6 @@
-import unittest
 import confit
 import os
-from . import _root
+from . import _root, unittest
 
 class TypeCheckTest(unittest.TestCase):
     def test_str_type_correct(self):
