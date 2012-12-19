@@ -111,6 +111,8 @@ conversion:
   lists) already or single-entry dicts. This can be helpful because, in
   YAML, lists of single-element mappings have a simple syntax (``- key:
   value``) and, unlike real mappings, preserve order.
+* ``as_str_seq()``: Given either a string or a list of strings, return a list
+  of strings. A single string is split on whitespace.
 
 For example, ``config['path'].as_filename()`` ensures that you get a
 reasonable filename string from the configuration. And calling

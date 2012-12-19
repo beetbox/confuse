@@ -304,6 +304,26 @@ class ConfigView(object):
         
         return out
 
+    def as_str_seq(self):
+        """Get the value as a list of strings. The underlying configured
+        value can be a sequence or a single string. In the latter case,
+        the string is treated as a white-space separated list of words.
+        """
+        value = self.get()
+        if isinstance(value, bytes):
+            value = value.decode('utf8', 'ignore')
+
+        if isinstance(value, STRING):
+            return value.split()
+        else:
+            try:
+                return list(value)
+            except TypeError:
+                raise ConfigTypeError(
+                    '{0} must be a whitespace-separated string or '
+                    'a list'.format(self.name)
+                )
+
 class RootView(ConfigView):
     """The base of a view hierarchy. This view keeps track of the
     sources that may be accessed by subviews.

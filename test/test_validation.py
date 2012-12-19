@@ -90,3 +90,16 @@ class BuiltInValidatorTest(unittest.TestCase):
             [('a', 'b'), ('c', 'd')]
         )
 
+    def test_as_str_seq_str(self):
+        config = _root({'k': 'a b c'})
+        self.assertEqual(
+            config['k'].as_str_seq(),
+            ['a', 'b', 'c']
+        )
+
+    def test_as_str_seq_list(self):
+        config = _root({'k': ['a b', 'c']})
+        self.assertEqual(
+            config['k'].as_str_seq(),
+            ['a b', 'c']
+        )
