@@ -58,37 +58,6 @@ class BuiltInValidatorTest(unittest.TestCase):
         with self.assertRaises(confit.ConfigTypeError):
             config['s'].as_number()
 
-    def test_as_pairs_pairs(self):
-        config = _root({'k': [['a', 'b'], ['c', 'd']]})
-        self.assertEqual(
-            config['k'].as_pairs(),
-            [('a', 'b'), ('c', 'd')]
-        )
-
-    def test_as_pairs_dicts(self):
-        config = _root({'k': [{'a': 'b'}, {'c': 'd'}]})
-        self.assertEqual(
-            config['k'].as_pairs(),
-            [('a', 'b'), ('c', 'd')]
-        )
-
-    def test_as_pairs_longer_list(self):
-        config = _root({'k': [['a', 'b'], ['c', 'd', 'e']]})
-        with self.assertRaises(confit.ConfigValueError):
-            config['k'].as_pairs()
-
-    def test_as_pairs_longer_dict(self):
-        config = _root({'k': [{'a': 'b'}, {'c': 'd', 'e': 'f'}]})
-        with self.assertRaises(confit.ConfigValueError):
-            config['k'].as_pairs()
-
-    def test_as_pairs_all(self):
-        config = _root({'k': [['a', 'b']]}, {'k': [['c', 'd']]})
-        self.assertEqual(
-            config['k'].as_pairs(True),
-            [('a', 'b'), ('c', 'd')]
-        )
-
     def test_as_str_seq_str(self):
         config = _root({'k': 'a b c'})
         self.assertEqual(
