@@ -30,12 +30,14 @@ MAC_DIR = '~/Library/Application Support'
 
 CONFIG_FILENAME = 'config.yaml'
 DEFAULT_FILENAME = 'config_default.yaml'
+ROOT_NAME = 'root'
 
 
 # Utilities.
 
 PY3 = sys.version_info[0] == 3
 STRING = str if PY3 else unicode
+BASESTRING = str if PY3 else basestring
 NUMERIC_TYPES = (int, float) if PY3 else (int, float, long)
 TYPE_TYPES = (type,) if PY3 else (type, types.ClassType)
 
@@ -335,7 +337,7 @@ class RootView(ConfigView):
         """
         self.sources = list(sources)
         self.overlay = {}
-        self.name = 'root'
+        self.name = ROOT_NAME
 
     def add(self, obj):
         """Add the object (probably a dict) as a source for
@@ -356,7 +358,20 @@ class Subview(ConfigView):
         """
         self.parent = parent
         self.key = key
-        self.name = '{0}[{1}]'.format(self.parent.name, repr(self.key))
+
+        # Choose a human-readable name for this view.
+        if isinstance(self.parent, RootView):
+            self.name = ''
+        else:
+            self.name = self.parent.name
+            if not isinstance(self.key, int):
+                self.name += '.'
+        if isinstance(self.key, int):
+            self.name += '#{0}'.format(self.key)
+        elif isinstance(self.key, BASESTRING):
+            self.name += '{0}'.format(self.key)
+        else:
+            self.name += '{0}'.format(repr(self.key))
 
     def get_all(self):
         for collection in self.parent.get_all():
@@ -456,7 +471,7 @@ def load_yaml(filename):
 # Main interface.
 
 class Configuration(RootView):
-    def __init__(self, name, modname=None, read=True):
+    def __init__(self, appname, modname=None, read=True):
         """Create a configuration object by reading the
         automatically-discovered config files for the application for a
         given name. If `modname` is specified, it should be the import
@@ -464,10 +479,10 @@ class Configuration(RootView):
         config file. (Otherwise, no defaults are used.)
         """
         super(Configuration, self).__init__([])
-        self.name = name
+        self.appname = appname
         self.modname = modname
 
-        self._env_var = '{0}DIR'.format(self.name.upper())
+        self._env_var = '{0}DIR'.format(self.appname.upper())
 
         if read:
             self._read()
@@ -483,7 +498,7 @@ class Configuration(RootView):
 
         # Standard configuration directories.
         for confdir in config_dirs():
-            yield os.path.join(confdir, self.name)
+            yield os.path.join(confdir, self.appname)
 
     def _filenames(self):
         """Get a list of filenames for configuration files. The files

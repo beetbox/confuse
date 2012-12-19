@@ -105,17 +105,17 @@ class NameTest(unittest.TestCase):
     def test_string_access_name(self):
         config = _root(None)
         name = config['foo'].name
-        self.assertEqual(name, "root['foo']")
+        self.assertEqual(name, "foo")
 
     def test_int_access_name(self):
         config = _root(None)
         name = config[5].name
-        self.assertEqual(name, "root[5]")
+        self.assertEqual(name, "#5")
 
     def test_nested_access_name(self):
         config = _root(None)
         name = config[5]['foo']['bar'][20].name
-        self.assertEqual(name, "root[5]['foo']['bar'][20]")
+        self.assertEqual(name, "#5.foo.bar#20")
 
 class MultipleSourceTest(unittest.TestCase):
     def test_dict_access_shadowed(self):
