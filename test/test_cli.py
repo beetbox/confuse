@@ -10,7 +10,7 @@ class ArgparseTest(unittest.TestCase):
 
     def _parse(self, args):
         args = self.parser.parse_args(args.split())
-        self.config.add_args(args)
+        self.config.set_args(args)
 
     def test_text_argument_parsed(self):
         self.parser.add_argument('--foo', metavar='BAR')
@@ -42,7 +42,7 @@ class OptparseTest(unittest.TestCase):
 
     def _parse(self, args):
         options, _ = self.parser.parse_args(args.split())
-        self.config.add_args(options)
+        self.config.set_args(options)
 
     def test_text_argument_parsed(self):
         self.parser.add_option('--foo', metavar='BAR')
@@ -76,9 +76,9 @@ class GenericNamespaceTest(unittest.TestCase):
         self.config = confit.Configuration('test', read=False)
 
     def test_value_added_to_root(self):
-        self.config.add_args(Namespace(foo='bar'))
+        self.config.set_args(Namespace(foo='bar'))
         self.assertEqual(self.config['foo'].get(), 'bar')
 
     def test_value_added_to_subview(self):
-        self.config['baz'].add_args(Namespace(foo='bar'))
+        self.config['baz'].set_args(Namespace(foo='bar'))
         self.assertEqual(self.config['baz']['foo'].get(), 'bar')

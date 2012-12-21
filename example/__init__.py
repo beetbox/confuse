@@ -17,7 +17,7 @@ def main():
                         help='print debugging messages')
 
     args = parser.parse_args()
-    config.add_args(args)
+    config.set_args(args)
 
     print('configuration directory is', config.config_dir())
 

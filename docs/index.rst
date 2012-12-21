@@ -130,19 +130,19 @@ configuration file should override those from a system-wide config,
 command-line options should take priority over all configuration files.
 
 You can use the `argparse`_ and `optparse`_ modules from the standard
-library with Confit to accomplish this. Just call the ``add_args``
+library with Confit to accomplish this. Just call the ``set_args``
 method on any view and pass in the object returned by the command-line
 parsing library. Values from the command-line option namespace object
 will be added to the overlay for the view in question. For example, with
 argparse::
 
     args = parser.parse_args()
-    config.add_args(args)
+    config.set_args(args)
 
 Correspondingly, with optparse::
 
     options, args = parser.parse_args()
-    config.add_args(options)
+    config.set_args(options)
 
 This call will turn all of the command-line options into a top-level
 source in your configuration. The key associated with each option in the
@@ -153,7 +153,7 @@ consider this argparse script::
     parser = argparse.ArgumentParser()
     parser.add_argument('--foo', help='a parameter')
     args = parser.parse_args()
-    config.add_args(args)
+    config.set_args(args)
     print(config['foo'].get())
 
 This will allow the user to override the configured value for key
