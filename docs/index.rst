@@ -210,8 +210,8 @@ like this::
 .. _ConfigParser: http://docs.python.org/library/configparser.html
 
 
-Transient Updates
------------------
+Dynamic Updates
+---------------
 
 Occasionally, a program will need to modify its configuration while it's
 running. For example, an interactive prompt from the user might cause
@@ -232,6 +232,14 @@ constant::
 
 This example allows the constant to override the default verbosity
 level, which would otherwise come from a configuration file.
+
+Assignment works be creating a new "source" for configuration data at
+the top of the stack. This new source takes priority over all other,
+previously-loaded sources. You can cause this explicitly by calling the
+``set()`` method on any view. A related method, ``add()``, works
+similarly but instead adds a new *lowest-priority* source to the bottom
+of the stack. This can be used to provide defaults for options that may
+be overridden by previously-loaded configuration files.
 
 
 YAML Tweaks
