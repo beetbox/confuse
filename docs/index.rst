@@ -258,3 +258,53 @@ niceties suited to human-written configuration files. Those tweaks are:
   a parse error.
 
 .. _OrderedDict: http://docs.python.org/2/library/collections.html#collections.OrderedDict
+
+
+Configuring Large Programs
+--------------------------
+
+One problem that must be solved by a configuration system is the issue
+of global configuration for complex applications. In a large program
+with many components and many config options, it can be unwieldy to
+explicitly pass configuration values from component to component. You
+quickly end up with monstrous function signatures with dozens of keyword
+arguments, decreasing code legibility and testability.
+
+In such systems, one option is to pass a single `Configuration` object
+through to each component. To avoid even this, however, it's sometimes
+appropriate to use a little bit of shared global state. As evil as
+shared global state usually is, configuration is (in my opinion) one
+valid use: since configuration is mostly read-only, it's relatively
+unlikely to cause the sorts of problems that global values sometimes
+can. And having a global repository for configuration option can vastly
+reduce the amount of boilerplate threading-through needed to explicitly
+pass configuration from call to call.
+
+To use global configuration, consider creating a `Configuration` object
+in a well-known module (say, the root of a package). Since this object
+will be initialized at module load time, pass ``read=False`` to the
+constructor to disable automatic loading of the configuration files.
+(Doing complicated stuff like parsing YAML at module load time is
+generally considered a Bad Idea.) This module-global `Configuration`
+object will just be a husk at this point---containing no useful
+configuration values---but it will be importable by other modules that
+need to use it. Then, in your program's initialization code (something
+called from its "main" function, say) call ``config.read()`` to parse
+your program's configuration files.
+
+Global state can cause problems for unit testing. To alleviate this,
+consider adding code to your test fixtures (e.g., `setUp`_ in the
+`unittest`_ module) that clears out the global configuration before each
+test is run. Something like this::
+
+    config.sources = []
+    config.read(user=False)
+
+These lines will empty out the current configuration and then re-load
+the defaults (but not the user's configuration files). Your tests can
+then modify the global configuration values without affecting other
+tests since these modifications will be cleared out before the next test
+runs.
+
+.. _unittest: http://docs.python.org/2/library/unittest.html
+.. _setUp: http://docs.python.org/2/library/unittest.html#unittest.TestCase.setUp
