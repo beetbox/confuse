@@ -341,6 +341,10 @@ class RootView(ConfigView):
     def get_all(self):
         return self.sources
 
+    def clear(self):
+        """Remove all sources from this configuration."""
+        del self.sources[:]
+
 class Subview(ConfigView):
     """A subview accessed via a subscript of a parent view."""
     def __init__(self, parent, key):
@@ -568,9 +572,8 @@ class Configuration(RootView):
         discovered user configuration files or the in-package defaults,
         set `user` or `defaults` to `False`.
         """
-        self.sources = []
         for filename in self._filenames(user, defaults):
-            self.sources.append(load_yaml(filename))
+            self.add(load_yaml(filename))
 
     def config_dir(self):
         """Get the path to the directory containing the highest-priority

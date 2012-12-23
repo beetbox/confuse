@@ -297,7 +297,7 @@ consider adding code to your test fixtures (e.g., `setUp`_ in the
 `unittest`_ module) that clears out the global configuration before each
 test is run. Something like this::
 
-    config.sources = []
+    config.clear()
     config.read(user=False)
 
 These lines will empty out the current configuration and then re-load
