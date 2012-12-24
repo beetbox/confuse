@@ -312,13 +312,23 @@ class ConfigView(object):
 
     def as_filename(self):
         """Get a string as a normalized filename, made absolute and with
-        tilde expanded.
+        tilde expanded. If the value comes from a default source, the
+        path is considered relative to the application's config
+        directory. If it comes from another file source, the filename is
+        expanded as if it were relative to that directory. Otherwise, it
+        is relative to the current working directory.
         """
         path, source = self.first()
         path = os.path.expanduser(STRING(path))
-        if source.filename is not None:
+
+        if source.default:
+            # From defaults: relative to the app's directory.
+            path = os.path.join(self.root().config_dir(), path)
+
+        elif source.filename is not None:
             # Relative to source filename's directory.
             path = os.path.join(os.path.dirname(source.filename), path)
+
         return os.path.abspath(path)
 
     def as_choice(self, choices):

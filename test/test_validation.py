@@ -36,6 +36,15 @@ class BuiltInValidatorTest(unittest.TestCase):
         value = config['foo'].as_filename()
         self.assertEqual(value, '/baz/foo/bar')
 
+    def test_as_filename_with_default_source(self):
+        source = confit.ConfigSource({'foo': 'foo/bar'},
+                                     filename='/baz/config.yaml',
+                                     default=True)
+        config = _root(source)
+        config.config_dir = lambda: '/config/path'
+        value = config['foo'].as_filename()
+        self.assertEqual(value, '/config/path/foo/bar')
+
     def test_as_choice_correct(self):
         config = _root({'foo': 'bar'})
         value = config['foo'].as_choice(['foo', 'bar', 'baz'])
