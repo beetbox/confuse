@@ -95,7 +95,7 @@ class ConfigSource(dict):
     """
     def __init__(self, value, filename=None):
         super(ConfigSource, self).__init__(value)
-        if not isinstance(filename, (types.NoneType, STRING)):
+        if not isinstance(filename, (types.NoneType, BASESTRING)):
             raise TypeError('filename must be a string or None')
         self.filename = filename
 
@@ -307,8 +307,12 @@ class ConfigView(object):
         """Get a string as a normalized filename, made absolute and with
         tilde expanded.
         """
-        value = STRING(self.get())
-        return os.path.abspath(os.path.expanduser(value))
+        path, source = self.first()
+        path = os.path.expanduser(STRING(path))
+        if source.filename is not None:
+            # Relative to source filename's directory.
+            path = os.path.join(os.path.dirname(source.filename), path)
+        return os.path.abspath(path)
 
     def as_choice(self, choices):
         """Ensure that the value is among a collection of choices and
@@ -373,7 +377,7 @@ class RootView(ConfigView):
         self.sources.insert(0, ConfigSource.of(value))
 
     def resolve(self):
-        return ((s, dict(s)) for s in self.sources)
+        return ((dict(s), s) for s in self.sources)
 
     def clear(self):
         """Remove all sources from this configuration."""
