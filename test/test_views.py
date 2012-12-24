@@ -11,19 +11,9 @@ class SingleSourceTest(unittest.TestCase):
         self.assertEqual(value, 'bar')
 
     def test_list_access(self):
-        config = _root(['foo', 'bar'])
-        value = config[1].get()
-        self.assertEqual(value, 'bar')
-
-    def test_nested_dict_list_access(self):
         config = _root({'foo': ['bar', 'baz']})
         value = config['foo'][1].get()
         self.assertEqual(value, 'baz')
-
-    def test_nested_list_dict_access(self):
-        config = _root([{'foo': 'bar'}, {'baz': 'qux'}])
-        value = config[1]['baz'].get()
-        self.assertEqual(value, 'qux')
 
     def test_missing_key(self):
         config = _root({'foo': 'bar'})
@@ -31,9 +21,9 @@ class SingleSourceTest(unittest.TestCase):
             config['baz'].get()
 
     def test_missing_index(self):
-        config = _root(['foo', 'bar'])
+        config = _root({'l': ['foo', 'bar']})
         with self.assertRaises(confit.NotFoundError):
-            config[5].get()
+            config['l'][5].get()
 
     def test_dict_keys(self):
         config = _root({'foo': 'bar', 'baz': 'qux'})
@@ -51,9 +41,9 @@ class SingleSourceTest(unittest.TestCase):
         self.assertEqual(set(items), set([('foo', 'bar'), ('baz', 'qux')]))
 
     def test_list_keys_error(self):
-        config = _root(['foo', 'bar'])
+        config = _root({'l': ['foo', 'bar']})
         with self.assertRaises(confit.ConfigTypeError):
-            config.keys()
+            config['l'].keys()
 
     def test_dict_contents(self):
         config = _root({'foo': 'bar', 'baz': 'qux'})
@@ -61,14 +51,14 @@ class SingleSourceTest(unittest.TestCase):
         self.assertEqual(set(contents), set(['foo', 'baz']))
 
     def test_list_contents(self):
-        config = _root(['foo', 'bar'])
-        contents = config.all_contents()
+        config = _root({'l': ['foo', 'bar']})
+        contents = config['l'].all_contents()
         self.assertEqual(list(contents), ['foo', 'bar'])
 
     def test_int_contents(self):
-        config = _root(2)
+        config = _root({'n': 2})
         with self.assertRaises(confit.ConfigTypeError):
-            list(config.all_contents())
+            list(config['n'].all_contents())
 
 class ConverstionTest(unittest.TestCase):
     def test_str_conversion_from_str(self):
@@ -99,21 +89,21 @@ class ConverstionTest(unittest.TestCase):
 
 class NameTest(unittest.TestCase):
     def test_root_name(self):
-        config = _root(None)
+        config = _root()
         self.assertEqual(config.name, 'root')
 
     def test_string_access_name(self):
-        config = _root(None)
+        config = _root()
         name = config['foo'].name
         self.assertEqual(name, "foo")
 
     def test_int_access_name(self):
-        config = _root(None)
+        config = _root()
         name = config[5].name
         self.assertEqual(name, "#5")
 
     def test_nested_access_name(self):
-        config = _root(None)
+        config = _root()
         name = config[5]['foo']['bar'][20].name
         self.assertEqual(name, "#5.foo.bar#20")
 
@@ -134,19 +124,19 @@ class MultipleSourceTest(unittest.TestCase):
             config['fred'].get()
 
     def test_list_access_shadowed(self):
-        config = _root(['a', 'b'], ['c', 'd', 'e'])
-        value = config[1].get()
+        config = _root({'l': ['a', 'b']}, {'l': ['c', 'd', 'e']})
+        value = config['l'][1].get()
         self.assertEqual(value, 'b')
 
     def test_list_access_fall_through(self):
-        config = _root(['a', 'b'], ['c', 'd', 'e'])
-        value = config[2].get()
+        config = _root({'l': ['a', 'b']}, {'l': ['c', 'd', 'e']})
+        value = config['l'][2].get()
         self.assertEqual(value, 'e')
 
     def test_list_access_missing(self):
-        config = _root(['a', 'b'], ['c', 'd', 'e'])
+        config = _root({'l': ['a', 'b']}, {'l': ['c', 'd', 'e']})
         with self.assertRaises(confit.NotFoundError):
-            config[3].get()
+            config['l'][3].get()
 
     def test_access_dict_replaced(self):
         config = _root({'foo': {'bar': 'baz'}}, {'foo': {'qux': 'fred'}})

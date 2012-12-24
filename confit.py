@@ -132,6 +132,14 @@ class ConfigView(object):
     configuration in Python-like syntax (e.g., ``foo['bar'][42]``).
     """
 
+    def resolve(self):
+        """The core (internal) data retrieval method. Generates (value,
+        source) pairs for each source that contains a value for this
+        view. May raise ConfigTypeError if a type error occurs while
+        traversing a source.
+        """
+        raise NotImplementedError
+
     def get_all(self):
         """Generates all available values for the view in the order of
         the configuration's sources. (Each source may have at most one
@@ -139,7 +147,8 @@ class ConfigView(object):
         generated. If a type error is encountered when traversing a
         source to resolve the view, a ConfigTypeError may be raised.
         """
-        raise NotImplementedError
+        for value, source in self.resolve():
+            yield value
 
     def get(self, typ=None):
         """Returns the canonical value for the view. This amounts to the
@@ -367,8 +376,8 @@ class RootView(ConfigView):
     def set(self, value):
         self.sources.insert(0, ConfigSource.of(value))
 
-    def get_all(self):
-        return self.sources
+    def resolve(self):
+        return ((s, dict(s)) for s in self.sources)
 
     def clear(self):
         """Remove all sources from this configuration."""
@@ -396,8 +405,8 @@ class Subview(ConfigView):
         else:
             self.name += '{0}'.format(repr(self.key))
 
-    def get_all(self):
-        for collection in self.parent.get_all():
+    def resolve(self):
+        for collection, source in self.parent.resolve():
             try:
                 value = collection[self.key]
             except IndexError:
@@ -413,7 +422,7 @@ class Subview(ConfigView):
                         self.parent.name, type(collection).__name__
                     )
                 )
-            yield value
+            yield value, source
 
     def set(self, value):
         self.parent.set({self.key: value})

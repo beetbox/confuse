@@ -7,4 +7,4 @@ except ImportError:
     import unittest
 
 def _root(*sources):
-    return confit.RootView(sources)
+    return confit.RootView([confit.ConfigSource.of(s) for s in sources])
