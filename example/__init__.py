@@ -30,5 +30,5 @@ def main():
     print('logging level is', config['log']['level'].get(int))
 
     # Some validated/converted values.
-    print('directory is', config['directory'].get(confit.as_filename))
-    print('library is', config['library'].get(confit.as_filename))
+    print('directory is', config['directory'].as_filename())
+    print('library is', config['library'].as_filename())

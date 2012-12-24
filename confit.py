@@ -112,7 +112,7 @@ class ConfigSource(dict):
         of object as an argument.
         """
         if isinstance(value, ConfigSource):
-            return ConfigSource
+            return value
         elif isinstance(value, dict):
             return ConfigSource(value)
         else:
