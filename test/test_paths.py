@@ -94,26 +94,33 @@ class ConfigFilenamesTest(unittest.TestCase):
         self.old_path = _mock_path('posixpath')
         self.old_isfile = os.path.isfile
         os.path.isfile = lambda x: True
+        self.old_load = confit.load_yaml
+        confit.load_yaml = lambda x: {}
     def tearDown(self):
         platform.system = self.old_system
         os.envrion = self.old_environ
         os.path = self.old_path
         os.path.isfile = self.old_isfile
+        confit.load_yaml = self.old_load
     
-    def test_search_all_conf_dirs(self):
-        fns = confit.Configuration('myapp', read=False)._filenames()
-        self.assertEqual(fns, [
+    def test_search_user_dirs(self):
+        sources = list(
+            confit.Configuration('myapp', read=False)._user_sources()
+        )
+        self.assertEqual([s.filename for s in sources], [
             '/home/xdgconfig/myapp/config.yaml',
             '/home/.config/myapp/config.yaml',
         ])
+        self.assertFalse(any(s.default for s in sources))
     
     def test_search_package(self):
-        fns = confit.Configuration('myapp', __name__, read=False)._filenames()
-        self.assertEqual(fns, [
-            '/home/xdgconfig/myapp/config.yaml',
-            '/home/.config/myapp/config.yaml',
-            os.path.join(os.path.dirname(__file__), 'config_default.yaml'),
-        ])
+        source = confit.Configuration('myapp', __name__, read=False) \
+                 ._default_source()
+        self.assertEqual(
+            source.filename,
+            os.path.join(os.path.dirname(__file__), 'config_default.yaml')
+        )
+        self.assertTrue(source.default)
 
 class EnvVarTest(unittest.TestCase):
     def setUp(self):

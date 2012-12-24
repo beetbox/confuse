@@ -93,16 +93,18 @@ class ConfigSource(dict):
     """A dictionary augmented with metadata about the source of the
     configuration.
     """
-    def __init__(self, value, filename=None):
+    def __init__(self, value, filename=None, default=False):
         super(ConfigSource, self).__init__(value)
         if filename is not None and not isinstance(filename, BASESTRING):
             raise TypeError('filename must be a string or None')
         self.filename = filename
+        self.default = default
 
     def __repr__(self):
-        return 'ConfigSource({0}, {1})'.format(
+        return 'ConfigSource({0}, {1}, {2})'.format(
             super(ConfigSource, self).__repr__(),
             repr(self.filename),
+            repr(self.default)
         )
 
     @classmethod
@@ -163,6 +165,11 @@ class ConfigView(object):
         """*Override* the value for this configuration view. The
         specified value is added as the highest-priority configuration
         data source.
+        """
+        raise NotImplementedError
+
+    def root(self):
+        """The RootView object from which this view is descended.
         """
         raise NotImplementedError
 
@@ -383,6 +390,9 @@ class RootView(ConfigView):
         """Remove all sources from this configuration."""
         del self.sources[:]
 
+    def root(self):
+        return self
+
 class Subview(ConfigView):
     """A subview accessed via a subscript of a parent view."""
     def __init__(self, parent, key):
@@ -429,6 +439,9 @@ class Subview(ConfigView):
 
     def add(self, value):
         self.parent.add({self.key: value})
+
+    def root(self):
+        return self.parent.root()
 
 
 # Config file paths, including platform-specific paths and in-package
@@ -544,12 +557,6 @@ def load_yaml(filename):
     except (IOError, yaml.error.YAMLError) as exc:
         raise ConfigReadError(filename, exc)
 
-def yaml_source(filename):
-    """Load a YAML file and return a `ConfigSource` object representing
-    the file.
-    """
-    return ConfigSource(load_yaml(filename), filename)
-
 
 # Main interface.
 
@@ -587,28 +594,25 @@ class Configuration(RootView):
         for confdir in config_dirs():
             yield os.path.join(confdir, self.appname)
 
-    def _filenames(self, user=True, defaults=True):
-        """Get a list of filenames for configuration files. The files
-        must actually exist and are placed in the order that they should
-        be prioritized. The `user` and `defaults` flags control whether
-        files should be used from discovered configuration directories
-        and from the in-package defaults directory; set either of these
-        to `False` to disable searching for them.
+    def _user_sources(self):
+        """Generate `ConfigSource` objects for each user configuration
+        file in the program's search directories.
         """
-        out = []
+        for appdir in self._search_dirs():
+            filename = os.path.join(appdir, CONFIG_FILENAME)
+            if os.path.isfile(filename):
+                yield ConfigSource(load_yaml(filename), filename)
 
-        # Search standard directories.
-        if user:
-            for appdir in self._search_dirs():
-                out.append(os.path.join(appdir, CONFIG_FILENAME))
-
-        # Search the package for a defaults file.
-        if defaults and self.modname:
+    def _default_source(self):
+        """Return the default-value source for this program or `None` if
+        it does not exist.
+        """
+        if self.modname:
             pkg_path = _package_path(self.modname)
             if pkg_path:
-                out.append(os.path.join(pkg_path, DEFAULT_FILENAME))
-
-        return [p for p in out if os.path.isfile(p)]
+                filename = os.path.join(pkg_path, DEFAULT_FILENAME)
+                if os.path.isfile(filename):
+                    return ConfigSource(load_yaml(filename), filename, True)
 
     def read(self, user=True, defaults=True):
         """Find and read the files for this configuration and set them
@@ -616,8 +620,13 @@ class Configuration(RootView):
         discovered user configuration files or the in-package defaults,
         set `user` or `defaults` to `False`.
         """
-        for filename in self._filenames(user, defaults):
-            self.add(yaml_source(filename))
+        if user:
+            for source in self._user_sources():
+                self.add(source)
+        if defaults:
+            source = self._default_source()
+            if source:
+                self.add(source)
 
     def config_dir(self):
         """Get the path to the directory containing the highest-priority
