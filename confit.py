@@ -140,42 +140,17 @@ class ConfigView(object):
         """
         raise NotImplementedError
 
-    def get_all(self):
-        """Generates all available values for the view in the order of
-        the configuration's sources. (Each source may have at most one
-        value for each view.) If no values are available, no values are
-        generated. If a type error is encountered when traversing a
-        source to resolve the view, a ConfigTypeError may be raised.
+    def first(self):
+        """Returns a (value, source) pair for the first object found for
+        this view. This amounts to the first element returned by
+        `resolve`. If no values are available, a NotFoundError is
+        raised.
         """
-        for value, source in self.resolve():
-            yield value
-
-    def get(self, typ=None):
-        """Returns the canonical value for the view. This amounts to the
-        first item in ``view.get_all()``. If the view cannot be
-        resolved, this method raises a NotFoundError.
-        """
-        values = self.get_all()
-
-        # Get the first value.
+        pairs = self.resolve()
         try:
-            value = iter_first(values)
+            return iter_first(pairs)
         except ValueError:
             raise NotFoundError("{0} not found".format(self.name))
-
-        # Validate type.
-        if typ is not None:
-            if not isinstance(typ, TYPE_TYPES):
-                raise TypeError('argument to get() must be a type')
-
-            if not isinstance(value, typ):
-                raise ConfigTypeError(
-                    "{0} must be of type {1}, not {2}".format(
-                        self.name, typ.__name__, type(value).__name__
-                    )
-                )
-
-        return value
 
     def add(self, value):
         """Set the *default* value for this configuration view. The
@@ -252,7 +227,7 @@ class ConfigView(object):
         """
         keys = []
 
-        for dic in self.get_all():
+        for dic, _ in self.resolve():
             try:
                 cur_keys = dic.keys()
             except AttributeError:
@@ -293,7 +268,7 @@ class ConfigView(object):
         intended to be used when the view indicates a list; this method
         will concatenate the contents of the list from all sources.
         """
-        for collection in self.get_all():
+        for collection, _ in self.resolve():
             try:
                 it = iter(collection)
             except TypeError:
@@ -305,7 +280,28 @@ class ConfigView(object):
             for value in it:
                 yield value
 
-    # Explicit validators/converters.
+    # Validation and conversion.
+
+    def get(self, typ=None):
+        """Returns the canonical value for the view, checked against the
+        passed-in type. If the value is not an instance of the given
+        type, a ConfigTypeError is raised. May also raise a
+        NotFoundError.
+        """
+        value, _ = self.first()
+
+        if typ is not None:
+            if not isinstance(typ, TYPE_TYPES):
+                raise TypeError('argument to get() must be a type')
+
+            if not isinstance(value, typ):
+                raise ConfigTypeError(
+                    "{0} must be of type {1}, not {2}".format(
+                        self.name, typ.__name__, type(value).__name__
+                    )
+                )
+
+        return value
 
     def as_filename(self):
         """Get a string as a normalized filename, made absolute and with
