@@ -95,7 +95,7 @@ class ConfigSource(dict):
     """
     def __init__(self, value, filename=None):
         super(ConfigSource, self).__init__(value)
-        if not isinstance(filename, (types.NoneType, BASESTRING)):
+        if filename is not None and not isinstance(filename, BASESTRING):
             raise TypeError('filename must be a string or None')
         self.filename = filename
 
