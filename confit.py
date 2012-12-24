@@ -87,7 +87,36 @@ class ConfigReadError(ConfigError):
         super(ConfigReadError, self).__init__(message)
 
 
-# Views and data access logic.
+# Views and sources.
+
+class ConfigSource(dict):
+    """A dictionary augmented with metadata about the source of the
+    configuration.
+    """
+    def __init__(self, value, filename=None):
+        super(ConfigSource, self).__init__(value)
+        if not isinstance(filename, (types.NoneType, STRING)):
+            raise TypeError('filename must be a string or None')
+        self.filename = filename
+
+    def __repr__(self):
+        return 'ConfigSource({0}, {1})'.format(
+            super(ConfigSource, self).__repr__(),
+            repr(self.filename),
+        )
+
+    @classmethod
+    def of(self, value):
+        """Given either a dictionary or a `ConfigSource` object, return
+        a `ConfigSource` object. This lets a function accept either type
+        of object as an argument.
+        """
+        if isinstance(value, ConfigSource):
+            return ConfigSource
+        elif isinstance(value, dict):
+            return ConfigSource(value)
+        else:
+            raise TypeError('source value must be a dict')
 
 class ConfigView(object):
     """A configuration "view" is a query into a program's configuration
@@ -333,10 +362,10 @@ class RootView(ConfigView):
         self.name = ROOT_NAME
 
     def add(self, obj):
-        self.sources.append(obj)
+        self.sources.append(ConfigSource.of(obj))
 
     def set(self, value):
-        self.sources.insert(0, value)
+        self.sources.insert(0, ConfigSource.of(value))
 
     def get_all(self):
         return self.sources
@@ -506,6 +535,12 @@ def load_yaml(filename):
     except (IOError, yaml.error.YAMLError) as exc:
         raise ConfigReadError(filename, exc)
 
+def yaml_source(filename):
+    """Load a YAML file and return a `ConfigSource` object representing
+    the file.
+    """
+    return ConfigSource(load_yaml(filename), filename)
+
 
 # Main interface.
 
@@ -573,7 +608,7 @@ class Configuration(RootView):
         set `user` or `defaults` to `False`.
         """
         for filename in self._filenames(user, defaults):
-            self.add(load_yaml(filename))
+            self.add(yaml_source(filename))
 
     def config_dir(self):
         """Get the path to the directory containing the highest-priority
