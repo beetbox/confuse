@@ -101,7 +101,11 @@ few methods on views that perform fancier validation or even
 conversion:
 
 * ``as_filename()``: Normalize a filename, substituting tildes and
-  absolute-ifying relative paths.
+  absolute-ifying relative paths. The filename is relative to the source
+  that provided it. That is, a relative path in a config file refers to
+  the directory containing the config file. A relative path from any
+  other source (e.g., command-line options) is relative to the working
+  directory.
 * ``as_choice(choices)``: Check that a value is one of the provided
   choices. The argument should be a list of possible values.
 * ``as_number()``: Raise an exception unless the value is of a numeric

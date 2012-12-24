@@ -1,4 +1,4 @@
-library: ~/.beetsmusic.blb
+library: library.db
 directory: ~/Music
 
 import_write: yes
