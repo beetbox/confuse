@@ -45,6 +45,11 @@ class BuiltInValidatorTest(unittest.TestCase):
         value = config['foo'].as_filename()
         self.assertEqual(value, '/config/path/foo/bar')
 
+    def test_as_filename_wrong_type(self):
+        config = _root({'foo': None})
+        with self.assertRaises(confit.ConfigTypeError):
+            config['foo'].as_filename()
+
     def test_as_choice_correct(self):
         config = _root({'foo': 'bar'})
         value = config['foo'].as_choice(['foo', 'bar', 'baz'])
