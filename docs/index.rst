@@ -188,6 +188,13 @@ directory named after the application. For example, the first search
 location on Unix-y systems is ``$XDG_CONFIG_HOME/AppName`` for an
 application called ``AppName``.
 
+Here are the default search paths for each platform:
+
+* OS X: ``~/.config/app`` and ``~/Library/Application Support/app``
+* Other Unix: ``$XDG_CONFIG_HOME/app`` and ``~/.config/app``
+* Windows: ``%APPDATA%\app`` where the `APPDATA` environment variable falls
+  back to ``%HOME%\AppData\Roaming`` if undefined
+
 Users can also add an override configuration directory with an
 environment variable. The variable name is the application name in
 capitals with "DIR" appended: for an application named ``AppName``, the

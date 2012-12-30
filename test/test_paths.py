@@ -65,8 +65,10 @@ class ConfigDirsMacTest(unittest.TestCase):
 
     def test_mac_and_unixy_dirs(self):
         dirs = confit.config_dirs()
-        self.assertEqual(dirs, ['/home/Library/Application Support',
-                                '/home/.config'])
+        self.assertEqual(dirs, [
+            '/home/.config',
+            '/home/Library/Application Support',
+        ])
 
 class ConfigDirsWindowsTest(unittest.TestCase):
     def setUp(self):
