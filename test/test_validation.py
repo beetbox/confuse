@@ -60,6 +60,14 @@ class BuiltInValidatorTest(unittest.TestCase):
         with self.assertRaises(confit.ConfigValueError):
             config['foo'].as_choice(['foo', 'baz'])
 
+    def test_as_choice_with_dict(self):
+        config = _root({'foo': 'bar'})
+        res = config['foo'].as_choice({
+            'bar': 'baz',
+            'x': 'y',
+        })
+        self.assertEqual(res, 'baz')
+
     def test_as_number_float(self):
         config = _root({'f': 1.0})
         config['f'].as_number()

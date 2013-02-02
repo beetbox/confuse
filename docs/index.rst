@@ -109,7 +109,9 @@ conversion:
   any other source (e.g., command-line options) is relative to the
   working directory.
 * ``as_choice(choices)``: Check that a value is one of the provided
-  choices. The argument should be a list of possible values.
+  choices. The argument should be a sequence of possible values. If the
+  sequence is a ``dict``, then this method returns the associated value
+  instead of the key.
 * ``as_number()``: Raise an exception unless the value is of a numeric
   type.
 * ``as_pairs()``: Get a collection as a list of pairs. The collection
