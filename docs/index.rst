@@ -295,17 +295,12 @@ can. And having a global repository for configuration option can vastly
 reduce the amount of boilerplate threading-through needed to explicitly
 pass configuration from call to call.
 
-To use global configuration, consider creating a `Configuration` object
-in a well-known module (say, the root of a package). Since this object
-will be initialized at module load time, pass ``read=False`` to the
-constructor to disable automatic loading of the configuration files.
-(Doing complicated stuff like parsing YAML at module load time is
-generally considered a Bad Idea.) This module-global `Configuration`
-object will just be a husk at this point---containing no useful
-configuration values---but it will be importable by other modules that
-need to use it. Then, in your program's initialization code (something
-called from its "main" function, say) call ``config.read()`` to parse
-your program's configuration files.
+To use global configuration, consider creating a configuration object in
+a well-known module (say, the root of a package). But since this object
+will be initialized at module load time, Confit provides a `LazyConfig`
+object that loads your configuration files on demand instead of when the
+object is constructed. (Doing complicated stuff like parsing YAML at
+module load time is generally considered a Bad Idea.)
 
 Global state can cause problems for unit testing. To alleviate this,
 consider adding code to your test fixtures (e.g., `setUp`_ in the

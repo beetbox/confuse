@@ -4,9 +4,9 @@ from __future__ import unicode_literals
 import confit
 import argparse
 
-def main():
-    config = confit.Configuration('ConfitExample', __name__)
+config = confit.LazyConfig('ConfitExample', __name__)
 
+def main():
     parser = argparse.ArgumentParser(description='example Confit program')
     parser.add_argument('--library', '-l', dest='library', metavar='LIBPATH',
                         help='library database file')
