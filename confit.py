@@ -357,7 +357,7 @@ class ConfigView(object):
         if value not in choices:
             raise ConfigValueError(
                 '{0} must be one of {1}, not {2}'.format(
-                    self.name, repr(value), repr(list(choices))
+                    self.name, repr(list(choices)), repr(value)
                 )
             )
 
@@ -633,7 +633,7 @@ class Configuration(RootView):
         for appdir in self._search_dirs():
             filename = os.path.join(appdir, CONFIG_FILENAME)
             if os.path.isfile(filename):
-                yield ConfigSource(load_yaml(filename), filename)
+                yield ConfigSource(load_yaml(filename) or {}, filename)
 
     def _default_source(self):
         """Return the default-value source for this program or `None` if
@@ -667,7 +667,7 @@ class Configuration(RootView):
         """
         dirs = list(self._search_dirs())
 
-        # First, look for an existant configuration file.
+        # First, look for an existent configuration file.
         for appdir in dirs:
             if os.path.isfile(os.path.join(appdir, CONFIG_FILENAME)):
                 return appdir
