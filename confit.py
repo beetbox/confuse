@@ -761,7 +761,7 @@ class Configuration(RootView):
         out_dict = OrderedDict()
         default_conf = next(x for x in self.sources if x.default)
         try:
-            default_keys = default_conf.keys()
+            default_keys = list(default_conf.keys())
         except AttributeError:
             default_keys = []
         new_keys = [x for x in self.keys() if not x in default_keys]
