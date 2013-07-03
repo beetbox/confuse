@@ -635,11 +635,11 @@ class Dumper(yaml.SafeDumper):
         (i.e. comma separated, within square brackets).
         """
         node = super(Dumper, self).represent_list(data)
-        #import ipdb
-        #ipdb.set_trace()
         length = len(data)
         if self.default_flow_style is None and length < 4:
             node.flow_style = True
+        elif self.default_flow_style is None:
+            node.flow_style = False
         return node
 
     def represent_bool(self, data):
