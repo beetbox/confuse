@@ -646,15 +646,15 @@ class Dumper(yaml.SafeDumper):
         """ Represent bool as 'yes' or 'no' instead of 'true' or 'false'.
         """
         if data:
-            value = u'yes'
+            value = 'yes'
         else:
-            value = u'no'
-        return self.represent_scalar(u'tag:yaml.org,2002:bool', value)
+            value = 'no'
+        return self.represent_scalar('tag:yaml.org,2002:bool', value)
 
     def represent_none(self, data):
         """ Represent a None value with nothing instead of 'none'.
         """
-        return self.represent_scalar(u'tag:yaml.org,2002:null', u'')
+        return self.represent_scalar('tag:yaml.org,2002:null', '')
 
 Dumper.add_representer(OrderedDict, Dumper.represent_dict)
 Dumper.add_representer(bool, Dumper.represent_bool)
