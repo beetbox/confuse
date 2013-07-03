@@ -755,7 +755,7 @@ class Configuration(RootView):
 
         The order of the keys is determined from the default configuration
         file. All keys not in the default configuration will be appended to
-        the end of the file, in the order that they were added.
+        the end of the file.
 
         """
         out_dict = OrderedDict()
@@ -771,16 +771,45 @@ class Configuration(RootView):
                 out_dict[key] = self[key].as_ordereddict()
             except ConfigTypeError:
                 out_dict[key] = self[key].get()
+        yaml_out = yaml.dump(out_dict, Dumper=Dumper,
+                             default_flow_style=None, indent=4,
+                             width=1000)
+        with open(default_conf.filename, 'r') as fp:
+            default_data = fp.read()
+        yaml_out = self.restore_comments(yaml_out, default_data)
         with open(filename, 'w') as fp:
-            # TODO: Find a way to preserve newlines and comments
-            yaml_out = yaml.dump(out_dict, Dumper=Dumper,
-                                 default_flow_style=None, indent=4,
-                                 width=1000)
-            # A ridiculous little hack to add some whitespace between
-            # "sections" in the YAML output. I hope this doesn't break any YAML
-            # syntax.
-            yaml_out = re.sub(r'(\n\w+:\n[-\s])', '\n\\1', yaml_out)
             fp.write(yaml_out)
+
+    def restore_comments(self, data, default_data):
+        """ Scan default_data for comments (we include empty lines in our
+        definition of comments) and place them before the same keys in data.
+        Only works with comments that are on one or more own lines, i.e.
+        not next to a yaml mapping.
+        """
+        comment_map = dict()
+        default_lines = iter(default_data.splitlines())
+        for line in default_lines:
+            if not line:
+                comment = "\n"
+            elif line.startswith("#"):
+                comment = "{0}\n".format(line)
+            else:
+                continue
+            while True:
+                line = next(default_lines)
+                if line and not line.startswith("#"):
+                    break
+                comment += "{0}\n".format(line)
+            key = line.split(':')[0].strip()
+            comment_map[key] = comment
+        out_lines = iter(data.splitlines())
+        out_data = ""
+        for line in out_lines:
+            key = line.split(':')[0].strip()
+            if key in comment_map:
+                out_data += comment_map[key]
+            out_data += "{0}\n".format(line)
+        return out_data
 
 
 class LazyConfig(Configuration):
