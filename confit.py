@@ -814,7 +814,7 @@ class Configuration(RootView):
                     and self[key].get() == default_conf[key]):
                 continue
             try:
-                out_dict[key] = self[key].as_ordereddict()
+                out_dict[key] = self[key].flatten()
             except ConfigTypeError:
                 out_dict[key] = self[key].get()
 
