@@ -263,15 +263,6 @@ class ConfigView(object):
 
         return keys
 
-    def as_ordereddict(self):
-        od = OrderedDict()
-        for x, y in self.items():
-            try:
-                od[x] = y.as_ordereddict()
-            except ConfigTypeError:
-                od[x] = y.get()
-        return od
-
     def items(self):
         """Iterates over (key, subview) pairs contained in dictionaries
         from *all* sources at this view. If the object for this view in
@@ -407,6 +398,19 @@ class ConfigView(object):
                     'a list'.format(self.name)
                 )
 
+    def flatten(self):
+        """Create a hierarchy of OrderedDicts containing the data from
+        this view, recursively reifying all views to get their
+        represented values.
+        """
+        od = OrderedDict()
+        for key, view in self.items():
+            try:
+                od[key] = view.flatten()
+            except ConfigTypeError:
+                od[key] = view.get()
+        return od
+
 class RootView(ConfigView):
     """The base of a view hierarchy. This view keeps track of the
     sources that may be accessed by subviews.
@@ -533,7 +537,7 @@ def config_dirs():
     return out
 
 
-# YAML.
+# YAML loading.
 
 class Loader(yaml.SafeLoader):
     """A customized YAML loader. This loader deviates from the official
@@ -600,6 +604,8 @@ def load_yaml(filename):
         raise ConfigReadError(filename, exc)
 
 
+# YAML dumping.
+
 class Dumper(yaml.SafeDumper):
     """A PyYAML Dumper that represents OrderedDicts as ordinary mappings
     (in order, of course).
@@ -631,7 +637,7 @@ class Dumper(yaml.SafeDumper):
         return node
 
     def represent_list(self, data):
-        """ If a list has less than 4 items, represent it in inline style
+        """If a list has less than 4 items, represent it in inline style
         (i.e. comma separated, within square brackets).
         """
         node = super(Dumper, self).represent_list(data)
@@ -643,7 +649,7 @@ class Dumper(yaml.SafeDumper):
         return node
 
     def represent_bool(self, data):
-        """ Represent bool as 'yes' or 'no' instead of 'true' or 'false'.
+        """Represent bool as 'yes' or 'no' instead of 'true' or 'false'.
         """
         if data:
             value = 'yes'
@@ -652,7 +658,7 @@ class Dumper(yaml.SafeDumper):
         return self.represent_scalar('tag:yaml.org,2002:bool', value)
 
     def represent_none(self, data):
-        """ Represent a None value with nothing instead of 'none'.
+        """Represent a None value with nothing instead of 'none'.
         """
         return self.represent_scalar('tag:yaml.org,2002:null', '')
 
@@ -660,6 +666,37 @@ Dumper.add_representer(OrderedDict, Dumper.represent_dict)
 Dumper.add_representer(bool, Dumper.represent_bool)
 Dumper.add_representer(type(None), Dumper.represent_none)
 Dumper.add_representer(list, Dumper.represent_list)
+
+def restore_yaml_comments(data, default_data):
+    """Scan default_data for comments (we include empty lines in our
+    definition of comments) and place them before the same keys in data.
+    Only works with comments that are on one or more own lines, i.e.
+    not next to a yaml mapping.
+    """
+    comment_map = dict()
+    default_lines = iter(default_data.splitlines())
+    for line in default_lines:
+        if not line:
+            comment = "\n"
+        elif line.startswith("#"):
+            comment = "{0}\n".format(line)
+        else:
+            continue
+        while True:
+            line = next(default_lines)
+            if line and not line.startswith("#"):
+                break
+            comment += "{0}\n".format(line)
+        key = line.split(':')[0].strip()
+        comment_map[key] = comment
+    out_lines = iter(data.splitlines())
+    out_data = ""
+    for line in out_lines:
+        key = line.split(':')[0].strip()
+        if key in comment_map:
+            out_data += comment_map[key]
+        out_data += "{0}\n".format(line)
+    return out_data
 
 
 # Main interface.
@@ -750,18 +787,18 @@ class Configuration(RootView):
             os.makedirs(appdir)
         return appdir
 
-    def dump(self, filename, full=True):
-        """ Dump the Configuration object to a YAML file.
+    def dump(self, filename=None, full=True):
+        """Dump the Configuration object to a YAML file.
 
-        The order of the keys is determined from the default configuration
-        file. All keys not in the default configuration will be appended to
-        the end of the file.
+        The order of the keys is determined from the default
+        configuration file. All keys not in the default configuration
+        will be appended to the end of the file.
 
-        :param filename:  The file to dump the configuration to
+        :param filename:  The file to dump the configuration to, or None
+                          if the YAML string should be returned instead
         :type filename:   unicode
         :param full:      Dump settings that don't differ from the defaults
                           as well
-
         """
         out_dict = OrderedDict()
         default_conf = next(x for x in self.sources if x.default)
@@ -780,45 +817,22 @@ class Configuration(RootView):
                 out_dict[key] = self[key].as_ordereddict()
             except ConfigTypeError:
                 out_dict[key] = self[key].get()
+
         yaml_out = yaml.dump(out_dict, Dumper=Dumper,
                              default_flow_style=None, indent=4,
                              width=1000)
+
+        # Restore comments to the YAML text.
         with open(default_conf.filename, 'r') as fp:
             default_data = fp.read()
-        yaml_out = self.restore_comments(yaml_out, default_data)
-        with open(filename, 'w') as fp:
-            fp.write(yaml_out)
+        yaml_out = restore_yaml_comments(yaml_out, default_data)
 
-    def restore_comments(self, data, default_data):
-        """ Scan default_data for comments (we include empty lines in our
-        definition of comments) and place them before the same keys in data.
-        Only works with comments that are on one or more own lines, i.e.
-        not next to a yaml mapping.
-        """
-        comment_map = dict()
-        default_lines = iter(default_data.splitlines())
-        for line in default_lines:
-            if not line:
-                comment = "\n"
-            elif line.startswith("#"):
-                comment = "{0}\n".format(line)
-            else:
-                continue
-            while True:
-                line = next(default_lines)
-                if line and not line.startswith("#"):
-                    break
-                comment += "{0}\n".format(line)
-            key = line.split(':')[0].strip()
-            comment_map[key] = comment
-        out_lines = iter(data.splitlines())
-        out_data = ""
-        for line in out_lines:
-            key = line.split(':')[0].strip()
-            if key in comment_map:
-                out_data += comment_map[key]
-            out_data += "{0}\n".format(line)
-        return out_data
+        # Return the YAML or write it to a file.
+        if filename is None:
+            return yaml_out
+        else:
+            with open(filename, 'w') as fp:
+                fp.write(yaml_out)
 
 
 class LazyConfig(Configuration):
