@@ -1,5 +1,5 @@
 # This file is part of Confit.
-# Copyright 2013, Adrian Sampson.
+# Copyright 2014, Adrian Sampson.
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -18,7 +18,6 @@ from __future__ import unicode_literals
 import platform
 import os
 import pkgutil
-import re
 import sys
 import yaml
 import types
@@ -102,7 +101,7 @@ class ConfigReadError(ConfigError):
 
 # Views and sources.
 
-class ConfigSource(OrderedDict):
+class ConfigSource(dict):
     """A dictionary augmented with metadata about the source of the
     configuration.
     """
@@ -156,7 +155,7 @@ class ConfigView(object):
         raise NotImplementedError
 
     def first(self):
-        """Returns a (value, source) pair for the first object found for
+        """Return a (value, source) pair for the first object found for
         this view. This amounts to the first element returned by
         `resolve`. If no values are available, a NotFoundError is
         raised.
@@ -166,6 +165,15 @@ class ConfigView(object):
             return iter_first(pairs)
         except ValueError:
             raise NotFoundError("{0} not found".format(self.name))
+
+    def exists(self):
+        """Determine whether the view has a setting in any source.
+        """
+        try:
+            self.first()
+        except NotFoundError:
+            return False
+        return True
 
     def add(self, value):
         """Set the *default* value for this configuration view. The
@@ -324,12 +332,12 @@ class ConfigView(object):
         return value
 
     def as_filename(self):
-        """Get a string as a normalized filename, made absolute and with
-        tilde expanded. If the value comes from a default source, the
-        path is considered relative to the application's config
-        directory. If it comes from another file source, the filename is
-        expanded as if it were relative to that directory. Otherwise, it
-        is relative to the current working directory.
+        """Get a string as a normalized as an absolute, tilde-free path.
+
+        Relative paths are relative to the configuration directory (see
+        the `config_dir` method) if they come from a file. Otherwise,
+        they are relative to the current working directory. This helps
+        attain the expected behavior when using command-line options.
         """
         path, source = self.first()
         if not isinstance(path, BASESTRING):
@@ -338,13 +346,9 @@ class ConfigView(object):
             ))
         path = os.path.expanduser(STRING(path))
 
-        if source.default:
+        if not os.path.isabs(path) and source.filename:
             # From defaults: relative to the app's directory.
             path = os.path.join(self.root().config_dir(), path)
-
-        elif source.filename is not None:
-            # Relative to source filename's directory.
-            path = os.path.join(os.path.dirname(source.filename), path)
 
         return os.path.abspath(path)
 
@@ -411,6 +415,7 @@ class ConfigView(object):
                 od[key] = view.get()
         return od
 
+
 class RootView(ConfigView):
     """The base of a view hierarchy. This view keeps track of the
     sources that may be accessed by subviews.
@@ -430,7 +435,7 @@ class RootView(ConfigView):
         self.sources.insert(0, ConfigSource.of(value))
 
     def resolve(self):
-        return ((OrderedDict(s), s) for s in self.sources)
+        return ((dict(s), s) for s in self.sources)
 
     def clear(self):
         """Remove all sources from this configuration."""
@@ -438,6 +443,7 @@ class RootView(ConfigView):
 
     def root(self):
         return self
+
 
 class Subview(ConfigView):
     """A subview accessed via a subscript of a parent view."""
@@ -513,20 +519,31 @@ def _package_path(name):
     return os.path.dirname(os.path.abspath(filepath))
 
 def config_dirs():
-    """Returns a list of user configuration directories to be searched.
+    """Return a platform-specific list of candidates for user
+    configuration directories on the system.
+
+    The candidates are in order of priority, from highest to lowest. The
+    last element is the "fallback" location to be used when no
+    higher-priority config file exists.
     """
+    paths = []
+
     if platform.system() == 'Darwin':
-        paths = [UNIX_DIR_FALLBACK, MAC_DIR]
+        paths.append(MAC_DIR)
+        paths.append(UNIX_DIR_FALLBACK)
+        if UNIX_DIR_VAR in os.environ:
+            paths.append(os.environ[UNIX_DIR_VAR])
+
     elif platform.system() == 'Windows':
+        paths.append(WINDOWS_DIR_FALLBACK)
         if WINDOWS_DIR_VAR in os.environ:
-            paths = [os.environ[WINDOWS_DIR_VAR]]
-        else:
-            paths = [WINDOWS_DIR_FALLBACK]
+            paths.append(os.environ[WINDOWS_DIR_VAR])
+
     else:
         # Assume Unix.
-        paths = [UNIX_DIR_FALLBACK]
+        paths.append(UNIX_DIR_FALLBACK)
         if UNIX_DIR_VAR in os.environ:
-            paths.insert(0, os.environ[UNIX_DIR_VAR])
+            paths.append(os.environ[UNIX_DIR_VAR])
 
     # Expand and deduplicate paths.
     out = []
@@ -722,38 +739,33 @@ class Configuration(RootView):
         if read:
             self.read()
 
-    def _search_dirs(self):
-        """Yield directories that will be searched for configuration
-        files for this application.
+    def user_config_path(self):
+        """Points to the location of the user configuration.
+
+        The file may not exist.
         """
-        # Application's environment variable.
-        if self._env_var in os.environ:
-            path = os.environ[self._env_var]
-            yield os.path.abspath(os.path.expanduser(path))
+        return os.path.join(self.config_dir(), CONFIG_FILENAME)
 
-        # Standard configuration directories.
-        for confdir in config_dirs():
-            yield os.path.join(confdir, self.appname)
-
-    def _user_sources(self):
-        """Generate `ConfigSource` objects for each user configuration
-        file in the program's search directories.
+    def _add_user_source(self):
+        """Add the configuration options from the YAML file in the
+        user's configuration directory (given by `config_dir`) if it
+        exists.
         """
-        for appdir in self._search_dirs():
-            filename = os.path.join(appdir, CONFIG_FILENAME)
-            if os.path.isfile(filename):
-                yield ConfigSource(load_yaml(filename) or {}, filename)
+        filename = self.user_config_path()
+        if os.path.isfile(filename):
+            self.add(ConfigSource(load_yaml(filename) or {}, filename))
 
-    def _default_source(self):
-        """Return the default-value source for this program or `None` if
-        it does not exist.
+    def _add_default_source(self):
+        """Add the package's default configuration settings. This looks
+        for a YAML file located inside the package for the module
+        `modname` if it was given.
         """
         if self.modname:
             pkg_path = _package_path(self.modname)
             if pkg_path:
                 filename = os.path.join(pkg_path, DEFAULT_FILENAME)
                 if os.path.isfile(filename):
-                    return ConfigSource(load_yaml(filename), filename, True)
+                    self.add(ConfigSource(load_yaml(filename), filename, True))
 
     def read(self, user=True, defaults=True):
         """Find and read the files for this configuration and set them
@@ -762,32 +774,47 @@ class Configuration(RootView):
         set `user` or `defaults` to `False`.
         """
         if user:
-            for source in self._user_sources():
-                self.add(source)
+            self._add_user_source()
         if defaults:
-            source = self._default_source()
-            if source:
-                self.add(source)
+            self._add_default_source()
 
     def config_dir(self):
-        """Get the path to the directory containing the highest-priority
-        user configuration. If no user configuration is present, create a
-        suitable directory before returning it.
+        """Get the path to the user configuration directory. The
+        directory is guaranteed to exist as a postcondition (one may be
+        created if none exist).
+
+        If the application's ``...DIR`` environment variable is set, it
+        is used as the configuration directory. Otherwise,
+        platform-specific standard configuration locations are searched
+        for a ``config.yaml`` file. If no configuration file is found, a
+        fallback path is used.
         """
-        dirs = list(self._search_dirs())
+        # If environment variable is set, use it.
+        if self._env_var in os.environ:
+            appdir = os.environ[self._env_var]
+            appdir = os.path.abspath(os.path.expanduser(appdir))
 
-        # First, look for an existent configuration file.
-        for appdir in dirs:
-            if os.path.isfile(os.path.join(appdir, CONFIG_FILENAME)):
-                return appdir
+        else:
+            # Search platform-specific locations. If no config file is
+            # found, fall back to the final directory in the list.
+            for confdir in config_dirs():
+                appdir = os.path.join(confdir, self.appname)
+                if os.path.isfile(os.path.join(appdir, CONFIG_FILENAME)):
+                    break
 
-        # As a fallback, create the first-listed directory name.
-        appdir = dirs[0]
+        # Ensure that the directory exists.
         if not os.path.isdir(appdir):
             os.makedirs(appdir)
         return appdir
 
-    def dump(self, filename=None, full=True):
+    def set_file(self, filename):
+        """Parses the file as YAML and inserts it into the configuration
+        sources with highest priority.
+        """
+        filename = os.path.abspath(filename)
+        self.set(ConfigSource(load_yaml(filename), filename))
+
+    def dump(self, full=True):
         """Dump the Configuration object to a YAML file.
 
         The order of the keys is determined from the default
@@ -800,39 +827,29 @@ class Configuration(RootView):
         :param full:      Dump settings that don't differ from the defaults
                           as well
         """
-        out_dict = OrderedDict()
-        default_conf = next(x for x in self.sources if x.default)
-        try:
-            default_keys = list(default_conf.keys())
-        except AttributeError:
-            default_keys = []
-        new_keys = [x for x in self.keys() if not x in default_keys]
-        out_keys = default_keys + new_keys
-        for key in out_keys:
-            # Skip entries unchanged from default config
-            if (not full and key in default_keys
-                    and self[key].get() == default_conf[key]):
-                continue
-            try:
-                out_dict[key] = self[key].flatten()
-            except ConfigTypeError:
-                out_dict[key] = self[key].get()
+        if full:
+            out_dict = self.flatten()
+        else:
+            # Exclude defaults when flattening.
+            sources = [s for s in self.sources if not s.default]
+            out_dict = RootView(sources).flatten()
 
         yaml_out = yaml.dump(out_dict, Dumper=Dumper,
                              default_flow_style=None, indent=4,
                              width=1000)
 
         # Restore comments to the YAML text.
-        with open(default_conf.filename, 'r') as fp:
-            default_data = fp.read()
-        yaml_out = restore_yaml_comments(yaml_out, default_data)
+        default_source = None
+        for source in self.sources:
+            if source.default:
+                default_source = source
+                break
+        if default_source:
+            with open(default_source.filename, 'r') as fp:
+                default_data = fp.read()
+            yaml_out = restore_yaml_comments(yaml_out, default_data)
 
-        # Return the YAML or write it to a file.
-        if filename is None:
-            return yaml_out
-        else:
-            with open(filename, 'w') as fp:
-                fp.write(yaml_out)
+        return yaml_out
 
 
 class LazyConfig(Configuration):
@@ -871,3 +888,9 @@ class LazyConfig(Configuration):
             # Buffer additions to beginning.
             self._lazy_prefix[:0] = self.sources
             del self.sources[:]
+
+    def clear(self):
+        """Remove all sources from this configuration."""
+        del self.sources[:]
+        self._lazy_suffix = []
+        self._lazy_prefix = []
