@@ -24,7 +24,7 @@ class TypeCheckTest(unittest.TestCase):
             config['foo'].get(int)
 
 class BuiltInValidatorTest(unittest.TestCase):
-    def test_as_filename(self):
+    def test_as_filename_with_non_file_source(self):
         config = _root({'foo': 'foo/bar'})
         value = config['foo'].as_filename()
         self.assertEqual(value, os.path.join(os.getcwd(), 'foo/bar'))
@@ -33,8 +33,9 @@ class BuiltInValidatorTest(unittest.TestCase):
         source = confit.ConfigSource({'foo': 'foo/bar'},
                                      filename='/baz/config.yaml')
         config = _root(source)
+        config.config_dir = lambda: '/config/path'
         value = config['foo'].as_filename()
-        self.assertEqual(value, '/baz/foo/bar')
+        self.assertEqual(value, '/config/path/foo/bar')
 
     def test_as_filename_with_default_source(self):
         source = confit.ConfigSource({'foo': 'foo/bar'},
