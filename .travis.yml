@@ -1,7 +1,20 @@
 language: python
 python:
+    - "2.6"
     - "2.7"
-    - "3.2"
+    - "3.3"
+    - "pypy"
+
 install:
     - pip install .
-script: nosetests
+    # backports on Python < 2.7
+    - "[[ $TRAVIS_PYTHON_VERSION == '2.6' ]] && pip install unittest2 || true"
+
+script: nosetests --with-coverage --cover-package=confit
+
+# coveralls.io reporting, using https://github.com/coagulant/coveralls-python
+# Only report coverage for one version.
+before_script:
+    - "[[ $TRAVIS_PYTHON_VERSION == '3.3' ]] && pip install coveralls || true"
+after_success:
+    - "[[ $TRAVIS_PYTHON_VERSION == '3.3' ]] && coveralls || true"
