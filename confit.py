@@ -21,6 +21,7 @@ import pkgutil
 import sys
 import yaml
 import types
+import collections
 try:
     from collections import OrderedDict
 except ImportError:
@@ -420,6 +421,15 @@ class ConfigView(object):
             except ConfigTypeError:
                 od[key] = view.get()
         return od
+
+    def validate(self, template):
+        """Eagerly check the values in this view and return an inert data
+        structure.
+
+        The `template` against which the values are checked can be a
+        `Type` or convertible to a `Type` using `as_type`.
+        """
+        return as_type(template).value(self)
 
 
 class RootView(ConfigView):
@@ -909,3 +919,117 @@ class LazyConfig(Configuration):
         del self.sources[:]
         self._lazy_suffix = []
         self._lazy_prefix = []
+
+
+# "Validated" configuration views: experimental!
+
+class Type(object):
+    """A value type for configuration fields.
+
+    The type instructs Confit about how to interpret a deserialized YAML
+    value. This includes type conversions, providing a default value,
+    and validating for errors. For example, a filepath type might expand
+    ~s and check that the file exists.
+    """
+    def __init__(self, default=None, required=False):
+        """Create a type with a given default value that may or may not
+        be required.
+
+        If `required` is true, then an error will be raised when a value
+        is missing. Otherwise, missing values will instead return
+        `default`.
+        """
+        self.default = default
+        self.required = required
+
+    def __call__(self, view):
+        """Invoking a type on a view gets the view's value according to
+        the type.
+        """
+        return self.value(view)
+
+    def value(self, view):
+        """Get the value for a `ConfigView`.
+
+        May raise a `NotFoundError` if the value is missing (and the
+        type requires it) or a `ConfigValueError` for invalid values.
+        """
+        if view.exists():
+            return self.convert(view.get(), view)
+        elif self.required:
+            # Missing required value. This is an error.
+            raise NotFoundError("{0} not found".format(view.name))
+        else:
+            # Missing value, but not required.
+            return self.default
+
+    def convert(self, value, view):
+        """Convert the YAML-deserialized value to a value of the desired
+        type.
+
+        Subclasses should override this to provide useful conversions.
+        May raise a `ConfigValueError` when the configuration is wrong.
+        """
+        # Default implementation does no conversion.
+        return value
+
+    def fail(self, message, view):
+        """Raise an exception indicating that a value cannot be
+        accepted.
+        """
+        raise ConfigValueError(
+            '{0}: {1}'.format(view.name, message)
+        )
+
+
+class Integer(Type):
+    """An integer configuration value type.
+    """
+    def convert(self, value, view):
+        """Check that the value is an integer. Floats are rounded.
+        """
+        if isinstance(value, int):
+            return value
+        elif isinstance(value, float):
+            return int(value)
+        else:
+            self.fail('must be a number', view)
+
+
+class MappingTemplate(Type):
+    """A type that uses a dictionary to specify other types for the
+    values for a set of keys and produce a validated dict.
+    """
+    def __init__(self, mapping):
+        """Create a template according to a dict (mapping). The
+        mapping's values should themselves either be Types or
+        convertible to Types.
+        """
+        template = {}
+        for key, typ in mapping.items():
+            template[key] = as_type(typ)
+        self.template = template
+
+    def value(self, view):
+        """Get a dict with the same keys as the template and values
+        validated according to the value types.
+        """
+        out = {}
+        for key, typ in self.template.items():
+            out[key] = typ.value(view[key])
+        return out
+
+
+def as_type(value):
+    """Convert a simple "shorthand" Python value to a Type.
+    """
+    if isinstance(value, Type):
+        # If it's already a Type, pass it through.
+        return value
+    elif isinstance(value, collections.Mapping):
+        # Dictionaries work as templates.
+        return MappingTemplate(value)
+    elif value == int:
+        return Integer()
+    elif isinstance(value, int):
+        return Integer(value)
