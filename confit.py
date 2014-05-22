@@ -981,6 +981,13 @@ class Type(object):
             '{0}: {1}'.format(view.name, message)
         )
 
+    def __repr__(self):
+        return '{0}({1})'.format(
+            type(self).__name__,
+            'required=True' if self.required else
+            '' if self.default is None else repr(self.default),
+        )
+
 
 class Integer(Type):
     """An integer configuration value type.
@@ -998,7 +1005,7 @@ class Integer(Type):
 
 class MappingTemplate(Type):
     """A type that uses a dictionary to specify other types for the
-    values for a set of keys and produce a validated dict.
+    values for a set of keys and produce a validated `AttrDict`.
     """
     def __init__(self, mapping):
         """Create a template according to a dict (mapping). The
@@ -1018,6 +1025,9 @@ class MappingTemplate(Type):
         for key, typ in self.template.items():
             out[key] = typ.value(view[key])
         return out
+
+    def __repr__(self):
+        return 'MappingTemplate({0})'.format(repr(self.template))
 
 
 class AttrDict(dict):

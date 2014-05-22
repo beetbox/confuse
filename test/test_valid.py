@@ -55,6 +55,15 @@ class ValidConfigTest(unittest.TestCase):
         valid = config['foo'].validate(confit.Integer())
         self.assertEqual(valid, 5)
 
+    def test_nested_dict_template(self):
+        config = _root({
+            'foo': {'bar': 9},
+        })
+        valid = config.validate({
+            'foo': {'bar': confit.Integer()},
+        })
+        self.assertEqual(valid['foo']['bar'], 9)
+
 
 class AsTypeTest(unittest.TestCase):
     def test_plain_int_as_type(self):
@@ -71,3 +80,12 @@ class AsTypeTest(unittest.TestCase):
         typ = confit.as_type({'key': 9})
         self.assertIsInstance(typ, confit.MappingTemplate)
         self.assertIsInstance(typ.template['key'], confit.Integer)
+        self.assertEqual(typ.template['key'].default, 9)
+
+    def test_nested_dict_as_type(self):
+        typ = confit.as_type({'outer': {'inner': 2}})
+        self.assertIsInstance(typ, confit.MappingTemplate)
+        self.assertIsInstance(typ.template['outer'], confit.MappingTemplate)
+        self.assertIsInstance(typ.template['outer'].template['inner'],
+                              confit.Integer)
+        self.assertEqual(typ.template['outer'].template['inner'].default, 2)
