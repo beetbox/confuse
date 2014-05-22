@@ -1014,10 +1014,21 @@ class MappingTemplate(Type):
         """Get a dict with the same keys as the template and values
         validated according to the value types.
         """
-        out = {}
+        out = AttrDict()
         for key, typ in self.template.items():
             out[key] = typ.value(view[key])
         return out
+
+
+class AttrDict(dict):
+    """A `dict` subclass that can be accessed via attributes (dot
+    notation) for convenience.
+    """
+    def __getattr__(self, key):
+        if key in self:
+            return self[key]
+        else:
+            raise AttributeError(key)
 
 
 def as_type(value):
