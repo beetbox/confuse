@@ -25,7 +25,7 @@ class ValidConfigTest(unittest.TestCase):
         with self.assertRaises(KeyError):
             valid['bar']
 
-    def test_int_type_shortcut(self):
+    def test_int_template_shortcut(self):
         config = _root({'foo': 5})
         valid = config.validate({'foo': int})
         self.assertEqual(valid['foo'], 5)
@@ -65,27 +65,29 @@ class ValidConfigTest(unittest.TestCase):
         self.assertEqual(valid['foo']['bar'], 9)
 
 
-class AsTypeTest(unittest.TestCase):
-    def test_plain_int_as_type(self):
-        typ = confit.as_type(int)
+class AsTemplateTest(unittest.TestCase):
+    def test_plain_int_as_template(self):
+        typ = confit.as_template(int)
         self.assertIsInstance(typ, confit.Integer)
         self.assertEqual(typ.default, None)
 
-    def test_concrete_int_as_type(self):
-        typ = confit.as_type(2)
+    def test_concrete_int_as_template(self):
+        typ = confit.as_template(2)
         self.assertIsInstance(typ, confit.Integer)
         self.assertEqual(typ.default, 2)
 
-    def test_dict_as_type(self):
-        typ = confit.as_type({'key': 9})
+    def test_dict_as_template(self):
+        typ = confit.as_template({'key': 9})
         self.assertIsInstance(typ, confit.MappingTemplate)
-        self.assertIsInstance(typ.template['key'], confit.Integer)
-        self.assertEqual(typ.template['key'].default, 9)
+        self.assertIsInstance(typ.subtemplates['key'], confit.Integer)
+        self.assertEqual(typ.subtemplates['key'].default, 9)
 
-    def test_nested_dict_as_type(self):
-        typ = confit.as_type({'outer': {'inner': 2}})
+    def test_nested_dict_as_template(self):
+        typ = confit.as_template({'outer': {'inner': 2}})
         self.assertIsInstance(typ, confit.MappingTemplate)
-        self.assertIsInstance(typ.template['outer'], confit.MappingTemplate)
-        self.assertIsInstance(typ.template['outer'].template['inner'],
+        self.assertIsInstance(typ.subtemplates['outer'],
+                              confit.MappingTemplate)
+        self.assertIsInstance(typ.subtemplates['outer'].subtemplates['inner'],
                               confit.Integer)
-        self.assertEqual(typ.template['outer'].template['inner'].default, 2)
+        self.assertEqual(typ.subtemplates['outer'].subtemplates['inner']
+                         .default, 2)

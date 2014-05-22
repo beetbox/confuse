@@ -423,13 +423,13 @@ class ConfigView(object):
         return od
 
     def validate(self, template):
-        """Eagerly check the values in this view and return an inert data
-        structure.
+        """Eagerly check the values in this view and return an inert
+        data structure.
 
-        The `template` against which the values are checked can be a
-        `Type` or convertible to a `Type` using `as_type`.
+        The `template` against which the values are checked can be
+        anything convertible to a `Template` using `as_template`.
         """
-        return as_type(template).value(self)
+        return as_template(template).value(self)
 
 
 class RootView(ConfigView):
@@ -923,16 +923,16 @@ class LazyConfig(Configuration):
 
 # "Validated" configuration views: experimental!
 
-class Type(object):
-    """A value type for configuration fields.
+class Template(object):
+    """A value template for configuration fields.
 
-    The type instructs Confit about how to interpret a deserialized YAML
-    value. This includes type conversions, providing a default value,
-    and validating for errors. For example, a filepath type might expand
-    ~s and check that the file exists.
+    The template works like a type and instructs Confit about how to
+    interpret a deserialized YAML value. This includes type conversions,
+    providing a default value, and validating for errors. For example, a
+    filepath type might expand tildes and check that the file exists.
     """
     def __init__(self, default=None, required=False):
-        """Create a type with a given default value that may or may not
+        """Create a template with a given default value that may or may not
         be required.
 
         If `required` is true, then an error will be raised when a value
@@ -943,8 +943,8 @@ class Type(object):
         self.required = required
 
     def __call__(self, view):
-        """Invoking a type on a view gets the view's value according to
-        the type.
+        """Invoking a template on a view gets the view's value according
+        to the template.
         """
         return self.value(view)
 
@@ -952,7 +952,7 @@ class Type(object):
         """Get the value for a `ConfigView`.
 
         May raise a `NotFoundError` if the value is missing (and the
-        type requires it) or a `ConfigValueError` for invalid values.
+        template requires it) or a `ConfigValueError` for invalid values.
         """
         if view.exists():
             return self.convert(view.get(), view)
@@ -989,8 +989,8 @@ class Type(object):
         )
 
 
-class Integer(Type):
-    """An integer configuration value type.
+class Integer(Template):
+    """An integer configuration value template.
     """
     def convert(self, value, view):
         """Check that the value is an integer. Floats are rounded.
@@ -1003,8 +1003,8 @@ class Integer(Type):
             self.fail('must be a number', view)
 
 
-class MappingTemplate(Type):
-    """A type that uses a dictionary to specify other types for the
+class MappingTemplate(Template):
+    """A template that uses a dictionary to specify other types for the
     values for a set of keys and produce a validated `AttrDict`.
     """
     def __init__(self, mapping):
@@ -1012,22 +1012,22 @@ class MappingTemplate(Type):
         mapping's values should themselves either be Types or
         convertible to Types.
         """
-        template = {}
+        subtemplates = {}
         for key, typ in mapping.items():
-            template[key] = as_type(typ)
-        self.template = template
+            subtemplates[key] = as_template(typ)
+        self.subtemplates = subtemplates
 
     def value(self, view):
         """Get a dict with the same keys as the template and values
         validated according to the value types.
         """
         out = AttrDict()
-        for key, typ in self.template.items():
+        for key, typ in self.subtemplates.items():
             out[key] = typ.value(view[key])
         return out
 
     def __repr__(self):
-        return 'MappingTemplate({0})'.format(repr(self.template))
+        return 'MappingTemplate({0})'.format(repr(self.subtemplates))
 
 
 class AttrDict(dict):
@@ -1041,11 +1041,11 @@ class AttrDict(dict):
             raise AttributeError(key)
 
 
-def as_type(value):
-    """Convert a simple "shorthand" Python value to a Type.
+def as_template(value):
+    """Convert a simple "shorthand" Python value to a `Template`.
     """
-    if isinstance(value, Type):
-        # If it's already a Type, pass it through.
+    if isinstance(value, Template):
+        # If it's already a Template, pass it through.
         return value
     elif isinstance(value, collections.Mapping):
         # Dictionaries work as templates.
