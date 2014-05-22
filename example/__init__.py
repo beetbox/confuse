@@ -4,7 +4,9 @@ from __future__ import unicode_literals
 import confit
 import argparse
 
+
 config = confit.LazyConfig('ConfitExample', __name__)
+
 
 def main():
     parser = argparse.ArgumentParser(description='example Confit program')
@@ -22,12 +24,12 @@ def main():
     print('configuration directory is', config.config_dir())
 
     # Use a boolean flag and the transient overlay.
-    if config['verbose'].get(bool):
+    if config['verbose']:
         print('verbose mode')
         config['log']['level'] = 2
     else:
         config['log']['level'] = 0
-    print('logging level is', config['log']['level'].get(int))
+    print('logging level is', config['log']['level'].validate(int))
 
     # Some validated/converted values.
     print('directory is', config['directory'].as_filename())
