@@ -22,6 +22,7 @@ import sys
 import yaml
 import types
 import collections
+import re
 try:
     from collections import OrderedDict
 except ImportError:
@@ -1030,6 +1031,28 @@ class MappingTemplate(Template):
         return 'MappingTemplate({0})'.format(repr(self.subtemplates))
 
 
+class String(Template):
+    """A string configuration value template.
+    """
+    def __init__(self, default=None, required=False, pattern=''):
+        """ Create a template with the added optional `pattern` argument, a non
+        compiled regular expression the string should match.
+        """
+        super(String, self).__init__(default, required)
+        self.regex = re.compile(pattern)
+
+    def convert(self, value, view):
+        """Check that the value is an integer. Floats are rounded.
+        """
+        if isinstance(value, STRING):
+            if self.regex.match(value) is not None:
+                return value
+            else:
+                self.fail("doesn't follow the expected pattern", view)
+        else:
+            self.fail('must be a string', view)
+
+
 class AttrDict(dict):
     """A `dict` subclass that can be accessed via attributes (dot
     notation) for convenience.
@@ -1054,3 +1077,7 @@ def as_template(value):
         return Integer()
     elif isinstance(value, int):
         return Integer(value)
+    elif value == STRING:
+        return String()
+    elif isinstance(value, STRING):
+        return String(value)
