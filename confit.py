@@ -1126,6 +1126,32 @@ class StrSeq(Template):
                           view)
 
 
+class Filename(Template):
+    """A template that validates strings as filenames.
+
+    Filenames are returned as absolute, tilde-free paths.
+
+    Relative paths are relative to the configuration directory (see
+    the `config_dir` method) if they come from a file. Otherwise,
+    they are relative to the current working directory. This helps
+    attain the expected behavior when using command-line options.
+    """
+    def value(self, view):
+        path, source = view.first()
+        if not isinstance(path, BASESTRING):
+            self.fail(
+                'must be a filename, not {0}'.format(type(path).__name__),
+                view
+            )
+        path = os.path.expanduser(STRING(path))
+
+        if not os.path.isabs(path) and source.filename:
+            # From defaults: relative to the app's directory.
+            path = os.path.join(view.root().config_dir(), path)
+
+        return os.path.abspath(path)
+
+
 class AttrDict(dict):
     """A `dict` subclass that can be accessed via attributes (dot
     notation) for convenience.

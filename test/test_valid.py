@@ -1,4 +1,5 @@
 import confit
+import os
 from . import _root, unittest
 
 
@@ -217,3 +218,32 @@ class StrSeqTest(unittest.TestCase):
         config = _root({'foo': 9})
         with self.assertRaises(confit.ConfigError):
             config['foo'].validate(confit.StrSeq())
+
+
+class FilenameTest(unittest.TestCase):
+    def test_as_filename_with_non_file_source(self):
+        config = _root({'foo': 'foo/bar'})
+        valid = config['foo'].validate(confit.Filename())
+        self.assertEqual(valid, os.path.join(os.getcwd(), 'foo/bar'))
+
+    def test_as_filename_with_file_source(self):
+        source = confit.ConfigSource({'foo': 'foo/bar'},
+                                     filename='/baz/config.yaml')
+        config = _root(source)
+        config.config_dir = lambda: '/config/path'
+        valid = config['foo'].validate(confit.Filename())
+        self.assertEqual(valid, '/config/path/foo/bar')
+
+    def test_as_filename_with_default_source(self):
+        source = confit.ConfigSource({'foo': 'foo/bar'},
+                                     filename='/baz/config.yaml',
+                                     default=True)
+        config = _root(source)
+        config.config_dir = lambda: '/config/path'
+        valid = config['foo'].validate(confit.Filename())
+        self.assertEqual(valid, '/config/path/foo/bar')
+
+    def test_as_filename_wrong_type(self):
+        config = _root({'foo': 8})
+        with self.assertRaises(confit.ConfigError):
+            config['foo'].validate(confit.Filename())
