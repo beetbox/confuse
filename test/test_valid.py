@@ -173,3 +173,25 @@ class NumberTest(unittest.TestCase):
         config = _root({'foo': 'bar'})
         with self.assertRaises(confit.ConfigError):
             config['foo'].validate(confit.Number())
+
+
+class ChoiceTest(unittest.TestCase):
+    def test_validate_good_choice_in_list(self):
+        config = _root({'foo': 2})
+        valid = config['foo'].validate(confit.Choice([1, 2, 4, 8, 16]))
+        self.assertEqual(valid, 2)
+
+    def test_validate_bad_choice_in_list(self):
+        config = _root({'foo': 3})
+        with self.assertRaises(confit.ConfigValueError):
+            config['foo'].validate(confit.Choice([1, 2, 4, 8, 16]))
+
+    def test_validate_good_choice_in_dict(self):
+        config = _root({'foo': 2})
+        valid = config['foo'].validate(confit.Choice({2: 'two', 4: 'four'}))
+        self.assertEqual(valid, 'two')
+
+    def test_validate_bad_choice_in_dict(self):
+        config = _root({'foo': 3})
+        with self.assertRaises(confit.ConfigValueError):
+            config['foo'].validate(confit.Choice({2: 'two', 4: 'four'}))

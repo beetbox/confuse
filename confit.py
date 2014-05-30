@@ -1076,6 +1076,36 @@ class String(Template):
             self.fail('must be a string', view)
 
 
+class Choice(Template):
+    """A template that permits values from a sequence of choices.
+    """
+    def __init__(self, choices):
+        """Create a template that validates any of the values from the
+        iterable `choices`.
+
+        If `choices` is a map, then the corresponding value is emitted.
+        Otherwise, the value itself is emitted.
+        """
+        self.choices = choices
+
+    def convert(self, value, view):
+        """Ensure that the value is among the choices (and remap if the
+        choices are a mapping).
+        """
+        if value not in self.choices:
+            self.fail(
+                'must be one of {0}, not {1}'.format(
+                    repr(list(self.choices)), repr(value)
+                ),
+                view
+            )
+
+        if isinstance(self.choices, collections.Mapping):
+            return self.choices[value]
+        else:
+            return value
+
+
 class AttrDict(dict):
     """A `dict` subclass that can be accessed via attributes (dot
     notation) for convenience.
