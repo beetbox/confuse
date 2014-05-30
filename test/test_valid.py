@@ -43,7 +43,12 @@ class ValidConfigTest(unittest.TestCase):
     def test_missing_required_value_raises_error_on_validate(self):
         config = _root({})
         with self.assertRaises(confit.NotFoundError):
-            config.validate({'foo': confit.Integer(required=True)})
+            config.validate({'foo': confit.Integer()})
+
+    def test_none_as_default(self):
+        config = _root({})
+        valid = config.validate({'foo': confit.Integer(None)})
+        self.assertIsNone(valid['foo'])
 
     def test_wrong_type_raises_error_on_validate(self):
         config = _root({'foo': 'bar'})
@@ -78,7 +83,7 @@ class AsTemplateTest(unittest.TestCase):
     def test_plain_int_as_template(self):
         typ = confit.as_template(int)
         self.assertIsInstance(typ, confit.Integer)
-        self.assertEqual(typ.default, None)
+        self.assertEqual(typ.default, confit.REQUIRED)
 
     def test_concrete_int_as_template(self):
         typ = confit.as_template(2)

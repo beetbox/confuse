@@ -924,6 +924,13 @@ class LazyConfig(Configuration):
 
 # "Validated" configuration views: experimental!
 
+
+REQUIRED = object()
+"""A sentinel indicating that there is no default value and an exception
+should be raised when the value is missing.
+"""
+
+
 class Template(object):
     """A value template for configuration fields.
 
@@ -932,16 +939,14 @@ class Template(object):
     providing a default value, and validating for errors. For example, a
     filepath type might expand tildes and check that the file exists.
     """
-    def __init__(self, default=None, required=False):
-        """Create a template with a given default value that may or may not
-        be required.
+    def __init__(self, default=REQUIRED):
+        """Create a template with a given default value.
 
-        If `required` is true, then an error will be raised when a value
-        is missing. Otherwise, missing values will instead return
-        `default`.
+        If `default` is the sentinel `REQUIRED` (as it is by default),
+        then an error will be raised when a value is missing. Otherwise,
+        missing values will instead return `default`.
         """
         self.default = default
-        self.required = required
 
     def __call__(self, view):
         """Invoking a template on a view gets the view's value according
@@ -957,7 +962,7 @@ class Template(object):
         """
         if view.exists():
             return self.convert(view.get(), view)
-        elif self.required:
+        elif self.default is REQUIRED:
             # Missing required value. This is an error.
             raise NotFoundError("{0} not found".format(view.name))
         else:
@@ -985,8 +990,7 @@ class Template(object):
     def __repr__(self):
         return '{0}({1})'.format(
             type(self).__name__,
-            'required=True' if self.required else
-            '' if self.default is None else repr(self.default),
+            '' if self.default is REQUIRED else repr(self.default),
         )
 
 
@@ -1034,11 +1038,11 @@ class MappingTemplate(Template):
 class String(Template):
     """A string configuration value template.
     """
-    def __init__(self, default=None, required=False, pattern=None):
+    def __init__(self, default=None, pattern=None):
         """Create a template with the added optional `pattern` argument,
         a regular expression string that the value should match.
         """
-        super(String, self).__init__(default, required)
+        super(String, self).__init__(default)
         self.pattern = pattern
         if pattern:
             self.regex = re.compile(pattern)
@@ -1077,7 +1081,7 @@ def as_template(value):
     elif isinstance(value, collections.Mapping):
         # Dictionaries work as templates.
         return MappingTemplate(value)
-    elif value == int:
+    elif value is int:
         return Integer()
     elif isinstance(value, int):
         return Integer(value)
