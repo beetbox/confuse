@@ -116,6 +116,11 @@ class AsTemplateTest(unittest.TestCase):
         self.assertEqual(typ.subtemplates['outer'].subtemplates['inner']
                          .default, 2)
 
+    def test_float_as_tempalte(self):
+        typ = confit.as_template(float)
+        self.assertIsInstance(typ, confit.Number)
+        self.assertEqual(typ.default, confit.REQUIRED)
+
 
 class StringTemplateTest(unittest.TestCase):
     def test_validate_string(self):
@@ -149,3 +154,22 @@ class StringTemplateTest(unittest.TestCase):
         config = _root({'foo': 5})
         with self.assertRaises(confit.ConfigError):
             config.validate({'foo': confit.String()})
+
+
+class NumberTest(unittest.TestCase):
+    def test_validate_int_as_number(self):
+        config = _root({'foo': 2})
+        valid = config['foo'].validate(confit.Number())
+        self.assertIsInstance(valid, int)
+        self.assertEqual(valid, 2)
+
+    def test_validate_float_as_number(self):
+        config = _root({'foo': 3.0})
+        valid = config['foo'].validate(confit.Number())
+        self.assertIsInstance(valid, float)
+        self.assertEqual(valid, 3.0)
+
+    def test_validate_string_as_number(self):
+        config = _root({'foo': 'bar'})
+        with self.assertRaises(confit.ConfigError):
+            config['foo'].validate(confit.Number())

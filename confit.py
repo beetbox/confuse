@@ -1008,6 +1008,21 @@ class Integer(Template):
             self.fail('must be a number', view)
 
 
+class Number(Template):
+    """A numeric type: either an integer or a floating-point number.
+    """
+    def convert(self, value, view):
+        """Check that the value is an int or a float.
+        """
+        if isinstance(value, NUMERIC_TYPES):
+            return value
+        else:
+            self.fail(
+                'must be numeric, not {0}'.format(type(value).__name__),
+                view
+            )
+
+
 class MappingTemplate(Template):
     """A template that uses a dictionary to specify other types for the
     values for a set of keys and produce a validated `AttrDict`.
@@ -1089,5 +1104,7 @@ def as_template(value):
         return String()
     elif isinstance(value, BASESTRING):
         return String(value)
+    elif value is float:
+        return Number()
     else:
         raise ValueError('cannot convert to template: {0!r}'.format(value))
