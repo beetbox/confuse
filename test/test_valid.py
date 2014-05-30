@@ -86,7 +86,7 @@ class AsTemplateTest(unittest.TestCase):
         self.assertEqual(typ.default, 2)
 
     def test_plain_string_as_template(self):
-        typ = confit.as_template(confit.STRING)
+        typ = confit.as_template(str)
         self.assertIsInstance(typ, confit.String)
         self.assertEqual(typ.default, None)
 
@@ -132,7 +132,7 @@ class StringTemplateTest(unittest.TestCase):
 
     def test_string_template_shortcut(self):
         config = _root({'foo': 'bar'})
-        valid = config.validate({'foo': confit.STRING})
+        valid = config.validate({'foo': str})
         self.assertEqual(valid['foo'], 'bar')
 
     def test_string_default_shortcut(self):

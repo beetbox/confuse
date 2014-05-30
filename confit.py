@@ -1034,21 +1034,25 @@ class MappingTemplate(Template):
 class String(Template):
     """A string configuration value template.
     """
-    def __init__(self, default=None, required=False, pattern=''):
-        """ Create a template with the added optional `pattern` argument, a non
-        compiled regular expression the string should match.
+    def __init__(self, default=None, required=False, pattern=None):
+        """Create a template with the added optional `pattern` argument,
+        a regular expression string that the value should match.
         """
         super(String, self).__init__(default, required)
-        self.regex = re.compile(pattern)
+        self.pattern = pattern
+        if pattern:
+            self.regex = re.compile(pattern)
 
     def convert(self, value, view):
-        """Check that the value is an integer. Floats are rounded.
+        """Check that the value is a string and matches the pattern.
         """
-        if isinstance(value, STRING):
-            if self.regex.match(value) is not None:
-                return value
-            else:
-                self.fail("doesn't follow the expected pattern", view)
+        if isinstance(value, BASESTRING):
+            if self.pattern and not self.regex.match(value):
+                self.fail(
+                    "must match the pattern {0}".format(self.pattern),
+                    view
+                )
+            return value
         else:
             self.fail('must be a string', view)
 
@@ -1077,7 +1081,9 @@ def as_template(value):
         return Integer()
     elif isinstance(value, int):
         return Integer(value)
-    elif value == STRING:
+    elif isinstance(value, type) and issubclass(value, BASESTRING):
         return String()
-    elif isinstance(value, STRING):
+    elif isinstance(value, BASESTRING):
         return String(value)
+    else:
+        raise ValueError('cannot convert to template: {0!r}'.format(value))
