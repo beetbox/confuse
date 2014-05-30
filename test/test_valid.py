@@ -195,3 +195,25 @@ class ChoiceTest(unittest.TestCase):
         config = _root({'foo': 3})
         with self.assertRaises(confit.ConfigValueError):
             config['foo'].validate(confit.Choice({2: 'two', 4: 'four'}))
+
+
+class StrSeqTest(unittest.TestCase):
+    def test_string_list(self):
+        config = _root({'foo': ['bar', 'baz']})
+        valid = config['foo'].validate(confit.StrSeq())
+        self.assertEqual(valid, ['bar', 'baz'])
+
+    def test_string_tuple(self):
+        config = _root({'foo': ('bar', 'baz')})
+        valid = config['foo'].validate(confit.StrSeq())
+        self.assertEqual(valid, ['bar', 'baz'])
+
+    def test_whitespace_separated_string(self):
+        config = _root({'foo': 'bar   baz'})
+        valid = config['foo'].validate(confit.StrSeq())
+        self.assertEqual(valid, ['bar', 'baz'])
+
+    def test_invalid_type(self):
+        config = _root({'foo': 9})
+        with self.assertRaises(confit.ConfigError):
+            config['foo'].validate(confit.StrSeq())

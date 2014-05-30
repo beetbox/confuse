@@ -1106,6 +1106,26 @@ class Choice(Template):
             return value
 
 
+class StrSeq(Template):
+    """A template for values that are lists of strings.
+
+    Validates both actual YAML string lists and whitespace-separated
+    strings.
+    """
+    def convert(self, value, view):
+        if isinstance(value, bytes):
+            value = value.decode('utf8', 'ignore')
+
+        if isinstance(value, STRING):
+            return value.split()
+        else:
+            try:
+                return list(value)
+            except TypeError:
+                self.fail('must be a whitespace-separated string or a list',
+                          view)
+
+
 class AttrDict(dict):
     """A `dict` subclass that can be accessed via attributes (dot
     notation) for convenience.
