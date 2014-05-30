@@ -4,27 +4,14 @@ from . import _root, unittest
 
 class ValidConfigTest(unittest.TestCase):
     def test_validate_simple_dict(self):
-        config = _root({'foo': 5, 'bar': 'baz'})
-        valid = config.validate({
-            'foo': confit.Integer(),
-            'bar': confit.String()})
+        config = _root({'foo': 5})
+        valid = config.validate({'foo': confit.Integer()})
         self.assertEqual(valid['foo'], 5)
-        self.assertEqual(valid['bar'], 'baz')
 
     def test_default_value(self):
         config = _root({})
-        valid = config.validate({
-            'foo': confit.Integer(8),
-            'bar': confit.String('baz')})
+        valid = config.validate({'foo': confit.Integer(8)})
         self.assertEqual(valid['foo'], 8)
-        self.assertEqual(valid['bar'], 'baz')
-
-    def test_pattern_matching(self):
-        config = _root({'foo': 'bar', 'baz': 'zab'})
-        valid = config.validate({'foo': confit.String(pattern='^ba.$')})
-        self.assertEqual(valid['foo'], 'bar')
-        with self.assertRaises(confit.ConfigValueError):
-            config.validate({'baz': confit.String(pattern='!')})
 
     def test_undeclared_key_raises_keyerror(self):
         config = _root({'foo': 5})
@@ -48,23 +35,10 @@ class ValidConfigTest(unittest.TestCase):
         valid = config.validate({'foo': 9})
         self.assertEqual(valid['foo'], 9)
 
-    def test_string_template_shortcut(self):
-        config = _root({'foo': 'bar'})
-        valid = config.validate({'foo': confit.STRING})
-        self.assertEqual(valid['foo'], 'bar')
-
-    def test_string_default_shortcut(self):
-        config = _root({})
-        valid = config.validate({'foo': 'bar'})
-        self.assertEqual(valid['foo'], 'bar')
-
     def test_attribute_access(self):
-        config = _root({'foo': 5, 'bar': 'baz'})
-        valid = config.validate({
-            'foo': confit.Integer(8),
-            'bar': confit.String('zab')})
+        config = _root({'foo': 5})
+        valid = config.validate({'foo': confit.Integer()})
         self.assertEqual(valid.foo, 5)
-        self.assertEqual(valid.bar, 'baz')
 
     def test_missing_required_value_raises_error_on_validate(self):
         config = _root({})
@@ -72,11 +46,9 @@ class ValidConfigTest(unittest.TestCase):
             config.validate({'foo': confit.Integer(required=True)})
 
     def test_wrong_type_raises_error_on_validate(self):
-        config = _root({'foo': 'bar', 'baz': 5})
+        config = _root({'foo': 'bar'})
         with self.assertRaises(confit.ConfigError):
             config.validate({'foo': confit.Integer()})
-        with self.assertRaises(confit.ConfigError):
-            config.validate({'baz': confit.String()})
 
     def test_validate_individual_value(self):
         config = _root({'foo': 5})
@@ -94,12 +66,12 @@ class ValidConfigTest(unittest.TestCase):
 
     def test_nested_attribute_access(self):
         config = _root({
-            'foo': {'bar': 'baz'},
+            'foo': {'bar': 8},
         })
         valid = config.validate({
-            'foo': {'bar': confit.String()},
+            'foo': {'bar': confit.Integer()},
         })
-        self.assertEqual(valid.foo.bar, 'baz')
+        self.assertEqual(valid.foo.bar, 8)
 
 
 class AsTemplateTest(unittest.TestCase):
@@ -138,3 +110,37 @@ class AsTemplateTest(unittest.TestCase):
                               confit.Integer)
         self.assertEqual(typ.subtemplates['outer'].subtemplates['inner']
                          .default, 2)
+
+
+class StringTemplateTest(unittest.TestCase):
+    def test_validate_string(self):
+        config = _root({'foo': 'bar'})
+        valid = config.validate({'foo': confit.String()})
+        self.assertEqual(valid['foo'], 'bar')
+
+    def test_string_default_value(self):
+        config = _root({})
+        valid = config.validate({'foo': confit.String('baz')})
+        self.assertEqual(valid['foo'], 'baz')
+
+    def test_pattern_matching(self):
+        config = _root({'foo': 'bar', 'baz': 'zab'})
+        valid = config.validate({'foo': confit.String(pattern='^ba.$')})
+        self.assertEqual(valid['foo'], 'bar')
+        with self.assertRaises(confit.ConfigValueError):
+            config.validate({'baz': confit.String(pattern='!')})
+
+    def test_string_template_shortcut(self):
+        config = _root({'foo': 'bar'})
+        valid = config.validate({'foo': confit.STRING})
+        self.assertEqual(valid['foo'], 'bar')
+
+    def test_string_default_shortcut(self):
+        config = _root({})
+        valid = config.validate({'foo': 'bar'})
+        self.assertEqual(valid['foo'], 'bar')
+
+    def test_check_string_type(self):
+        config = _root({'foo': 5})
+        with self.assertRaises(confit.ConfigError):
+            config.validate({'foo': confit.String()})
