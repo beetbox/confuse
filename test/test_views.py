@@ -71,11 +71,11 @@ class ConverstionTest(unittest.TestCase):
         value = str(config['foo'])
         self.assertEqual(value, '2')
 
+    @unittest.skipIf(confit.PY3, "unicode only present in Python 2")
     def test_unicode_conversion_from_int(self):
-        if not PY3:
-            config = _root({'foo': 2})
-            value = unicode(config['foo'])
-            self.assertEqual(value, unicode('2'))
+        config = _root({'foo': 2})
+        value = unicode(config['foo'])
+        self.assertEqual(value, unicode('2'))
 
     def test_bool_conversion_from_bool(self):
         config = _root({'foo': True})

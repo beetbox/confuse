@@ -77,11 +77,10 @@ class BuiltInValidatorTest(unittest.TestCase):
         config = _root({'i': 2})
         config['i'].as_number()
 
+    @unittest.skipIf(confit.PY3, "long only present in Python 2")
     def test_as_number_long_in_py2(self):
-        # A no-op on Python 3, which doesn't have a long type.
-        if not confit.PY3:
-            config = _root({'l': long(3)})
-            config['l'].as_number()
+        config = _root({'l': long(3)})
+        config['l'].as_number()
 
     def test_as_number_string(self):
         config = _root({'s': 'a'})
