@@ -1105,6 +1105,30 @@ class Filename(Template):
         return os.path.abspath(path)
 
 
+class TypeTemplate(Template):
+    """A simple template that checks that a value is an instance of a
+    desired Python type.
+    """
+    def __init__(self, typ, default=REQUIRED):
+        """Create a template that checks that the value is an instance
+        of `typ`.
+        """
+        super(TypeTemplate, self).__init__(default)
+        self.typ = typ
+
+    def convert(self, value, view):
+        if not isinstance(value, self.typ):
+            self.fail(
+                'must be a {0}, not {1}'.format(
+                    self.typ.__name__,
+                    type(value).__name__,
+                ),
+                view,
+                True
+            )
+        return value
+
+
 class AttrDict(dict):
     """A `dict` subclass that can be accessed via attributes (dot
     notation) for convenience.
@@ -1137,5 +1161,11 @@ def as_template(value):
         return Number()
     elif value is None:
         return Template()
+    elif value is dict:
+        return TypeTemplate(collections.Mapping)
+    elif value is list:
+        return TypeTemplate(collections.Sequence)
+    elif isinstance(value, type):
+        return TypeTemplate(value)
     else:
         raise ValueError('cannot convert to template: {0!r}'.format(value))

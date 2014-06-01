@@ -1,5 +1,6 @@
 import confit
 import os
+import collections
 from . import _root, unittest
 
 
@@ -137,6 +138,26 @@ class AsTemplateTest(unittest.TestCase):
     def test_none_as_template(self):
         typ = confit.as_template(None)
         self.assertIs(type(typ), confit.Template)
+        self.assertEqual(typ.default, confit.REQUIRED)
+
+    def test_dict_type_as_template(self):
+        typ = confit.as_template(dict)
+        self.assertIsInstance(typ, confit.TypeTemplate)
+        self.assertEqual(typ.typ, collections.Mapping)
+        self.assertEqual(typ.default, confit.REQUIRED)
+
+    def test_list_type_as_template(self):
+        typ = confit.as_template(list)
+        self.assertIsInstance(typ, confit.TypeTemplate)
+        self.assertEqual(typ.typ, collections.Sequence)
+        self.assertEqual(typ.default, confit.REQUIRED)
+
+    def test_other_type_as_template(self):
+        class MyClass(object):
+            pass
+        typ = confit.as_template(MyClass)
+        self.assertIsInstance(typ, confit.TypeTemplate)
+        self.assertEqual(typ.typ, MyClass)
         self.assertEqual(typ.default, confit.REQUIRED)
 
 
@@ -281,3 +302,25 @@ class BaseTemplateTest(unittest.TestCase):
         config = _root({})
         valid = config['foo'].validate(confit.Template('bar'))
         self.assertEqual(valid, 'bar')
+
+
+class TypeTemplateTest(unittest.TestCase):
+    def test_correct_type(self):
+        config = _root({'foo': set()})
+        valid = config['foo'].validate(confit.TypeTemplate(set))
+        self.assertEqual(valid, set())
+
+    def test_incorrect_type(self):
+        config = _root({'foo': dict()})
+        with self.assertRaises(confit.ConfigTypeError):
+            config['foo'].validate(confit.TypeTemplate(set))
+
+    def test_missing_required_value(self):
+        config = _root({})
+        with self.assertRaises(confit.NotFoundError):
+            config['foo'].validate(confit.TypeTemplate(set))
+
+    def test_default_value(self):
+        config = _root({})
+        valid = config['foo'].validate(confit.TypeTemplate(set, set([1, 2])))
+        self.assertEqual(valid, set([1, 2]))
