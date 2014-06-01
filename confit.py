@@ -346,21 +346,19 @@ class ConfigView(object):
         """
         return as_template(template).value(self)
 
-    validate = get
-
     # Old validation methods (deprecated).
 
     def as_filename(self):
-        return self.validate(Filename())
+        return self.get(Filename())
 
     def as_choice(self, choices):
-        return self.validate(Choice(choices))
+        return self.get(Choice(choices))
 
     def as_number(self):
-        return self.validate(Number())
+        return self.get(Number())
 
     def as_str_seq(self):
-        return self.validate(StrSeq())
+        return self.get(StrSeq())
 
 
 class RootView(ConfigView):
