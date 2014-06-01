@@ -53,7 +53,7 @@ class ValidConfigTest(unittest.TestCase):
 
     def test_wrong_type_raises_error_on_validate(self):
         config = _root({'foo': 'bar'})
-        with self.assertRaises(confit.ConfigError):
+        with self.assertRaises(confit.ConfigTypeError):
             config.validate({'foo': confit.Integer()})
 
     def test_validate_individual_value(self):
@@ -153,7 +153,7 @@ class StringTemplateTest(unittest.TestCase):
 
     def test_check_string_type(self):
         config = _root({'foo': 5})
-        with self.assertRaises(confit.ConfigError):
+        with self.assertRaises(confit.ConfigTypeError):
             config.validate({'foo': confit.String()})
 
 
@@ -172,7 +172,7 @@ class NumberTest(unittest.TestCase):
 
     def test_validate_string_as_number(self):
         config = _root({'foo': 'bar'})
-        with self.assertRaises(confit.ConfigError):
+        with self.assertRaises(confit.ConfigTypeError):
             config['foo'].validate(confit.Number())
 
 
@@ -216,7 +216,7 @@ class StrSeqTest(unittest.TestCase):
 
     def test_invalid_type(self):
         config = _root({'foo': 9})
-        with self.assertRaises(confit.ConfigError):
+        with self.assertRaises(confit.ConfigTypeError):
             config['foo'].validate(confit.StrSeq())
 
 
@@ -245,5 +245,5 @@ class FilenameTest(unittest.TestCase):
 
     def test_as_filename_wrong_type(self):
         config = _root({'foo': 8})
-        with self.assertRaises(confit.ConfigError):
+        with self.assertRaises(confit.ConfigTypeError):
             config['foo'].validate(confit.Filename())

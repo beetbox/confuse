@@ -76,13 +76,13 @@ class NotFoundError(ConfigError):
     """
 
 
-class ConfigTypeError(ConfigError, TypeError):
+class ConfigValueError(ConfigError):
+    """The value in the configuration is illegal."""
+
+
+class ConfigTypeError(ConfigValueError):
     """The value in the configuration did not match the expected type.
     """
-
-
-class ConfigValueError(ConfigError, ValueError):
-    """The value in the configuration is illegal."""
 
 
 class ConfigReadError(ConfigError):
@@ -339,77 +339,6 @@ class ConfigView(object):
 
         return value
 
-    def as_filename(self):
-        """Get a string as a normalized as an absolute, tilde-free path.
-
-        Relative paths are relative to the configuration directory (see
-        the `config_dir` method) if they come from a file. Otherwise,
-        they are relative to the current working directory. This helps
-        attain the expected behavior when using command-line options.
-        """
-        path, source = self.first()
-        if not isinstance(path, BASESTRING):
-            raise ConfigTypeError('{0} must be a filename, not {1}'.format(
-                self.name, type(path).__name__
-            ))
-        path = os.path.expanduser(STRING(path))
-
-        if not os.path.isabs(path) and source.filename:
-            # From defaults: relative to the app's directory.
-            path = os.path.join(self.root().config_dir(), path)
-
-        return os.path.abspath(path)
-
-    def as_choice(self, choices):
-        """Ensure that the value is among a collection of choices and
-        return it. If `choices` is a dictionary, then return the
-        corresponding value rather than the value itself (the key).
-        """
-        value = self.get()
-
-        if value not in choices:
-            raise ConfigValueError(
-                '{0} must be one of {1}, not {2}'.format(
-                    self.name, repr(list(choices)), repr(value)
-                )
-            )
-
-        if isinstance(choices, dict):
-            return choices[value]
-        else:
-            return value
-
-    def as_number(self):
-        """Ensure that a value is of numeric type."""
-        value = self.get()
-        if isinstance(value, NUMERIC_TYPES):
-            return value
-        raise ConfigTypeError(
-            '{0} must be numeric, not {1}'.format(
-                self.name, type(value).__name__
-            )
-        )
-
-    def as_str_seq(self):
-        """Get the value as a list of strings. The underlying configured
-        value can be a sequence or a single string. In the latter case,
-        the string is treated as a white-space separated list of words.
-        """
-        value = self.get()
-        if isinstance(value, bytes):
-            value = value.decode('utf8', 'ignore')
-
-        if isinstance(value, STRING):
-            return value.split()
-        else:
-            try:
-                return list(value)
-            except TypeError:
-                raise ConfigTypeError(
-                    '{0} must be a whitespace-separated string or '
-                    'a list'.format(self.name)
-                )
-
     def flatten(self):
         """Create a hierarchy of OrderedDicts containing the data from
         this view, recursively reifying all views to get their
@@ -431,6 +360,20 @@ class ConfigView(object):
         anything convertible to a `Template` using `as_template`.
         """
         return as_template(template).value(self)
+
+    # Old validation methods (deprecated).
+
+    def as_filename(self):
+        return self.validate(Filename())
+
+    def as_choice(self, choices):
+        return self.validate(Choice(choices))
+
+    def as_number(self):
+        return self.validate(Number())
+
+    def as_str_seq(self):
+        return self.validate(StrSeq())
 
 
 class RootView(ConfigView):
@@ -979,11 +922,16 @@ class Template(object):
         # Default implementation does no conversion.
         return value
 
-    def fail(self, message, view):
+    def fail(self, message, view, type_error=False):
         """Raise an exception indicating that a value cannot be
         accepted.
+
+        `type_error` indicates whether the error is due to a type
+        mismatch rather than a malformed value. In this case, a more
+        specific exception is raised.
         """
-        raise ConfigValueError(
+        exc_class = ConfigTypeError if type_error else ConfigValueError
+        raise exc_class(
             '{0}: {1}'.format(view.name, message)
         )
 
@@ -1005,7 +953,7 @@ class Integer(Template):
         elif isinstance(value, float):
             return int(value)
         else:
-            self.fail('must be a number', view)
+            self.fail('must be a number', view, True)
 
 
 class Number(Template):
@@ -1019,7 +967,8 @@ class Number(Template):
         else:
             self.fail(
                 'must be numeric, not {0}'.format(type(value).__name__),
-                view
+                view,
+                True
             )
 
 
@@ -1073,7 +1022,7 @@ class String(Template):
                 )
             return value
         else:
-            self.fail('must be a string', view)
+            self.fail('must be a string', view, True)
 
 
 class Choice(Template):
@@ -1123,7 +1072,7 @@ class StrSeq(Template):
                 return list(value)
             except TypeError:
                 self.fail('must be a whitespace-separated string or a list',
-                          view)
+                          view, True)
 
 
 class Filename(Template):
@@ -1141,7 +1090,8 @@ class Filename(Template):
         if not isinstance(path, BASESTRING):
             self.fail(
                 'must be a filename, not {0}'.format(type(path).__name__),
-                view
+                view,
+                True
             )
         path = os.path.expanduser(STRING(path))
 
