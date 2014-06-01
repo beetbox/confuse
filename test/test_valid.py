@@ -94,12 +94,24 @@ class AsTemplateTest(unittest.TestCase):
     def test_plain_string_as_template(self):
         typ = confit.as_template(str)
         self.assertIsInstance(typ, confit.String)
-        self.assertEqual(typ.default, None)
+        self.assertEqual(typ.default, confit.REQUIRED)
 
     def test_concrete_string_as_template(self):
         typ = confit.as_template('foo')
         self.assertIsInstance(typ, confit.String)
         self.assertEqual(typ.default, 'foo')
+
+    @unittest.skipIf(confit.PY3, "unicode only present in Python 2")
+    def test_unicode_type_as_template(self):
+        typ = confit.as_template(unicode)
+        self.assertIsInstance(typ, confit.String)
+        self.assertEqual(typ.default, confit.REQUIRED)
+
+    @unittest.skipIf(confit.PY3, "basestring only present in Python 2")
+    def test_basestring_as_template(self):
+        typ = confit.as_template(basestring)
+        self.assertIsInstance(typ, confit.String)
+        self.assertEqual(typ.default, confit.REQUIRED)
 
     def test_dict_as_template(self):
         typ = confit.as_template({'key': 9})

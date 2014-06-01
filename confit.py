@@ -1002,7 +1002,7 @@ class MappingTemplate(Template):
 class String(Template):
     """A string configuration value template.
     """
-    def __init__(self, default=None, pattern=None):
+    def __init__(self, default=REQUIRED, pattern=None):
         """Create a template with the added optional `pattern` argument,
         a regular expression string that the value should match.
         """
