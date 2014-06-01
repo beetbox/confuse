@@ -318,27 +318,6 @@ class ConfigView(object):
 
     # Validation and conversion.
 
-    def get(self, typ=None):
-        """Returns the canonical value for the view, checked against the
-        passed-in type. If the value is not an instance of the given
-        type, a ConfigTypeError is raised. May also raise a
-        NotFoundError.
-        """
-        value, _ = self.first()
-
-        if typ is not None:
-            if not isinstance(typ, TYPE_TYPES):
-                raise TypeError('argument to get() must be a type')
-
-            if not isinstance(value, typ):
-                raise ConfigTypeError(
-                    "{0} must be of type {1}, not {2}".format(
-                        self.name, typ.__name__, type(value).__name__
-                    )
-                )
-
-        return value
-
     def flatten(self):
         """Create a hierarchy of OrderedDicts containing the data from
         this view, recursively reifying all views to get their
@@ -352,14 +331,22 @@ class ConfigView(object):
                 od[key] = view.get()
         return od
 
-    def validate(self, template):
-        """Eagerly check the values in this view and return an inert
-        data structure.
+    def get(self, template=None):
+        """Retrieve the value for this view according to the template.
 
         The `template` against which the values are checked can be
-        anything convertible to a `Template` using `as_template`.
+        anything convertible to a `Template` using `as_template`. This
+        means you can pass in a default integer or string value, for
+        example, or a type to just check that something matches the type
+        you expect.
+
+        May raise a `ConfigValueError` (or its subclass,
+        `ConfigTypeError`) or a `NotFoundError` when the configuration
+        doesn't satisfy the template.
         """
         return as_template(template).value(self)
+
+    validate = get
 
     # Old validation methods (deprecated).
 
@@ -904,7 +891,8 @@ class Template(object):
         template requires it) or a `ConfigValueError` for invalid values.
         """
         if view.exists():
-            return self.convert(view.get(), view)
+            value, _ = view.first()
+            return self.convert(value, view)
         elif self.default is REQUIRED:
             # Missing required value. This is an error.
             raise NotFoundError("{0} not found".format(view.name))
