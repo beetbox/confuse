@@ -1058,10 +1058,14 @@ class StrSeq(Template):
             return value.split()
         else:
             try:
-                return list(value)
+                value = list(value)
             except TypeError:
                 self.fail('must be a whitespace-separated string or a list',
                           view, True)
+            if all(isinstance(x, BASESTRING) for x in value):
+                return value
+            else:
+                self.fail('must be a list of strings', view, True)
 
 
 class Filename(Template):
