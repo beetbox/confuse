@@ -29,7 +29,7 @@ def main():
         config['log']['level'] = 2
     else:
         config['log']['level'] = 0
-    print('logging level is', config['log']['level'].validate(int))
+    print('logging level is', config['log']['level'].get(int))
 
     # Some validated/converted values.
     print('directory is', config['directory'].as_filename())
