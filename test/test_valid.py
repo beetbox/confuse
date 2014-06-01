@@ -257,6 +257,11 @@ class StrSeqTest(unittest.TestCase):
         with self.assertRaises(confit.ConfigTypeError):
             config['foo'].get(confit.StrSeq())
 
+    def test_invalid_sequence_type(self):
+        config = _root({'foo': ['bar', 2126]})
+        with self.assertRaises(confit.ConfigTypeError):
+            config['foo'].get(confit.StrSeq())
+
 
 class FilenameTest(unittest.TestCase):
     def test_filename_with_non_file_source(self):
