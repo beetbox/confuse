@@ -1054,6 +1054,9 @@ class Choice(Template):
         else:
             return value
 
+    def __repr__(self):
+        return 'Choice({0!r})'.format(self.choices)
+
 
 class StrSeq(Template):
     """A template for values that are lists of strings.
@@ -1132,5 +1135,7 @@ def as_template(value):
         return String(value)
     elif value is float:
         return Number()
+    elif value is None:
+        return Template()
     else:
         raise ValueError('cannot convert to template: {0!r}'.format(value))

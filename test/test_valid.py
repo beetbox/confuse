@@ -122,6 +122,11 @@ class AsTemplateTest(unittest.TestCase):
         self.assertIsInstance(typ, confit.Number)
         self.assertEqual(typ.default, confit.REQUIRED)
 
+    def test_none_as_template(self):
+        typ = confit.as_template(None)
+        self.assertIs(type(typ), confit.Template)
+        self.assertEqual(typ.default, confit.REQUIRED)
+
 
 class StringTemplateTest(unittest.TestCase):
     def test_validate_string(self):
@@ -221,12 +226,12 @@ class StrSeqTest(unittest.TestCase):
 
 
 class FilenameTest(unittest.TestCase):
-    def test_as_filename_with_non_file_source(self):
+    def test_filename_with_non_file_source(self):
         config = _root({'foo': 'foo/bar'})
         valid = config['foo'].validate(confit.Filename())
         self.assertEqual(valid, os.path.join(os.getcwd(), 'foo/bar'))
 
-    def test_as_filename_with_file_source(self):
+    def test_filename_with_file_source(self):
         source = confit.ConfigSource({'foo': 'foo/bar'},
                                      filename='/baz/config.yaml')
         config = _root(source)
@@ -234,7 +239,7 @@ class FilenameTest(unittest.TestCase):
         valid = config['foo'].validate(confit.Filename())
         self.assertEqual(valid, '/config/path/foo/bar')
 
-    def test_as_filename_with_default_source(self):
+    def test_filename_with_default_source(self):
         source = confit.ConfigSource({'foo': 'foo/bar'},
                                      filename='/baz/config.yaml',
                                      default=True)
@@ -243,7 +248,24 @@ class FilenameTest(unittest.TestCase):
         valid = config['foo'].validate(confit.Filename())
         self.assertEqual(valid, '/config/path/foo/bar')
 
-    def test_as_filename_wrong_type(self):
+    def test_filename_wrong_type(self):
         config = _root({'foo': 8})
         with self.assertRaises(confit.ConfigTypeError):
             config['foo'].validate(confit.Filename())
+
+
+class BaseTemplateTest(unittest.TestCase):
+    def test_base_template_accepts_any_value(self):
+        config = _root({'foo': 4.2})
+        valid = config['foo'].validate(confit.Template())
+        self.assertEqual(valid, 4.2)
+
+    def test_base_template_required(self):
+        config = _root({})
+        with self.assertRaises(confit.NotFoundError):
+            config['foo'].validate(confit.Template())
+
+    def test_base_template_with_default(self):
+        config = _root({})
+        valid = config['foo'].validate(confit.Template('bar'))
+        self.assertEqual(valid, 'bar')
