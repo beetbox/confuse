@@ -27,7 +27,7 @@ class BuiltInValidatorTest(unittest.TestCase):
     def test_as_filename_with_non_file_source(self):
         config = _root({'foo': 'foo/bar'})
         value = config['foo'].as_filename()
-        self.assertEqual(value, os.path.join(os.getcwd(), 'foo/bar'))
+        self.assertEqual(value, os.path.join(os.getcwd(), 'foo', 'bar'))
 
     def test_as_filename_with_file_source(self):
         source = confit.ConfigSource({'foo': 'foo/bar'},
@@ -35,7 +35,7 @@ class BuiltInValidatorTest(unittest.TestCase):
         config = _root(source)
         config.config_dir = lambda: '/config/path'
         value = config['foo'].as_filename()
-        self.assertEqual(value, '/config/path/foo/bar')
+        self.assertEqual(value, os.path.realpath('/config/path/foo/bar'))
 
     def test_as_filename_with_default_source(self):
         source = confit.ConfigSource({'foo': 'foo/bar'},
@@ -44,7 +44,7 @@ class BuiltInValidatorTest(unittest.TestCase):
         config = _root(source)
         config.config_dir = lambda: '/config/path'
         value = config['foo'].as_filename()
-        self.assertEqual(value, '/config/path/foo/bar')
+        self.assertEqual(value, os.path.realpath('/config/path/foo/bar'))
 
     def test_as_filename_wrong_type(self):
         config = _root({'foo': None})

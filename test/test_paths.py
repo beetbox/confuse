@@ -1,116 +1,94 @@
 import confit
+import ntpath
 import os
 import platform
-import tempfile
+import posixpath
 import shutil
+import tempfile
+
 from . import unittest
 
-def _mock_system(plat):
-    def system():
-        return plat
-    old = platform.system
-    platform.system = system
-    return old
+DEFAULT = [platform.system, os.environ, os.path]
+SYSTEMS = {
+    'Linux': [{'HOME': '/home/test', 'XDG_CONFIG_HOME': '~/xdgconfig'},
+        posixpath],
+    'Darwin': [{'HOME': '/Users/test'}, posixpath],
+    'Windows': [{'APPDATA': '~\\winconfig', 'HOME': 'C:\\Users\\test'}, ntpath]
+}
 
-def _mock_environ(home='/home'):
-    old = os.environ
-    os.environ = {
-        'XDG_CONFIG_HOME': '~/xdgconfig',
-        'APPDATA': '~\\winconfig',
-        'HOME': home,
-    }
-    return old
-
-def _mock_path(modname):
-    old = os.path
-    os.path = __import__(modname)
-    return old
 
 def _touch(path):
     open(path, 'a').close()
 
-class ConfigDirsUnixTest(unittest.TestCase):
+
+class FakeSystem(unittest.TestCase):
+    SYS_NAME = None
+    TMP_HOME = False
+
     def setUp(self):
-        self.old_system = _mock_system('Linux')
-        self.old_environ = _mock_environ()
-        self.old_path = _mock_path('posixpath')
+        if self.SYS_NAME in SYSTEMS:
+            self.os_path = os.path
+            os.environ = {}
+
+            environ, os.path = SYSTEMS[self.SYS_NAME]
+            os.environ.update(environ)  # copy
+            platform.system = lambda: self.SYS_NAME
+
+        if self.TMP_HOME:
+            self.home = tempfile.mkdtemp()
+            os.environ['HOME'] = self.home
+
     def tearDown(self):
-        platform.system = self.old_system
-        os.envrion = self.old_environ
-        os.path = self.old_path
+        platform.system, os.environ, os.path = DEFAULT
+        if hasattr(self, 'home'):
+            shutil.rmtree(self.home)
+
+
+class LinuxTestCases(FakeSystem):
+    SYS_NAME = 'Linux'
 
     def test_both_xdg_and_fallback_dirs(self):
-        dirs = confit.config_dirs()
-        self.assertEqual(dirs, [
-            '/home/.config',
-            '/home/xdgconfig',
-        ])
+        self.assertEqual(confit.config_dirs(),
+            ['/home/test/.config', '/home/test/xdgconfig'])
 
     def test_fallback_only(self):
         del os.environ['XDG_CONFIG_HOME']
-        dirs = confit.config_dirs()
-        self.assertEqual(dirs, ['/home/.config'])
+        self.assertEqual(confit.config_dirs(), ['/home/test/.config'])
 
     def test_xdg_matching_fallback_not_duplicated(self):
         os.environ['XDG_CONFIG_HOME'] = '~/.config'
-        dirs = confit.config_dirs()
-        self.assertEqual(dirs, ['/home/.config'])
+        self.assertEqual(confit.config_dirs(), ['/home/test/.config'])
 
-class ConfigDirsMacTest(unittest.TestCase):
-    def setUp(self):
-        self.old_system = _mock_system('Darwin')
-        self.old_environ = _mock_environ()
-        self.old_path = _mock_path('posixpath')
-    def tearDown(self):
-        platform.system = self.old_system
-        os.envrion = self.old_environ
-        os.path = self.old_path
 
-    def test_mac_and_unixy_dirs(self):
-        dirs = confit.config_dirs()
-        self.assertEqual(dirs, [
-            '/home/Library/Application Support',
-            '/home/.config',
-            '/home/xdgconfig',
-        ])
+class OSXTestCases(FakeSystem):
+    SYS_NAME = 'Darwin'
 
-class ConfigDirsWindowsTest(unittest.TestCase):
-    def setUp(self):
-        self.old_system = _mock_system('Windows')
-        self.old_environ = _mock_environ('c:\\home')
-        self.old_path = _mock_path('ntpath')
-    def tearDown(self):
-        platform.system = self.old_system
-        os.envrion = self.old_environ
-        os.path = self.old_path
+    def test_mac_dirs(self):
+        self.assertEqual(confit.config_dirs(),
+            ['/Users/test/Library/Application Support', '/Users/test/.config'])
+
+
+class WindowsTestCases(FakeSystem):
+    SYS_NAME = 'Windows'
 
     def test_dir_from_environ(self):
-        dirs = confit.config_dirs()
-        self.assertEqual(dirs, [
-            'c:\\home\\AppData\\Roaming',
-            'c:\\home\\winconfig',
-        ])
+        self.assertEqual(confit.config_dirs(),
+            ['C:\\Users\\test\\AppData\\Roaming',
+            'C:\\Users\\test\\winconfig'])
 
     def test_fallback_dir(self):
         del os.environ['APPDATA']
-        dirs = confit.config_dirs()
-        self.assertEqual(dirs, ['c:\\home\\AppData\\Roaming'])
+        self.assertEqual(confit.config_dirs(),
+            ['C:\\Users\\test\\AppData\\Roaming'])
+
 
 class ConfigFilenamesTest(unittest.TestCase):
     def setUp(self):
-        self.old_system = _mock_system('Linux')
-        self.old_environ = _mock_environ()
-        self.old_path = _mock_path('posixpath')
-        self.old_isfile = os.path.isfile
-        os.path.isfile = lambda x: True
-        self.old_load = confit.load_yaml
-        confit.load_yaml = lambda x: {}
+        self._old = os.path.isfile, confit.load_yaml
+        os.path.isfile, confit.load_yaml = lambda x: True, lambda x: {}
+
     def tearDown(self):
-        platform.system = self.old_system
-        os.envrion = self.old_environ
-        os.path = self.old_path
-        os.path.isfile = self.old_isfile
-        confit.load_yaml = self.old_load
+        confit.load_yaml, os.path.isfile = self._old
 
     def test_no_sources_when_files_missing(self):
         config = confit.Configuration('myapp', read=False)
@@ -120,6 +98,7 @@ class ConfigFilenamesTest(unittest.TestCase):
     def test_search_package(self):
         config = confit.Configuration('myapp', __name__, read=False)
         config._add_default_source()
+
         for source in config.sources:
             if source.default:
                 default_source = source
@@ -133,57 +112,53 @@ class ConfigFilenamesTest(unittest.TestCase):
         )
         self.assertTrue(source.default)
 
-class TempHomeMixin(object):
-    """Test fixture that locates the home directory in a temporary
-    directory.
-    """
+
+class EnvVarTest(FakeSystem):
+    TMP_HOME = True
+
     def setUp(self):
-        self.home = tempfile.mkdtemp()
-        self.old_environ = _mock_environ(home=self.home)
-
-    def tearDown(self):
-        os.envrion = self.old_environ
-        if os.path.exists(self.home):
-            shutil.rmtree(self.home)
-
-class EnvVarTest(unittest.TestCase, TempHomeMixin):
-    def setUp(self):
-        TempHomeMixin.setUp(self)
-        self.old_system = _mock_system('Linux')
-        self.old_path = _mock_path('posixpath')
-
+        super(EnvVarTest, self).setUp()
         self.config = confit.Configuration('myapp', read=False)
-        os.environ['MYAPPDIR'] = os.path.join(self.home, 'test')
-
-    def tearDown(self):
-        TempHomeMixin.tearDown(self)
-        platform.system = self.old_system
-        os.path = self.old_path
+        os.environ['MYAPPDIR'] = self.home  # use the tmp home as a config dir
 
     def test_env_var_name(self):
         self.assertEqual(self.config._env_var, 'MYAPPDIR')
 
     def test_env_var_dir_has_first_priority(self):
-        config_dir = self.config.config_dir()
-        self.assertEqual(config_dir, os.path.join(self.home, 'test'))
+        self.assertEqual(self.config.config_dir(), self.home)
 
     def test_env_var_missing(self):
         del os.environ['MYAPPDIR']
-        config_dir = self.config.config_dir()
-        self.assertNotEqual(config_dir, os.path.join(self.home, 'test'))
+        self.assertNotEqual(self.config.config_dir(), self.home)
 
-class PrimaryConfigDirTest(unittest.TestCase, TempHomeMixin):
+
+class PrimaryConfigDirTest(FakeSystem):
+    SYS_NAME = 'Linux'  # conversion from posix to nt is easy
+    TMP_HOME = True
+
+    if platform.system() == 'Windows':
+        # wrap these functions as they need to work on the host system which is
+        # only needed on Windows as we are using `posixpath`
+        def join(self, *args):
+            return self.os_path.normpath(self.os_path.join(*args))
+
+        def makedirs(self, path, *args):
+            os.path, os_path = self.os_path, os.path
+            self._makedirs(path, *args)
+            os.path = os_path
+
     def setUp(self):
-        TempHomeMixin.setUp(self)
-        self.old_system = _mock_system('Linux')
-        self.old_path = _mock_path('posixpath')
+        super(PrimaryConfigDirTest, self).setUp()
+        if hasattr(self, 'join'):
+            os.path.join = self.join
+            os.makedirs, self._makedirs = self.makedirs, os.makedirs
 
         self.config = confit.Configuration('test', read=False)
 
     def tearDown(self):
-        TempHomeMixin.tearDown(self)
-        platform.system = self.old_system
-        os.path = self.old_path
+        super(PrimaryConfigDirTest, self).tearDown()
+        if hasattr(self, '_makedirs'):
+            os.makedirs = self._makedirs
 
     def test_create_dir_if_none_exists(self):
         path = os.path.join(self.home, 'xdgconfig', 'test')

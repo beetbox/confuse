@@ -262,7 +262,7 @@ class FilenameTest(unittest.TestCase):
     def test_filename_with_non_file_source(self):
         config = _root({'foo': 'foo/bar'})
         valid = config['foo'].get(confit.Filename())
-        self.assertEqual(valid, os.path.join(os.getcwd(), 'foo/bar'))
+        self.assertEqual(valid, os.path.join(os.getcwd(), 'foo', 'bar'))
 
     def test_filename_with_file_source(self):
         source = confit.ConfigSource({'foo': 'foo/bar'},
@@ -270,7 +270,7 @@ class FilenameTest(unittest.TestCase):
         config = _root(source)
         config.config_dir = lambda: '/config/path'
         valid = config['foo'].get(confit.Filename())
-        self.assertEqual(valid, '/config/path/foo/bar')
+        self.assertEqual(valid, os.path.realpath('/config/path/foo/bar'))
 
     def test_filename_with_default_source(self):
         source = confit.ConfigSource({'foo': 'foo/bar'},
@@ -279,7 +279,7 @@ class FilenameTest(unittest.TestCase):
         config = _root(source)
         config.config_dir = lambda: '/config/path'
         valid = config['foo'].get(confit.Filename())
-        self.assertEqual(valid, '/config/path/foo/bar')
+        self.assertEqual(valid, os.path.realpath('/config/path/foo/bar'))
 
     def test_filename_wrong_type(self):
         config = _root({'foo': 8})
