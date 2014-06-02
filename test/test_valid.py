@@ -130,7 +130,7 @@ class AsTemplateTest(unittest.TestCase):
         self.assertEqual(typ.subtemplates['outer'].subtemplates['inner']
                          .default, 2)
 
-    def test_float_as_tempalte(self):
+    def test_float_type_as_tempalte(self):
         typ = confit.as_template(float)
         self.assertIsInstance(typ, confit.Number)
         self.assertEqual(typ.default, confit.REQUIRED)

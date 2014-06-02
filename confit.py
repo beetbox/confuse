@@ -1103,10 +1103,7 @@ class Filename(Template):
         if self.relative_to is not None:
             args.append('relative_to=' + repr(self.relative_to))
 
-        return '{}({})'.format(
-            type(self).__name__,
-            ', '.join(args)
-        )
+        return 'Filename({})'.format(', '.join(args))
 
     def resolve_relative_to(self, view, template):
         if not isinstance(template,
@@ -1155,9 +1152,7 @@ class Filename(Template):
                         'relative path'
                     ).format(self.relative_to, view.name))
 
-            next_template.subtemplates.update({
-                next_relative: rel_to_template
-            })
+            next_template.subtemplates[next_relative] = rel_to_template
             next_relative = rel_to_template.relative_to
 
         return view.parent.get(next_template)[self.relative_to]
