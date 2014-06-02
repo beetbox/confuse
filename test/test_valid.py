@@ -264,6 +264,11 @@ class StrSeqTest(unittest.TestCase):
 
 
 class FilenameTest(unittest.TestCase):
+    def test_filename_relative_to_working_dir(self):
+        config = _root({'foo': 'foo/bar'})
+        valid = config['foo'].get(confit.Filename(cwd='/dev/null'))
+        self.assertEqual(valid, os.path.realpath('/dev/null/foo/bar'))
+
     def test_filename_with_non_file_source(self):
         config = _root({'foo': 'foo/bar'})
         valid = config['foo'].get(confit.Filename())
