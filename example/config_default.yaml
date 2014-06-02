@@ -1,5 +1,4 @@
 library: library.db
-directory: ~/Music
 
 import_write: yes
 import_copy: yes
@@ -32,6 +31,7 @@ list_format_item: $artist - $album - $title
 list_format_album: $albumartist - $album
 
 paths:
+    directory: ~/Music
     default: $albumartist/$album%aunique{}/$track $title
     singleton: Non-Album/$artist/$title
     comp: Compilations/$album%aunique{}/$track $title

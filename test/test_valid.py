@@ -265,9 +265,53 @@ class StrSeqTest(unittest.TestCase):
 
 class FilenameTest(unittest.TestCase):
     def test_filename_relative_to_working_dir(self):
-        config = _root({'foo': 'foo/bar'})
+        config = _root({'foo': 'bar'})
         valid = config['foo'].get(confit.Filename(cwd='/dev/null'))
-        self.assertEqual(valid, os.path.realpath('/dev/null/foo/bar'))
+        self.assertEqual(valid, os.path.realpath('/dev/null/bar'))
+
+    def test_filename_relative_to_sibling(self):
+        config = _root({'foo': '/', 'bar': 'baz'})
+        valid = config.get({
+            'foo': confit.Filename(),
+            'bar': confit.Filename(relative_to='foo')
+        })
+        self.assertEqual(valid.foo, os.path.realpath('/'))
+        self.assertEqual(valid.bar, os.path.realpath('/baz'))
+
+    def test_filename_working_dir_overrides_sibling(self):
+        config = _root({'foo': 'bar'})
+        valid = config.get({
+            'foo': confit.Filename(cwd='/dev/null', relative_to='baz')
+        })
+        self.assertEqual(valid.foo, os.path.realpath('/dev/null/bar'))
+
+    def test_filename_relative_to_sibling_with_recursion(self):
+        config = _root({'foo': '/', 'bar': 'r', 'baz': 'z'})
+        with self.assertRaises(confit.ConfigTemplateError):
+            config.get({
+                'foo': confit.Filename(relative_to='bar'),
+                'bar': confit.Filename(relative_to='baz'),
+                'baz': confit.Filename(relative_to='foo')
+            })
+
+    def test_filename_relative_to_self(self):
+        config = _root({'foo': 'bar'})
+        with self.assertRaises(confit.ConfigTemplateError):
+            config.get({
+                'foo': confit.Filename(relative_to='foo')
+            })
+
+    def test_filename_relative_to_sibling_needs_siblings(self):
+        config = _root({'foo': 'bar'})
+        with self.assertRaises(confit.ConfigTemplateError):
+            config['foo'].get(confit.Filename(relative_to='bar'))
+
+    def test_filename_relative_to_sibling_needs_template(self):
+        config = _root({'foo': '/', 'bar': 'baz'})
+        with self.assertRaises(confit.ConfigTemplateError):
+            config.get({
+                'bar': confit.Filename(relative_to='foo')
+            })
 
     def test_filename_with_non_file_source(self):
         config = _root({'foo': 'foo/bar'})

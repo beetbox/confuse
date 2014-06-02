@@ -85,6 +85,11 @@ class ConfigTypeError(ConfigValueError):
     """
 
 
+class ConfigTemplateError(ConfigError):
+    """Base class for exceptions raised because of an invalid template.
+    """
+
+
 class ConfigReadError(ConfigError):
     """A configuration file could not be read."""
     def __init__(self, filename, reason=None):
@@ -344,7 +349,7 @@ class ConfigView(object):
         `ConfigTypeError`) or a `NotFoundError` when the configuration
         doesn't satisfy the template.
         """
-        return as_template(template).value(self)
+        return as_template(template).value(self, template)
 
     # Old validation methods (deprecated).
 
@@ -880,9 +885,9 @@ class Template(object):
         """Invoking a template on a view gets the view's value according
         to the template.
         """
-        return self.value(view)
+        return self.value(view, self)
 
-    def value(self, view):
+    def value(self, view, template=None):
         """Get the value for a `ConfigView`.
 
         May raise a `NotFoundError` if the value is missing (and the
@@ -972,13 +977,13 @@ class MappingTemplate(Template):
             subtemplates[key] = as_template(typ)
         self.subtemplates = subtemplates
 
-    def value(self, view):
+    def value(self, view, template=None):
         """Get a dict with the same keys as the template and values
         validated according to the value types.
         """
         out = AttrDict()
         for key, typ in self.subtemplates.items():
-            out[key] = typ.value(view[key])
+            out[key] = typ.value(view[key], self)
         return out
 
     def __repr__(self):
@@ -1079,11 +1084,85 @@ class Filename(Template):
     they are relative to the current working directory. This helps
     attain the expected behavior when using command-line options.
     """
-    def __init__(self, default=REQUIRED, cwd=None):
+    def __init__(self, default=REQUIRED, cwd=None, relative_to=None):
+        """ `relative_to` is the name of a sibling value that is
+        being validated at the same time.
+        """
         super(Filename, self).__init__(default)
-        self.cwd = cwd
+        self.cwd, self.relative_to = cwd, relative_to
 
-    def value(self, view):
+    def __repr__(self):
+        args = []
+
+        if self.default is not REQUIRED:
+            args.append(repr(self.default))
+
+        if self.cwd is not None:
+            args.append('cwd=' + repr(self.cwd))
+
+        if self.relative_to is not None:
+            args.append('relative_to=' + repr(self.relative_to))
+
+        return '{}({})'.format(
+            type(self).__name__,
+            ', '.join(args)
+        )
+
+    def resolve_relative_to(self, view, template):
+        if not isinstance(template,
+                (collections.Mapping, MappingTemplate)):
+            # disallow config.get(Filename(relative_to='foo'))
+            raise ConfigTemplateError(
+                'relative_to may only be used when getting multiple values.'
+            )
+
+        elif self.relative_to == view.key:
+            raise ConfigTemplateError(
+                '{} is relative to itself'.format(view.name)
+            )
+
+        elif self.relative_to not in view.parent.keys():
+            # self.relative_to is not in the config
+            self.fail(
+                (
+                    'needs sibling value "{}" to expand relative path'
+                ).format(self.relative_to),
+                view
+            )
+
+        old_template = {}
+        old_template.update(template.subtemplates)
+
+        # save time by skipping MappingTemplate's init loop
+        next_template = MappingTemplate({})
+        next_relative = self.relative_to
+
+        # gather all the needed templates and nothing else
+        while next_relative is not None:
+            try:
+                # pop to avoid infinite loop because of recursive
+                # relative paths
+                rel_to_template = old_template.pop(next_relative)
+            except KeyError:
+                if next_relative in template.subtemplates:
+                    # we encountered this config key previously
+                    raise ConfigTemplateError((
+                        '{} and {} are recursively relative'
+                    ).format(view.name, self.relative_to))
+                else:
+                    raise ConfigTemplateError((
+                        'missing template for {}, needed to expand {}\'s' +
+                        'relative path'
+                    ).format(self.relative_to, view.name))
+
+            next_template.subtemplates.update({
+                next_relative: rel_to_template
+            })
+            next_relative = rel_to_template.relative_to
+
+        return view.parent.get(next_template)[self.relative_to]
+
+    def value(self, view, template=None):
         path, source = view.first()
         if not isinstance(path, BASESTRING):
             self.fail(
@@ -1097,6 +1176,13 @@ class Filename(Template):
             if self.cwd is not None:
                 # relative to the template's argument
                 path = os.path.join(self.cwd, path)
+
+            elif self.relative_to is not None:
+                path = os.path.join(
+                    self.resolve_relative_to(view, template),
+                    path,
+                )
+
             elif source.filename:
                 # From defaults: relative to the app's directory.
                 path = os.path.join(view.root().config_dir(), path)

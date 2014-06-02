@@ -4,6 +4,17 @@ from __future__ import unicode_literals
 import confit
 import argparse
 
+template = {
+    'library': confit.Filename(),
+    'import_write': confit.Choice([True, False, 'ask', 'skip']),
+    'ignore': confit.StrSeq(),
+    'plugins': list,
+
+    'paths': {
+        'directory': confit.Filename(),
+        'default': confit.Filename(relative_to='directory'),
+    }
+}
 
 config = confit.LazyConfig('ConfitExample', __name__)
 
@@ -31,6 +42,9 @@ def main():
         config['log']['level'] = 0
     print('logging level is', config['log']['level'].get(int))
 
+    valid = config.get(template)
+
     # Some validated/converted values.
-    print('directory is', config['directory'].as_filename())
-    print('library is', config['library'].as_filename())
+    print('library is', valid.library)
+    print('directory is', valid.paths.directory)
+    print('paths.default is', valid.paths.default)
