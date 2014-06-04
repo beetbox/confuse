@@ -1105,6 +1105,48 @@ class Filename(Template):
 
         return 'Filename({0})'.format(', '.join(args))
 
+    def template_with_relatives(self, view, template):
+        """ Make a template containing only the Filenames needed to resolve
+        relative paths.
+        """
+        # make shallow copy (we only modify the dict with pop)
+        template = dict(template.subtemplates)
+
+        # save time by skipping MappingTemplate's init loop
+        new_template = MappingTemplate({})
+        new_subtemplates = new_template.subtemplates
+
+        next_relative = self.relative_to
+
+        # gather all the needed templates and nothing else
+        while next_relative is not None:
+            try:
+                # pop to avoid infinite loop because of recursive
+                # relative paths
+                next_template = template.pop(next_relative)
+            except KeyError:
+                if next_relative in new_subtemplates:
+                    # we encountered this config key previously
+                    raise ConfigTemplateError((
+                        '{0} and {1} are recursively relative'
+                    ).format(view.name, self.relative_to))
+                else:
+                    raise ConfigTemplateError((
+                        'missing template for {0}, needed to expand {1}\'s' +
+                        'relative path'
+                    ).format(self.relative_to, view.name))
+
+            if isinstance(next_template, Filename):
+                new_subtemplates[next_relative] = next_template
+                next_relative = next_template.relative_to
+            else:
+                raise ConfigTemplateError((
+                    '{0} can not be relative to non Filename key {1}')
+                    .format(view.name, next_relative)
+                )
+
+        return new_template
+
     def resolve_relative_to(self, view, template):
         if not isinstance(template,
                 (collections.Mapping, MappingTemplate)):
@@ -1118,8 +1160,11 @@ class Filename(Template):
                 '{0} is relative to itself'.format(view.name)
             )
 
-        elif self.relative_to not in view.parent.keys():
-            # self.relative_to is not in the config
+        elif self.relative_to not in view.parent.keys() and (
+            self.relative_to not in template.subtemplates or
+            template.subtemplates[self.relative_to].default == REQUIRED
+        ):
+            # self.relative_to is not in the config and has no default
             self.fail(
                 (
                     'needs sibling value "{0}" to expand relative path'
@@ -1127,39 +1172,26 @@ class Filename(Template):
                 view
             )
 
-        old_template = {}
-        old_template.update(template.subtemplates)
-
-        # save time by skipping MappingTemplate's init loop
-        next_template = MappingTemplate({})
-        next_relative = self.relative_to
-
-        # gather all the needed templates and nothing else
-        while next_relative is not None:
-            try:
-                # pop to avoid infinite loop because of recursive
-                # relative paths
-                rel_to_template = old_template.pop(next_relative)
-            except KeyError:
-                if next_relative in template.subtemplates:
-                    # we encountered this config key previously
-                    raise ConfigTemplateError((
-                        '{0} and {1} are recursively relative'
-                    ).format(view.name, self.relative_to))
-                else:
-                    raise ConfigTemplateError((
-                        'missing template for {0}, needed to expand {1}\'s' +
-                        'relative path'
-                    ).format(self.relative_to, view.name))
-
-            next_template.subtemplates[next_relative] = rel_to_template
-            next_relative = rel_to_template.relative_to
-
-        return view.parent.get(next_template)[self.relative_to]
+        return view.parent.get(
+            self.template_with_relatives(view, template)
+        )[self.relative_to]
 
     def value(self, view, template=None):
-        path, source = view.first()
+        try:
+            path, source = view.first()
+            used_default = False
+        except NotFoundError:
+            if self.default is REQUIRED:
+                raise NotFoundError("{0} not found".format(view.name))
+            else:
+                used_default = True
+                path = self.default
+
         if not isinstance(path, BASESTRING):
+            # return non path default as is
+            if used_default:
+                return path
+
             self.fail(
                 'must be a filename, not {0}'.format(type(path).__name__),
                 view,
@@ -1178,7 +1210,7 @@ class Filename(Template):
                     path,
                 )
 
-            elif source.filename:
+            elif not used_default and source.filename:
                 # From defaults: relative to the app's directory.
                 path = os.path.join(view.root().config_dir(), path)
 

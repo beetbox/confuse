@@ -306,10 +306,35 @@ class FilenameTest(unittest.TestCase):
         with self.assertRaises(confit.ConfigTemplateError):
             config['foo'].get(confit.Filename(relative_to='bar'))
 
+    def test_filename_relative_to_sibling_can_use_default(self):
+        config = _root({'bar': 'baz'})
+        valid = config.get({
+            'foo': confit.Filename(default='/dev/null'),
+            'bar': confit.Filename(relative_to='foo')
+        })
+        self.assertEqual(valid.foo, os.path.realpath('/dev/null'))
+        self.assertEqual(valid.bar, os.path.realpath('/dev/null/baz'))
+
     def test_filename_relative_to_sibling_needs_template(self):
         config = _root({'foo': '/', 'bar': 'baz'})
         with self.assertRaises(confit.ConfigTemplateError):
             config.get({
+                'bar': confit.Filename(relative_to='foo')
+            })
+
+    def test_filename_relative_to_non_filename(self):
+        config = _root({'foo': 0, 'bar': 'baz'})
+        with self.assertRaises(confit.ConfigTemplateError):
+            config.get({
+                'foo': confit.Integer(),
+                'bar': confit.Filename(relative_to='foo')
+            })
+
+    def test_filename_relative_to_non_filename_using_default(self):
+        config = _root({'bar': 'baz'})
+        with self.assertRaises(confit.ConfigTemplateError):
+            config.get({
+                'foo': confit.Integer(0),
                 'bar': confit.Filename(relative_to='foo')
             })
 
@@ -339,6 +364,16 @@ class FilenameTest(unittest.TestCase):
         config = _root({'foo': 8})
         with self.assertRaises(confit.ConfigTypeError):
             config['foo'].get(confit.Filename())
+
+    def test_filename_required(self):
+        config = _root({})
+        with self.assertRaises(confit.NotFoundError):
+            config['foo'].get(confit.Filename())
+
+    def test_filename_default_is_never_wrong(self):
+        config = _root({})
+        valid = config['foo'].get(confit.Filename(default=None))
+        self.assertEqual(valid, None)
 
 
 class BaseTemplateTest(unittest.TestCase):
