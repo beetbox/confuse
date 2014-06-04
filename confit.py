@@ -1103,7 +1103,7 @@ class Filename(Template):
         if self.relative_to is not None:
             args.append('relative_to=' + repr(self.relative_to))
 
-        return 'Filename({})'.format(', '.join(args))
+        return 'Filename({0})'.format(', '.join(args))
 
     def resolve_relative_to(self, view, template):
         if not isinstance(template,
@@ -1115,14 +1115,14 @@ class Filename(Template):
 
         elif self.relative_to == view.key:
             raise ConfigTemplateError(
-                '{} is relative to itself'.format(view.name)
+                '{0} is relative to itself'.format(view.name)
             )
 
         elif self.relative_to not in view.parent.keys():
             # self.relative_to is not in the config
             self.fail(
                 (
-                    'needs sibling value "{}" to expand relative path'
+                    'needs sibling value "{0}" to expand relative path'
                 ).format(self.relative_to),
                 view
             )
@@ -1144,11 +1144,11 @@ class Filename(Template):
                 if next_relative in template.subtemplates:
                     # we encountered this config key previously
                     raise ConfigTemplateError((
-                        '{} and {} are recursively relative'
+                        '{0} and {1} are recursively relative'
                     ).format(view.name, self.relative_to))
                 else:
                     raise ConfigTemplateError((
-                        'missing template for {}, needed to expand {}\'s' +
+                        'missing template for {0}, needed to expand {1}\'s' +
                         'relative path'
                     ).format(self.relative_to, view.name))
 
