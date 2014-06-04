@@ -6,7 +6,7 @@ import argparse
 
 template = {
     'library': confit.Filename(),
-    'import_write': confit.Choice([True, False, 'ask', 'skip']),
+    'import_write': confit.OneOf([bool, 'ask', 'skip']),
     'ignore': confit.StrSeq(),
     'plugins': list,
 

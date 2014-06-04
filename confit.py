@@ -1049,6 +1049,67 @@ class Choice(Template):
         return 'Choice({0!r})'.format(self.choices)
 
 
+class OneOf(Template):
+    """A template that permits values complying to one of the given templates.
+    """
+    def __init__(self, allowed, default=REQUIRED):
+        super(OneOf, self).__init__(default)
+        self.allowed = list(allowed)
+
+    def __repr__(self):
+        args = []
+
+        if self.allowed is not None:
+            args.append('allowed=' + repr(self.allowed))
+
+        if self.default is not REQUIRED:
+            args.append(repr(self.default))
+
+        return 'OneOf({0})'.format(', '.join(args))
+
+    def value(self, view, template):
+        self.template = template
+        return super(OneOf, self).value(view, template)
+
+    def convert(self, value, view):
+        """Ensure that the value follows at least one template.
+        """
+        is_mapping = isinstance(self.template, MappingTemplate)
+
+        for candidate in self.allowed:
+            try:
+                if is_mapping:
+                    if isinstance(candidate, Filename) and \
+                            candidate.relative_to:
+                        next_template = candidate.template_with_relatives(
+                            view,
+                            self.template
+                        )
+
+                        next_template.subtemplates[view.key] = as_template(
+                            candidate
+                        )
+                    else:
+                        next_template = MappingTemplate({view.key: candidate})
+
+                    return view.parent.get(next_template)[view.key]
+                else:
+                    return view.get(candidate)
+            except ConfigTemplateError:
+                raise
+            except ConfigError:
+                pass
+            except ValueError as exc:
+                raise ConfigTemplateError(exc)
+
+        self.fail(
+            'must be one of {0}, not {1}'.format(
+                repr(self.allowed), repr(value)
+            ),
+            view
+        )
+
+
 class StrSeq(Template):
     """A template for values that are lists of strings.
 
@@ -1085,7 +1146,7 @@ class Filename(Template):
     attain the expected behavior when using command-line options.
     """
     def __init__(self, default=REQUIRED, cwd=None, relative_to=None):
-        """ `relative_to` is the name of a sibling value that is
+        """`relative_to` is the name of a sibling value that is
         being validated at the same time.
         """
         super(Filename, self).__init__(default)
@@ -1106,7 +1167,7 @@ class Filename(Template):
         return 'Filename({0})'.format(', '.join(args))
 
     def template_with_relatives(self, view, template):
-        """ Make a template containing only the Filenames needed to resolve
+        """Make a template containing only the Filenames needed to resolve
         relative paths.
         """
         # make shallow copy (we only modify the dict with pop)
@@ -1269,6 +1330,11 @@ def as_template(value):
         return String()
     elif isinstance(value, BASESTRING):
         return String(value)
+    elif isinstance(value, set):
+        # convert to list to avoid hash related problems
+        return Choice(list(value))
+    elif isinstance(value, list):
+        return OneOf(value)
     elif value is float:
         return Number()
     elif value is None:
