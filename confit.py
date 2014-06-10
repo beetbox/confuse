@@ -1002,6 +1002,17 @@ class String(Template):
         if pattern:
             self.regex = re.compile(pattern)
 
+    def __repr__(self):
+        args = []
+
+        if self.default is not REQUIRED:
+            args.append(repr(self.default))
+
+        if self.pattern is not None:
+            args.append('pattern=' + repr(self.pattern))
+
+        return 'String({0})'.format(', '.join(args))
+
     def convert(self, value, view):
         """Check that the value is a string and matches the pattern.
         """
