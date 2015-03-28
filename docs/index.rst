@@ -324,3 +324,18 @@ runs.
 
 .. _unittest: http://docs.python.org/2/library/unittest.html
 .. _setUp: http://docs.python.org/2/library/unittest.html#unittest.TestCase.setUp
+
+
+Redaction
+---------
+
+You can also mark certain configuration values as "sensitive" and avoid
+including them in output. Just set the `redact` flag::
+
+    config['key'].redact = True
+
+Then flatten or dump the configuration like so::
+
+    config.dump(redact=True)
+
+The resulting YAML will contain "key: REDACTED" instead of the original data.
