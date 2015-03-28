@@ -249,14 +249,17 @@ class ConfigView(object):
     # just say ``bool(view)`` or use ``view`` in a conditional.
 
     def __str__(self):
-        """Gets the value for this view as a byte string."""
-        return bytes(self.get())
+        """Get the value for this view as a bytestring.
+        """
+        if PY3:
+            return self.__unicode__()
+        else:
+            return bytes(self.get())
 
     def __unicode__(self):
-        """Gets the value for this view as a unicode string. (Python 2
-        only.)
+        """Get the value for this view as a Unicode string.
         """
-        return unicode(self.get())
+        return STRING(self.get())
 
     def __nonzero__(self):
         """Gets the value for this view as a boolean. (Python 2 only.)
@@ -466,9 +469,12 @@ class Subview(ConfigView):
         if isinstance(self.key, int):
             self.name += '#{0}'.format(self.key)
         elif isinstance(self.key, BASESTRING):
-            self.name += '{0}'.format(self.key.decode('utf8'))
+            if isinstance(self.key, bytes):
+                self.name += self.key.decode('utf8')
+            else:
+                self.name += self.key
         else:
-            self.name += '{0}'.format(repr(self.key))
+            self.name += repr(self.key)
 
     def resolve(self):
         for collection, source in self.parent.resolve():
@@ -519,7 +525,7 @@ def _package_path(name):
     if loader is None or name == b'__main__':
         return None
 
-    if hasattr(loader, b'get_filename'):
+    if hasattr(loader, 'get_filename'):
         filepath = loader.get_filename(name)
     else:
         # Fall back to importing the specified module.
@@ -539,13 +545,13 @@ def config_dirs():
     """
     paths = []
 
-    if platform.system() == b'Darwin':
+    if platform.system() == 'Darwin':
         paths.append(MAC_DIR)
         paths.append(UNIX_DIR_FALLBACK)
         if UNIX_DIR_VAR in os.environ:
             paths.append(os.environ[UNIX_DIR_VAR])
 
-    elif platform.system() == b'Windows':
+    elif platform.system() == 'Windows':
         paths.append(WINDOWS_DIR_FALLBACK)
         if WINDOWS_DIR_VAR in os.environ:
             paths.append(os.environ[WINDOWS_DIR_VAR])
@@ -628,7 +634,7 @@ def load_yaml(filename):
     parsed, a ConfigReadError is raised.
     """
     try:
-        with open(filename, b'r') as f:
+        with open(filename, 'r') as f:
             return yaml.load(f, Loader=Loader)
     except (IOError, yaml.error.YAMLError) as exc:
         raise ConfigReadError(filename, exc)
@@ -1216,13 +1222,13 @@ class StrSeq(Template):
                       view, True)
 
         def convert(x):
-            if isinstance(x, unicode):
+            if isinstance(x, STRING):
                 return x
-            elif isinstance(x, BASESTRING):
+            elif isinstance(x, bytes):
                 return x.decode('utf8', 'ignore')
             else:
                 self.fail('must be a list of strings', view, True)
-        return map(convert, value)
+        return list(map(convert, value))
 
 
 class Filename(Template):
