@@ -42,6 +42,8 @@ ROOT_NAME = 'root'
 
 YAML_TAB_PROBLEM = "found character '\\t' that cannot start any token"
 
+REDACTED_TOMBSTONE = 'REDACTED'
+
 
 # Utilities.
 
@@ -334,17 +336,23 @@ class ConfigView(object):
 
     # Validation and conversion.
 
-    def flatten(self):
+    def flatten(self, redact=False):
         """Create a hierarchy of OrderedDicts containing the data from
         this view, recursively reifying all views to get their
         represented values.
+
+        If `redact` is set, then sensitive values are replaced with
+        the string "REDACTED".
         """
         od = OrderedDict()
         for key, view in self.items():
-            try:
-                od[key] = view.flatten()
-            except ConfigTypeError:
-                od[key] = view.get()
+            if redact and view.redact:
+                od[key] = REDACTED_TOMBSTONE
+            else:
+                try:
+                    od[key] = view.flatten(redact=True)
+                except ConfigTypeError:
+                    od[key] = view.get()
         return od
 
     def get(self, template=None):
@@ -376,6 +384,30 @@ class ConfigView(object):
     def as_str_seq(self):
         return self.get(StrSeq())
 
+    # Redaction.
+
+    @property
+    def redact(self):
+        """Whether the view contains sensitive information and should be
+        redacted from output.
+        """
+        return () in self.get_redactions()
+
+    @redact.setter
+    def redact(self, flag):
+        self.set_redaction((), flag)
+
+    def set_redaction(self, path, flag):
+        """Add or remove a redaction for a key path, which should be an
+        iterable of keys.
+        """
+        raise NotImplementedError()
+
+    def get_redactions(self):
+        """Get the set of currently-redacted sub-key-paths at this view.
+        """
+        raise NotImplementedError()
+
 
 class RootView(ConfigView):
     """The base of a view hierarchy. This view keeps track of the
@@ -388,6 +420,7 @@ class RootView(ConfigView):
         """
         self.sources = list(sources)
         self.name = ROOT_NAME
+        self.redactions = set()
 
     def add(self, obj):
         self.sources.append(ConfigSource.of(obj))
@@ -404,6 +437,15 @@ class RootView(ConfigView):
 
     def root(self):
         return self
+
+    def set_redaction(self, path, flag):
+        if flag:
+            self.redactions.add(path)
+        elif path in self.redactions:
+            self.redactions.remove(path)
+
+    def get_redactions(self):
+        return self.redactions
 
 
 class Subview(ConfigView):
@@ -455,6 +497,13 @@ class Subview(ConfigView):
 
     def root(self):
         return self.parent.root()
+
+    def set_redaction(self, path, flag):
+        self.parent.set_redaction((self.key,) + path, flag)
+
+    def get_redactions(self):
+        return (kp[1:] for kp in self.parent.get_redactions()
+                if kp and kp[0] == self.key)
 
 
 # Config file paths, including platform-specific paths and in-package

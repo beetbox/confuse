@@ -43,3 +43,23 @@ class PrettyDumpTest(unittest.TestCase):
                 bar: baz
                 baz: qux
         """).strip())
+
+
+class RedactTest(unittest.TestCase):
+    def test_no_redaction(self):
+        config = _root({'foo': 'bar'})
+        data = config.flatten(redact=True)
+        self.assertEqual(data, {'foo': 'bar'})
+
+    def test_redact_key(self):
+        config = _root({'foo': 'bar'})
+        config['foo'].redact = True
+        data = config.flatten(redact=True)
+        self.assertEqual(data, {'foo': 'REDACTED'})
+
+    def test_unredact(self):
+        config = _root({'foo': 'bar'})
+        config['foo'].redact = True
+        config['foo'].redact = False
+        data = config.flatten(redact=True)
+        self.assertEqual(data, {'foo': 'bar'})
