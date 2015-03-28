@@ -833,7 +833,7 @@ class Configuration(RootView):
         filename = os.path.abspath(filename)
         self.set(ConfigSource(load_yaml(filename), filename))
 
-    def dump(self, full=True):
+    def dump(self, full=True, redact=False):
         """Dump the Configuration object to a YAML file.
 
         The order of the keys is determined from the default
@@ -845,13 +845,15 @@ class Configuration(RootView):
         :type filename:   unicode
         :param full:      Dump settings that don't differ from the defaults
                           as well
+        :param redact:    Remove sensitive information (views with the `redact`
+                          flag set) from the output
         """
         if full:
-            out_dict = self.flatten()
+            out_dict = self.flatten(redact=redact)
         else:
             # Exclude defaults when flattening.
             sources = [s for s in self.sources if not s.default]
-            out_dict = RootView(sources).flatten()
+            out_dict = RootView(sources).flatten(redact=redact)
 
         yaml_out = yaml.dump(out_dict, Dumper=Dumper,
                              default_flow_style=None, indent=4,

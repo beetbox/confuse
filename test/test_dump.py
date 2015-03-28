@@ -63,3 +63,17 @@ class RedactTest(unittest.TestCase):
         config['foo'].redact = False
         data = config.flatten(redact=True)
         self.assertEqual(data, {'foo': 'bar'})
+
+    def test_dump_redacted(self):
+        config = confit.Configuration('myapp', read=False)
+        config.add({'foo': 'bar'})
+        config['foo'].redact = True
+        yaml = config.dump(redact=True).strip()
+        self.assertEqual(yaml, 'foo: REDACTED')
+
+    def test_dump_unredacted(self):
+        config = confit.Configuration('myapp', read=False)
+        config.add({'foo': 'bar'})
+        config['foo'].redact = True
+        yaml = config.dump(redact=False).strip()
+        self.assertEqual(yaml, 'foo: bar')
