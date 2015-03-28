@@ -213,7 +213,8 @@ class ConfigView(object):
         return '<{}: {}>'.format(self.__class__.__name__, self.name)
 
     def __iter__(self):
-        """Prevent list(config) from using __getitem__ and never halting"""
+        # Prevent list(config) from using __getitem__ and entering an
+        # infinite loop.
         raise TypeError(u"{!r} object is not "
                         u"iterable".format(self.__class__.__name__))
 
