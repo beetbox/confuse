@@ -130,6 +130,15 @@ class AsTemplateTest(unittest.TestCase):
         self.assertEqual(typ.subtemplates['outer'].subtemplates['inner']
                          .default, 2)
 
+    def test_list_as_template(self):
+        typ = confit.as_template(list())
+        self.assertIsInstance(typ, confit.OneOf)
+        self.assertEqual(typ.default, confit.REQUIRED)
+
+    def test_set_as_template(self):
+        typ = confit.as_template(set())
+        self.assertIsInstance(typ, confit.Choice)
+
     def test_float_type_as_tempalte(self):
         typ = confit.as_template(float)
         self.assertIsInstance(typ, confit.Number)
@@ -150,6 +159,12 @@ class AsTemplateTest(unittest.TestCase):
         typ = confit.as_template(list)
         self.assertIsInstance(typ, confit.TypeTemplate)
         self.assertEqual(typ.typ, collections.Sequence)
+        self.assertEqual(typ.default, confit.REQUIRED)
+
+    def test_set_type_as_template(self):
+        typ = confit.as_template(set)
+        self.assertIsInstance(typ, confit.TypeTemplate)
+        self.assertEqual(typ.typ, set)
         self.assertEqual(typ.default, confit.REQUIRED)
 
     def test_other_type_as_template(self):
@@ -234,6 +249,45 @@ class ChoiceTest(unittest.TestCase):
         config = _root({'foo': 3})
         with self.assertRaises(confit.ConfigValueError):
             config['foo'].get(confit.Choice({2: 'two', 4: 'four'}))
+
+
+class OneOfTest(unittest.TestCase):
+    def test_default_value(self):
+        config = _root({})
+        valid = config['foo'].get(confit.OneOf([], default='bar'))
+        self.assertEqual(valid, 'bar')
+
+    def test_validate_good_choice_in_list(self):
+        config = _root({'foo': 2})
+        valid = config['foo'].get(confit.OneOf([
+            confit.String(),
+            confit.Integer(),
+        ]))
+        self.assertEqual(valid, 2)
+
+    def test_validate_first_good_choice_in_list(self):
+        config = _root({'foo': 3.14})
+        valid = config['foo'].get(confit.OneOf([
+            confit.Integer(),
+            confit.Number(),
+        ]))
+        self.assertEqual(valid, 3)
+
+    def test_validate_no_choice_in_list(self):
+        config = _root({'foo': None})
+        with self.assertRaises(confit.ConfigValueError):
+            config['foo'].get(confit.OneOf([
+                confit.String(),
+                confit.Integer(),
+            ]))
+
+    def test_validate_bad_template(self):
+        class BadTemplate(object):
+            pass
+        config = _root({})
+        with self.assertRaises(confit.ConfigTemplateError):
+            config.get(confit.OneOf([BadTemplate()]))
+        del BadTemplate
 
 
 class StrSeqTest(unittest.TestCase):

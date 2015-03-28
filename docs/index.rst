@@ -19,7 +19,7 @@ The first parameter is required; it’s the name of your application that
 will be used to search the system for config files. The second parameter
 is optional: it’s the name of a module that will guide the search for a
 *defaults* file. Use this if you want to include a
-``config_defaults.yaml`` file inside your package. (The included
+``config_default.yaml`` file inside your package. (The included
 ``example`` package does exactly this.)
 
 Now, you can access your configuration data as if it were a simple
@@ -175,7 +175,7 @@ Note that, while you can use the full power of your favorite
 command-line parsing library, you'll probably want to avoid specifying
 defaults in your argparse or optparse setup. This way, Confit can use
 other configuration sources---possibly your
-``config_defaults.yaml``---to fill in values for unspecified
+``config_default.yaml``---to fill in values for unspecified
 command-line switches. Otherwise, the argparse/optparse default value
 will hide options configured elsewhere.
 
