@@ -44,6 +44,18 @@ class PrettyDumpTest(unittest.TestCase):
                 baz: qux
         """).strip())
 
+    def test_dump_sans_defaults(self):
+        config = confit.Configuration('myapp', read=False)
+        config.add({'foo': 'bar'})
+        config.sources[0].default = True
+        config.add({'baz': 'qux'})
+
+        yaml = config.dump().strip()
+        self.assertEqual(yaml, "foo: bar\nbaz: qux")
+
+        yaml = config.dump(full=False).strip()
+        self.assertEqual(yaml, "baz: qux")
+
 
 class RedactTest(unittest.TestCase):
     def test_no_redaction(self):
@@ -77,3 +89,13 @@ class RedactTest(unittest.TestCase):
         config['foo'].redact = True
         yaml = config.dump(redact=False).strip()
         self.assertEqual(yaml, 'foo: bar')
+
+    def test_dump_redacted_sans_defaults(self):
+        config = confit.Configuration('myapp', read=False)
+        config.add({'foo': 'bar'})
+        config.sources[0].default = True
+        config.add({'baz': 'qux'})
+        config['baz'].redact = True
+
+        yaml = config.dump(redact=True, full=False).strip()
+        self.assertEqual(yaml, "baz: REDACTED")
