@@ -330,15 +330,12 @@ Return ``True`` for non-zero integers, ``"t"``, ``"true"``, ``"on"``, and
 ::
 
   as_int(check=None)
+  as_float(check=None)
 
-Return an integer after asserting *check* on it. If the underlying value is a
-string, it will be strictly parsed as an integer (after stripping surrounding
-whitespace). A common use for *check* is a range check, e.g.
-``lambda x: 1 <= x <= 10``.
-
-::
-
-  as_float
+Return an integer or float after asserting *check* on it. If the underlying
+value is a string, it will be strictly parsed as an integer or float (after
+stripping surrounding whitespace). A common use for *check* is a range check,
+e.g.  ``lambda x: 1 <= x <= 10``.
 
 ::
 
@@ -348,10 +345,10 @@ Return a string if it matches the regular expression.
 
 ::
 
-  as_strs
+  as_strs(split=str.split)
 
 Given either a string or a list of strings, return a list of strings. A
-single string is split on whitespace.
+single string is split using *split*; the default splits on whitespace.
 
 ::
 
