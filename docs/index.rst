@@ -288,6 +288,7 @@ Composition
 Configurations can be composed with the addition operator::
 
   config = defaults + overrides
+  config += more_overrides
 
 The result of this will be a new configuration with a union of the variables
 in ``overrides`` and ``defaults`` with the values and origins from
@@ -418,10 +419,9 @@ following:
 
   flatten(config, casts=None)
 
-Return a mapping from variable names to their most preferred value, passing
-them through the given *casts*. By flattening, you can cast variables once
-and use them many times, or dump a configuration to file in whatever format
-you want.
+Return a copy of a configuration with variable stacks reduced to their most
+preferred value, passing them through the given *casts*. By flattening, you
+can pay the cost of lookup and cast for each variable once.
 
 
 YAML Tweaks
