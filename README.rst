@@ -1,6 +1,13 @@
 Confit: painless YAML config files that Just Work
 =================================================
 
+.. image:: https://travis-ci.org/sampsyo/confit.svg?branch=master
+    :target: https://travis-ci.org/sampsyo/confit
+
+.. image:: http://img.shields.io/pypi/v/confer.svg
+    :target: https://pypi.python.org/pypi/confer
+
+
 I'm tired of fiddling around with `ConfigParser`_. I don’t even really
 like INI syntax. I'm tired of writing boilerplate code to check for
 missing values, fall back to defaults, override config values with
