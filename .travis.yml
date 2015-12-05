@@ -19,3 +19,5 @@ before_script:
     - "[[ $TRAVIS_PYTHON_VERSION == '3.3' ]] && pip install coveralls || true"
 after_success:
     - "[[ $TRAVIS_PYTHON_VERSION == '3.3' ]] && coveralls || true"
+
+sudo: false
