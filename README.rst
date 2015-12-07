@@ -4,8 +4,8 @@ Confit: painless YAML config files that Just Work
 .. image:: https://travis-ci.org/sampsyo/confit.svg?branch=master
     :target: https://travis-ci.org/sampsyo/confit
 
-.. image:: http://img.shields.io/pypi/v/confer.svg
-    :target: https://pypi.python.org/pypi/confer
+.. image:: http://img.shields.io/pypi/v/confuse.svg
+    :target: https://pypi.python.org/pypi/confuse
 
 
 I'm tired of fiddling around with `ConfigParser`_. I don’t even really
