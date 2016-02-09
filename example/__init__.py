@@ -1,12 +1,13 @@
 """An example application using Confit for configuration."""
 from __future__ import print_function
 from __future__ import unicode_literals
+import os
 import confit
 import argparse
 
 template = {
     'library': confit.Filename(),
-    'import_write': confit.OneOf([bool, 'ask', 'skip']),
+    'import_write': confit.OneOf([bool, 'true', 'false']),
     'ignore': confit.StrSeq(),
     'plugins': list,
 
@@ -16,7 +17,7 @@ template = {
     }
 }
 
-config = confit.LazyConfig('ConfitExample', __name__)
+config = confit.LazyConfig('ConfitExample', file="~/PycharmProjects/confit/example/config_default.yaml")
 
 
 def main():
@@ -31,9 +32,6 @@ def main():
 
     args = parser.parse_args()
     config.set_args(args)
-
-    print('configuration directory is', config.config_dir())
-
     # Use a boolean flag and the transient overlay.
     if config['verbose']:
         print('verbose mode')
@@ -41,8 +39,9 @@ def main():
     else:
         config['log']['level'] = 0
     print('logging level is', config['log']['level'].get(int))
-
     valid = config.get(template)
+
+    print(config.dump())
 
     # Some validated/converted values.
     print('library is', valid.library)

@@ -1,12 +1,12 @@
 library: library.db
-
-import_write: yes
-import_copy: yes
-import_move: no
-import_resume: ask
-import_incremental: yes
-import_quiet_fallback: skip
-import_timid: no
+#Example Comment beneath Library
+import_write: true
+import_copy: true
+import_move: false
+import_resume: true
+import_incremental: true
+import_quiet_fallback: false
+import_timid: false
 import_log:
 
 ignore: [".*", "*~"]
@@ -21,11 +21,11 @@ art_filename: cover
 
 plugins: []
 pluginpath: []
-threaded: yes
-color: yes
+threaded: true
+color: true
 timeout: 5.0
-per_disc_numbering: no
-verbose: no
+per_disc_numbering: false
+verbose: false
 
 list_format_item: $artist - $album - $title
 list_format_album: $albumartist - $album
@@ -35,3 +35,7 @@ paths:
     default: $albumartist/$album%aunique{}/$track $title
     singleton: Non-Album/$artist/$title
     comp: Compilations/$album%aunique{}/$track $title
+
+# This
+# Thisssss
+#is: awesome!

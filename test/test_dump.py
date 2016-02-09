@@ -1,3 +1,5 @@
+import os
+import sys
 import confit
 import textwrap
 from . import unittest, _root
@@ -14,13 +16,13 @@ class PrettyDumpTest(unittest.TestCase):
         config = confit.Configuration('myapp', read=False)
         config.add({'foo': True})
         yaml = config.dump().strip()
-        self.assertEqual(yaml, 'foo: yes')
+        self.assertEqual(yaml, 'foo: true')
 
     def test_dump_false(self):
         config = confit.Configuration('myapp', read=False)
         config.add({'foo': False})
         yaml = config.dump().strip()
-        self.assertEqual(yaml, 'foo: no')
+        self.assertEqual(yaml, 'foo: false')
 
     def test_dump_short_list(self):
         config = confit.Configuration('myapp', read=False)
@@ -99,3 +101,39 @@ class RedactTest(unittest.TestCase):
 
         yaml = config.dump(redact=True, full=False).strip()
         self.assertEqual(yaml, "baz: REDACTED")
+
+    @unittest.skipIf(sys.version_info <= (2, 7), reason="Unsupprted Python version!")
+    def test_dump_comments(self):
+        # self.maxDiff = None
+        config = confit.Configuration("myapp",
+                                      file="%s" % os.path.join(confit.get_parent_folder(__file__), 'comment-yaml.yml'))
+
+        self.assertEqual(config.dump(default_flow_style=False).strip(), textwrap.dedent("""
+############################################################
+# +------------------------------------------------------+ #
+# |                 Essentials (Global)                  | #
+# +------------------------------------------------------+ #
+############################################################
+
+# A color code between 0-9 or a-f. Set to 'none' to disable.
+ops-name-color: '4'
+        """).strip())
+
+        notes_yaml = os.path.join(confit.get_parent_folder(__file__), 'notes.yml')
+        # print("Notes-Yaml: ", notes_yaml)
+        config.add(confit.ConfigSource.from_file(notes_yaml))
+        self.assertEqual(config.dump(default_flow_style=False).strip(), textwrap.dedent("""
+        ############################################################
+# +------------------------------------------------------+ #
+# |                 Essentials (Global)                  | #
+# +------------------------------------------------------+ #
+############################################################
+
+# A color code between 0-9 or a-f. Set to 'none' to disable.
+ops-name-color: '4'
+############################################################
+# +------------------------------------------------------+ #
+# |                       Notes                          | #
+# +------------------------------------------------------+ #
+############################################################
+always-finish-her-first: true""").strip())
