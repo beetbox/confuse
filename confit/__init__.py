@@ -25,6 +25,8 @@ import yaml
 import types
 import collections
 import re
+from yaml.constructor import ConstructorError
+
 try:
     from collections import OrderedDict
 except ImportError:
@@ -36,8 +38,8 @@ WINDOWS_DIR_VAR = 'APPDATA'
 WINDOWS_DIR_FALLBACK = '~\\AppData\\Roaming'
 MAC_DIR = '~/Library/Application Support'
 
-CONFIG_FILENAME = 'config.yaml'
-DEFAULT_FILENAME = 'config_default.yaml'
+CONFIG_FILENAME = 'config.yml'
+DEFAULT_FILENAME = 'config_default.yml'
 ROOT_NAME = 'root'
 
 YAML_TAB_PROBLEM = "found character '\\t' that cannot start any token"
@@ -96,13 +98,13 @@ class ConfigTemplateError(ConfigError):
 
 class ConfigReadError(ConfigError):
     """A configuration file could not be read."""
+
     def __init__(self, filename, reason=None):
         self.filename = filename
         self.reason = reason
-
         message = 'file {0} could not be read'.format(filename)
         if isinstance(reason, yaml.scanner.ScannerError) and \
-                reason.problem == YAML_TAB_PROBLEM:
+                        reason.problem == YAML_TAB_PROBLEM:
             # Special-case error message for tab indentation in YAML markup.
             message += ': found tab character at line {0}, column {1}'.format(
                 reason.problem_mark.line + 1,
@@ -117,12 +119,13 @@ class ConfigReadError(ConfigError):
 
 # Views and sources.
 
-class ConfigSource(dict):
+class ConfigSource(OrderedDict):
     """A dictionary augmented with metadata about the source of the
     configuration.
     """
-    def __init__(self, value, filename=None, default=False):
-        super(ConfigSource, self).__init__(value)
+
+    def __init__(self, data, filename=None, default=False):
+        super(ConfigSource, self).__init__(data)
         if filename is not None and not isinstance(filename, BASESTRING):
             raise TypeError('filename must be a string or None')
         self.filename = filename
@@ -143,10 +146,24 @@ class ConfigSource(dict):
         """
         if isinstance(value, ConfigSource):
             return value
+        elif isinstance(value, OrderedDict):
+            return ConfigSource(value)
         elif isinstance(value, dict):
             return ConfigSource(value)
         else:
             raise TypeError('source value must be a dict')
+
+    @classmethod
+    def from_file(cls, file):
+        abs_path = os.path.abspath(os.path.expanduser(file))
+        if os.path.exists(abs_path):
+            yaml_file_data = load_yaml(abs_path)
+            if yaml_file_data is None:
+                raise ValueError("Unable to load yaml as it holds no data...")
+            return ConfigSource(data=yaml_file_data,
+                                filename=abs_path)
+        else:
+            raise FileExistsError("Unable to locate file %s" % file)
 
 
 class ConfigView(object):
@@ -225,9 +242,6 @@ class ConfigView(object):
         return Subview(self, key)
 
     def __setitem__(self, key, value):
-        """Create an overlay source to assign a given key under this
-        view.
-        """
         self.set({key: value})
 
     def __contains__(self, key):
@@ -416,6 +430,7 @@ class RootView(ConfigView):
     """The base of a view hierarchy. This view keeps track of the
     sources that may be accessed by subviews.
     """
+
     def __init__(self, sources):
         """Create a configuration hierarchy for a list of sources. At
         least one source must be provided. The first source in the list
@@ -432,7 +447,7 @@ class RootView(ConfigView):
         self.sources.insert(0, ConfigSource.of(value))
 
     def resolve(self):
-        return ((dict(s), s) for s in self.sources)
+        return ((OrderedDict(s), s) for s in self.sources)
 
     def clear(self):
         """Remove all sources (and redactions) from this
@@ -456,6 +471,7 @@ class RootView(ConfigView):
 
 class Subview(ConfigView):
     """A subview accessed via a subscript of a parent view."""
+
     def __init__(self, parent, key):
         """Make a subview of a parent view for a given subscript key.
         """
@@ -579,7 +595,6 @@ def config_dirs():
 class Loader(yaml.SafeLoader):
     """A customized YAML loader. This loader deviates from the official
     YAML spec in a few convenient ways:
-
     - All strings as are Unicode objects.
     - All maps are OrderedDicts.
     - Strings can begin with % without quotation.
@@ -600,7 +615,7 @@ class Loader(yaml.SafeLoader):
         if isinstance(node, yaml.MappingNode):
             self.flatten_mapping(node)
         else:
-            raise yaml.constructor.ConstructorError(
+            raise ConstructorError(
                 None, None,
                 'expected a mapping node, but found %s' % node.id,
                 node.start_mark
@@ -662,10 +677,10 @@ class Dumper(yaml.SafeDumper):
             node_key = self.represent_data(item_key)
             node_value = self.represent_data(item_value)
             if not (isinstance(node_key, yaml.ScalarNode) and
-                    not node_key.style):
+                        not node_key.style):
                 best_style = False
             if not (isinstance(node_value, yaml.ScalarNode) and
-                    not node_value.style):
+                        not node_value.style):
                 best_style = False
             value.append((node_key, node_value))
         if flow_style is None:
@@ -691,9 +706,9 @@ class Dumper(yaml.SafeDumper):
         """Represent bool as 'yes' or 'no' instead of 'true' or 'false'.
         """
         if data:
-            value = 'yes'
+            value = 'true'
         else:
-            value = 'no'
+            value = 'false'
         return self.represent_scalar('tag:yaml.org,2002:bool', value)
 
     def represent_none(self, data):
@@ -714,8 +729,10 @@ def restore_yaml_comments(data, default_data):
     Only works with comments that are on one or more own lines, i.e.
     not next to a yaml mapping.
     """
-    comment_map = dict()
+    comment_map = OrderedDict()
     default_lines = iter(default_data.splitlines())
+    is_eof = False
+    eof_comment = None
     for line in default_lines:
         if not line:
             comment = "\n"
@@ -723,12 +740,21 @@ def restore_yaml_comments(data, default_data):
             comment = "{0}\n".format(line)
         else:
             continue
+
         while True:
-            line = next(default_lines)
+            try:
+                line = next(default_lines)
+            except StopIteration:
+                is_eof = True
+                eof_comment = comment
+                break
+
             if line and not line.startswith("#"):
                 break
+            # Create a multi line comment!
             comment += "{0}\n".format(line)
         key = line.split(':')[0].strip()
+
         comment_map[key] = comment
     out_lines = iter(data.splitlines())
     out_data = ""
@@ -737,13 +763,15 @@ def restore_yaml_comments(data, default_data):
         if key in comment_map:
             out_data += comment_map[key]
         out_data += "{0}\n".format(line)
+    if is_eof and eof_comment is not None:
+        out_data += eof_comment
     return out_data
 
 
 # Main interface.
 
 class Configuration(RootView):
-    def __init__(self, appname, modname=None, read=True):
+    def __init__(self, appname, modname=None, read=True, file=None, **kwargs):
         """Create a configuration object by reading the
         automatically-discovered config files for the application for a
         given name. If `modname` is specified, it should be the import
@@ -755,8 +783,12 @@ class Configuration(RootView):
         later.
         """
         super(Configuration, self).__init__([])
+        # Will allow us to a file location as an argument, moving away from the folder only based config
+        self.file_location = os.path.expanduser(file) if file is not None else None
         self.appname = appname
         self.modname = modname
+
+        self.skip_defaults = kwargs.get('skip_defaults', True)
 
         self._env_var = '{0}DIR'.format(self.appname.upper())
 
@@ -768,11 +800,17 @@ class Configuration(RootView):
 
         The file may not exist.
         """
-        return os.path.join(self.config_dir(), CONFIG_FILENAME)
+        if self.file_location is None:
+            return os.path.join(self.config_dir(), CONFIG_FILENAME)
+        else:
+            potential_local_path = os.path.join(self.config_dir(), self.file_location)
+            if os.path.exists(potential_local_path):
+                return potential_local_path
+            return os.path.expanduser(self.file_location)
 
     def _add_user_source(self):
         """Add the configuration options from the YAML file in the
-        user's configuration directory (given by `config_dir`) if it
+        user's configuration directory (given by `config_dir`, or 'file') if it
         exists.
         """
         filename = self.user_config_path()
@@ -791,7 +829,7 @@ class Configuration(RootView):
                 if os.path.isfile(filename):
                     self.add(ConfigSource(load_yaml(filename), filename, True))
 
-    def read(self, user=True, defaults=True):
+    def read(self, user=True, defaults=False):
         """Find and read the files for this configuration and set them
         as the sources for this configuration. To disable either
         discovered user configuration files or the in-package defaults,
@@ -799,7 +837,8 @@ class Configuration(RootView):
         """
         if user:
             self._add_user_source()
-        if defaults:
+
+        if not self.skip_defaults and defaults:
             self._add_default_source()
 
     def config_dir(self):
@@ -814,7 +853,9 @@ class Configuration(RootView):
         fallback path is used.
         """
         # If environment variable is set, use it.
-        if self._env_var in os.environ:
+        if self.file_location is not None:
+            appdir = os.path.abspath(os.path.join(self.file_location, os.pardir))
+        elif self._env_var in os.environ:
             appdir = os.environ[self._env_var]
             appdir = os.path.abspath(os.path.expanduser(appdir))
             if os.path.isfile(appdir):
@@ -839,10 +880,10 @@ class Configuration(RootView):
         """Parses the file as YAML and inserts it into the configuration
         sources with highest priority.
         """
-        filename = os.path.abspath(filename)
+        filename = os.path.abspath(os.path.expanduser(filename))
         self.set(ConfigSource(load_yaml(filename), filename))
 
-    def dump(self, full=True, redact=False):
+    def dump(self, full=True, redact=False, **kwargs):
         """Dump the Configuration object to a YAML file.
 
         The order of the keys is determined from the default
@@ -857,6 +898,7 @@ class Configuration(RootView):
         :param redact:    Remove sensitive information (views with the `redact`
                           flag set) from the output
         """
+        # TODO Change this to store the keys in the order they were inputted.
         if full:
             out_dict = self.flatten(redact=redact)
         else:
@@ -866,20 +908,27 @@ class Configuration(RootView):
             temp_root.redactions = self.redactions
             out_dict = temp_root.flatten(redact=redact)
 
+        flow_style = kwargs.get('default_flow_style', None)
         yaml_out = yaml.dump(out_dict, Dumper=Dumper,
-                             default_flow_style=None, indent=4,
+                             default_flow_style=flow_style, indent=4,
                              width=1000)
 
         # Restore comments to the YAML text.
-        default_source = None
+        # default_source = None
+        # for source in self.sources:
+        #     if source.default:
+        #         default_source = source
+        #         break
+        # if default_source and default_source.filename:
+        #     with open(default_source.filename, 'r') as fp:
+        #         default_data = fp.read()
+        #     yaml_out = restore_yaml_comments(yaml_out, default_data)
+        # default_source = None
         for source in self.sources:
-            if source.default:
-                default_source = source
-                break
-        if default_source and default_source.filename:
-            with open(default_source.filename, 'r') as fp:
-                default_data = fp.read()
-            yaml_out = restore_yaml_comments(yaml_out, default_data)
+            if source.filename:
+                with open(source.filename, 'r') as fp:
+                    comment_data = fp.read()
+                yaml_out = restore_yaml_comments(yaml_out, comment_data)
 
         return yaml_out
 
@@ -889,8 +938,9 @@ class LazyConfig(Configuration):
     accessed. This is appropriate for using as a global config object at
     the module level.
     """
-    def __init__(self, appname, modname=None):
-        super(LazyConfig, self).__init__(appname, modname, False)
+
+    def __init__(self, appname, file=None, modname=None, **kwargs):
+        super(LazyConfig, self).__init__(appname, file=file, modname=modname, read=False, **kwargs)
         self._materialized = False  # Have we read the files yet?
         self._lazy_prefix = []  # Pre-materialization calls to set().
         self._lazy_suffix = []  # Calls to add().
@@ -927,7 +977,6 @@ class LazyConfig(Configuration):
         self._lazy_suffix = []
         self._lazy_prefix = []
 
-
 # "Validated" configuration views: experimental!
 
 
@@ -945,6 +994,7 @@ class Template(object):
     providing a default value, and validating for errors. For example, a
     filepath type might expand tildes and check that the file exists.
     """
+
     def __init__(self, default=REQUIRED):
         """Create a template with a given default value.
 
@@ -1009,6 +1059,7 @@ class Template(object):
 class Integer(Template):
     """An integer configuration value template.
     """
+
     def convert(self, value, view):
         """Check that the value is an integer. Floats are rounded.
         """
@@ -1023,6 +1074,7 @@ class Integer(Template):
 class Number(Template):
     """A numeric type: either an integer or a floating-point number.
     """
+
     def convert(self, value, view):
         """Check that the value is an int or a float.
         """
@@ -1040,6 +1092,7 @@ class MappingTemplate(Template):
     """A template that uses a dictionary to specify other types for the
     values for a set of keys and produce a validated `AttrDict`.
     """
+
     def __init__(self, mapping):
         """Create a template according to a dict (mapping). The
         mapping's values should themselves either be Types or
@@ -1066,6 +1119,7 @@ class MappingTemplate(Template):
 class String(Template):
     """A string configuration value template.
     """
+
     def __init__(self, default=REQUIRED, pattern=None):
         """Create a template with the added optional `pattern` argument,
         a regular expression string that the value should match.
@@ -1103,6 +1157,7 @@ class String(Template):
 class Choice(Template):
     """A template that permits values from a sequence of choices.
     """
+
     def __init__(self, choices):
         """Create a template that validates any of the values from the
         iterable `choices`.
@@ -1136,6 +1191,7 @@ class Choice(Template):
 class OneOf(Template):
     """A template that permits values complying to one of the given templates.
     """
+
     def __init__(self, allowed, default=REQUIRED):
         super(OneOf, self).__init__(default)
         self.allowed = list(allowed)
@@ -1200,6 +1256,7 @@ class StrSeq(Template):
     Validates both actual YAML string lists and single strings. Strings
     can optionally be split on whitespace.
     """
+
     def __init__(self, split=True):
         """Create a new template.
 
@@ -1233,6 +1290,7 @@ class StrSeq(Template):
                 return x.decode('utf8', 'ignore')
             else:
                 self.fail('must be a list of strings', view, True)
+
         return list(map(convert, value))
 
 
@@ -1247,6 +1305,7 @@ class Filename(Template):
     they are relative to the current working directory. This helps
     attain the expected behavior when using command-line options.
     """
+
     def __init__(self, default=REQUIRED, cwd=None, relative_to=None,
                  in_app_dir=False):
         """`relative_to` is the name of a sibling value that is
@@ -1316,13 +1375,13 @@ class Filename(Template):
                 if next_relative in template.subtemplates:
                     # we encountered this config key previously
                     raise ConfigTemplateError((
-                        '{0} and {1} are recursively relative'
-                    ).format(view.name, self.relative_to))
+                                                  '{0} and {1} are recursively relative'
+                                              ).format(view.name, self.relative_to))
                 else:
                     raise ConfigTemplateError((
-                        'missing template for {0}, needed to expand {1}\'s' +
-                        'relative path'
-                    ).format(self.relative_to, view.name))
+                                                  'missing template for {0}, needed to expand {1}\'s' +
+                                                  'relative path'
+                                              ).format(self.relative_to, view.name))
 
             next_template.subtemplates[next_relative] = rel_to_template
             next_relative = rel_to_template.relative_to
@@ -1361,6 +1420,7 @@ class TypeTemplate(Template):
     """A simple template that checks that a value is an instance of a
     desired Python type.
     """
+
     def __init__(self, typ, default=REQUIRED):
         """Create a template that checks that the value is an instance
         of `typ`.
@@ -1385,6 +1445,7 @@ class AttrDict(dict):
     """A `dict` subclass that can be accessed via attributes (dot
     notation) for convenience.
     """
+
     def __getattr__(self, key):
         if key in self:
             return self[key]
@@ -1426,3 +1487,12 @@ def as_template(value):
         return TypeTemplate(value)
     else:
         raise ValueError('cannot convert to template: {0!r}'.format(value))
+
+
+def get_parent_folder(file):
+    return os.path.abspath(os.path.join(file, os.pardir))
+
+
+def get_config_from_file(file):
+    with open(file, 'r') as config_file:
+        return config_file.read().replace('\n', '')

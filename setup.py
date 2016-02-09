@@ -12,21 +12,22 @@ reqs = ['pyyaml']
 if sys.version_info[0] <= 2 and sys.version_info[1] < 7:
     reqs.append('ordereddict')
 
-
 setup(
     name='confuse',
-    version='0.3.0',
+    version='0.3.1',
     description='painless YAML configuration',
     author='Adrian Sampson',
     author_email='adrian@radbox.org',
-    url='https://github.com/sampsyo/confit',
+    url='https://github.com/TechnicalBro/confit',
     license='MIT',
     platforms='ALL',
     long_description=_read("README.rst"),
 
     install_requires=reqs,
-
-    py_modules=['confit'],
+    packages=[
+        'confit'
+    ],
+    # py_modules=['confit'],
 
     classifiers=[
         'Intended Audience :: Developers',
