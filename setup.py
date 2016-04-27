@@ -15,7 +15,7 @@ if sys.version_info[0] <= 2 and sys.version_info[1] < 7:
 
 setup(
     name='confuse',
-    version='0.3.0',
+    version='0.3.1',
     description='painless YAML configuration',
     author='Adrian Sampson',
     author_email='adrian@radbox.org',
