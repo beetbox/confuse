@@ -1,260 +1,427 @@
 Confit: Painless Configuration
 ==============================
 
-`Confit`_ (*con-FEE*) is a straightforward, full-featured configuration system
-for Python.
+`Confit`_ (*con-FEE*) is a straightforward, full-featured configuration
+library written in Python.
 
 .. _Confit: https://github.com/sampsyo/confit
 
+When to Use Confit
+------------------
 
-Using Confit
-------------
+Confit abstracts the process of compiling a runtime configuration. In this
+context, a configuration holds values that would otherwise be hard coded
+into your application or library. Common examples include:
 
-Set up your Configuration object, which provides unified access to
-all of your application’s config settings::
+- A host and port for a remote service.
+- A username and password for a remote service.
+- A port number to bind.
+- A timeout in milliseconds.
+- A path to a temporary directory.
+- A log level.
 
-    config = confit.Configuration('MyGreatApp', __name__)
-
-The first parameter is required; it’s the name of your application that
-will be used to search the system for config files. The second parameter
-is optional: it’s the name of a module that will guide the search for a
-*defaults* file. Use this if you want to include a
-``config_default.yaml`` file inside your package. (The included
-``example`` package does exactly this.)
-
-Now, you can access your configuration data as if it were a simple
-structure consisting of nested dicts and lists—except that you need to
-call the method ``.get()`` on the leaf of this tree to get the result as
-a value::
-
-    value = config['foo'][2]['bar'].get()
-
-Under the hood, accessing items in your configuration tree builds up a
-*view* into your app’s configuration. Then, ``get()`` flattens this view
-into a file, performing a search through each configuration data source
-to find an answer. More on view later.
-
-If you know that a configuration value should have a specific type, just
-pass that type to ``get()``::
-
-    int_value = config['number_of_goats'].get(int)
-
-This way, Confit will either give you an integer or raise a
-``ConfigTypeError`` if the user has messed up the configuration. You’re
-safe to assume after this call that ``int_value`` has the right type. If
-the key doesn’t exist in any configuration file, Confit will raise a
-``NotFoundError``. Together, catching these exceptions (both subclasses
-of ``confit.ConfigError``) lets you painlessly validate the user’s
-configuration as you go.
+Configurations are distinct from data, although the line is hard to define.
+In our approximation, an application can run without data, but it cannot run
+without a configuration. A configuration can be packaged and imported, but
+data cannot.
 
 
-View Theory
+Features
+--------
+
+
+- Put your **default configuration in code** so that your application or
+  library will run out of the box.
+- Easily let your users **override the configuration** with **command-line
+  arguments, environment variables, and configuration files in multiple
+  formats**.
+- Define your own **custom sources**, e.g., for reading configuration from a
+  database.
+- Choose a precedence order for **any number or combination of sources** that
+  make sense for you.
+- Easily **type check and validate** configuration overrides and emit **human
+  readable errors** that point users to the offending overrides.
+- Look for configuration files in **platform-specific paths** like
+  ``$XDG_CONFIG_HOME`` or ``~/.config`` on Unix; ``Application Support`` on
+  Mac OS X; and ``%APPDATA%`` on Windows.
+
+
+Examples
+--------
+
+Hello World
+^^^^^^^^^^^
+
+::
+
+  1| import confit
+  2| default_config = confit.from_mapping({'greeting': 'Hello, world!'})
+  3| sys_config = confit.from_yaml('/etc/example.yml')
+  4| config = default_config + sys_config
+  5| config['greeting'].get(str)
+
+Let's step through each line in this example:
+
+1. Import Confit.
+2. Create a configuration from code---that is, from a mapping literal. It
+   will serve as our default.
+3. Read a configuration from a `YAML`_ file in the system configuration
+   directory.
+4. Compose the two configurations by laying the system configuration over the
+   default configuration. Every variable in the system configuration will
+   override the ones in the default.
+5. Read a string variable from the configuration.
+
+.. _YAML: http://yaml.org/
+
+This example is just enough to get a taste for Confit. Details are explained
+in later sections.
+
+
+Git
+^^^
+
+To demonstrate the full power of Confit, consider the `configuration model
+for Git <http://git-scm.com/docs/git-config#FILES>`_.
+
+::
+
+  from_git_ini = lambda path: confit.from_ini(path, sep=".")
+  sys_config = from_git_ini(confit.sys_config_path("git", "config"))
+  second_user_config = sum(map(from_git_ini, confit.user_config_paths("git", "config")))
+  first_user_config = from_git_ini(os.expanduser("~/.gitconfig"))
+  repo_config = from_git_ini(os.path.join(git_dir(), "config"))
+  # Git takes configuration from environment variables with names different
+  # from the configuration variables they map to. That requires some custom
+  # (but simple) logic not built in to Confit. It is left as an exercise for
+  # the reader.
+  env_config = ...
+  config = sum((defaults, sys_config, second_user_config, first_user_config, repo_config, env_config))
+
+
+curl
+^^^^
+
+Confit is useful for libraries in addition to applications. Consider libcurl,
+which loads configuration from `~/.curlrc` and special environment variables
+(`http_proxy`, `https_proxy`, `no_proxy`, etc). Libraries can use all the
+facilities of Confit (with the exception of ``from_args``) to ease handling
+of their configuration.
+
+
+Configuration
+-------------
+
+A configuration consists of variable bindings. In each new project, a
+configuration is born when some variable holds an arbitrary value, e.g.  a
+path to a temporary directory. The value is moved to the configuration as a
+default, and the variable's value is loaded from the configuration.
+
+Variables
+^^^^^^^^^
+
+In Confit, a configuration is an immutable mapping from string names to
+*variables*. Variables have two methods, ``get`` and ``origin``.
+
+::
+
+  get(cast=lambda x: x)
+
+Call *cast* with the variable's value and return the result. *cast* is useful
+for casting the value to a different type (i.e., "get the value as a ___").
+*cast* may also check the value against some validity criteria, e.g. whether
+a string can be parsed, or whether an integer fits within a range. If *cast*
+raises an exception, then it will be wrapped in a ``ConfitCastError``, that,
+if uncaught, will be pretty-printed to the console (using ``sys.excepthook``)
+indicating both the failing call to ``get`` and the origin of the faulty
+value::
+
+  /usr/bin/script:123:
+      port = config['port'].get(is_not_privileged)
+  failed on the override at /home/user/.example.yml:8:
+  port: 80
+
+::
+
+  origin()
+
+Return the variable's origin. An **origin** is a location identifier for an
+individual variable within a given source (see Sources section). Each origin
+type may have different properties, but every built-in origin can be
+pretty-printed with its ``__str__`` method.
+
+
+Sources
+-------
+
+Configurations come from **sources**, e.g. command-line arguments,
+environment variables, or files. Confit comes with a few functions for
+creating configurations from well-known sources.
+
+::
+
+  from_mapping(mapping)
+
+Return a configuration taken from a mapping from string names to values. Each
+variable will have a ``FileOrigin`` pointing to the call to this function.
+
+::
+
+  from_object(object)
+
+Return a configuration drawn from the non-callable public properties of
+*object*. A property is considered public if its name does not start with an
+underscore. Each variable will have a ``FileOrigin`` pointing to the call to
+this function.
+
+::
+
+  from_yaml(path)
+
+Return a configuration parsed from a YAML file at *path*, or if *path* is not
+a file, return an empty configuration. Each variable will have a
+``FileOrigin``. Can be used to parse JSON as well since YAML is a superset.
+
+::
+
+  from_ini(path, sep="_")
+
+Return a configuration parsed from an INI file at *path*, or if *path* is not
+a file, return an empty configuration. Each variable will have a
+``FileOrigin``, and its key will be prefixed by its section name separated by
+*sep*.
+
+::
+
+  user_config_paths(*paths)
+
+Return a list of paths to user-specific configuration directories
+conventional for the current platform, with *paths* appended to each using
+``os.path.join``.
+
+OS X    | ``~/.config``, ``~/Library/Application Support``
+Unix    | ``$XDG_CONFIG_HOME``, ``~/.config``
+Windows | ``%HOME%\AppData\Roaming``
+
+::
+
+  sys_config_path(*paths)
+
+Return path to the system-wide configuration directory (shared by all users)
+conventional for the current platform, with *paths* appended using
+``os.path.join``.
+
+Unix, OS X | ``/etc``
+Windows    | ``%APPDATA%``
+
+::
+
+  module_dir(module_name)
+
+Return the path to the directory where the named module is found.
+
+::
+
+  from_env(prefix, sep="_")
+
+Return a configuration pulled from the environment. For each environment
+variable whose name has the given *prefix*, the configuration will have a
+variable whose name is everything after the *prefix* with underscores
+replaced by *sep* (see caveat at the end of this description), whose value is
+a string, and whose origin is an ``EnvironmentOrigin``.
+
+Environment overrides are handy for scripts that cannot create a
+configuration file (or cannot edit an existing one) and cannot change the
+command line before invoking your application.
+
+One notable caveat is that most shells have a limited character set for
+environment variable names. Often, the OS will support all non-null
+characters, but shells will only support letters, numbers, and underscores.
+In those cases, environment variables can be used to override only variables
+with "well behaved names". To help overcome this limitation, this source
+supports overriding variables with non-underscore separators using the *sep*
+argument.
+
+::
+
+  from_args(argv, prefix)
+
+Return a pair. The first half will be a configuration parsed from the command
+line long options in *argv* that have the given *prefix*. Each variable will
+have a ``CommandLineOrigin``. The second half will be the remaining unparsed
+command line arguments in the same order they appeared. Example::
+
+  (config, args) = confit.from_args(["a", "--eg-hello", "world", "b"], "eg")
+  config["hello"].get() # "world"
+  args # ["a", "b"]
+
+::
+
+  class confit.FileOrigin(filename, line, [column])
+
+::
+
+  class confit.EnvironmentOrigin(variable)
+
+::
+
+  class confit.CommandLineOrigin(option)
+
+
+Custom sources
+^^^^^^^^^^^^^^
+
+To extend this set with your own custom source, define a function that
+returns a configuration::
+
+  class confit.Configuration(config)
+
+*config* should be a mapping from variable names to (value, origin) pairs.
+For origins that do not fit the built-in types, consider defining your own
+origin class. If you do, it is best practice to define a pretty-printing
+``__str__`` method.
+
+
+Composition
 -----------
 
-The Confit API is based on the concept of *views*. You can think of a
-view as a *place to look* in a config file: for example, one view might
-say “get the value for key ``number_of_goats``”. Another might say “get
-the value at index 8 inside the sequence for key ``animal_counts``”. To
-get the value for a given view, you *resolve* it by calling the
-``get()`` method.
+Configurations can be composed with the addition operator::
 
-This concept separates the specification of a location from the
-mechanism for retrieving data from a location. (In this sense, it’s a
-little like `XPath`_: you specify a path to data you want and *then* you
-retrieve it.)
+  config = defaults + overrides
+  config += more_overrides
 
-Using views, you can write ``config['animal_counts'][8]`` and know that
-no exceptions will be raised until you call ``get()``, even if the
-``animal_counts`` key does not exist. More importantly, it lets you
-write a single expression to search many different data sources without
-preemtively merging all sources together into a single data structure.
+The result of this will be a new configuration with a union of the variables
+in ``overrides`` and ``defaults`` with the values and origins from
+``overrides`` taking precedence.
 
-Views also solve an important problem with overriding collections.
-Imagine, for example, that you have a dictionary called
-``deliciousness`` in your config file that maps food names to tastiness
-ratings. If the default configuration gives carrots a rating of 8 and
-the user’s config rates them a 10, then clearly
-``config['deliciousness']['carrots'].get()`` should return 10. But what
-if the two data sources have different sets of vegetables? If the user
-provides a value for broccoli and zucchini but not carrots, should
-carrots have a default deliciousness value of 8 or should Confit just
-throw an exception? With Confit’s views, the application gets to decide.
+``defaults`` and ``overrides`` themselves can be compositions, creating a
+tree of configurations. Generally, due to the left associativity of the ``+``
+operator in Python, only ``defaults`` will be a composition, creating a
+sequence. Summing an iterable of configurations will compose them from left
+to right, in order of lowest precedence to highest precedence.
 
-The above expression, ``config['deliciousness']['carrots'].get()``,
-returns 10 (falling back on the default). However, you can also write
-``config['deliciousness'].get()``. This expression will cause the
-*entire* user-specified mapping to override the default one, providing a
-dict object like ``{'broccoli': 7, 'zucchini': 9}``. As a rule, then,
-resolve a view at the same granularity you want config files to override
-each other.
+Variables have a third method that becomes useful in the context of
+compositions. ``stack`` will return a list, in precedence order starting with
+most preferred, of all the variable definitions in the configuration tree::
 
-.. _XPath: http://www.w3.org/TR/xpath/
+  assert config['var'].stack()[0].get() == config['var'].get()
+
+.. note:: Programmatic updates simplify in the face of composition.
+  ``config["var"].add(value)`` becomes
+  ``config + confit.from_mapping({"var": value})``, which I think we can even
+  simplify to ``config + {"var": value}``.
+  ``config["var"].set(value)`` becomes
+  ``confit.from_mapping({"var": value}) + config``, which I don't think we
+  can simplify due to the associativity of addition in Python.
 
 
-Validation
-----------
+Casts
+-----
 
-We saw above that you can easily assert that a configuration value has a
-certain type by passing that type to ``get()``. But sometimes you need
-to do more than just type checking. For this reason, Confit provides a
-few methods on views that perform fancier validation or even
-conversion:
+Confit comes with a few built-in casts.
 
-* ``as_filename()``: Normalize a filename, substituting tildes and
-  absolute-ifying relative paths. The filename is relative to the source
-  that provided it. That is, a relative path in a config file refers to
-  the directory containing the config file. A relative path in the
-  defaults refers to the application's config directory
-  (``config.config_dir()``, as described below). A relative path from
-  any other source (e.g., command-line options) is relative to the
-  working directory.
-* ``as_choice(choices)``: Check that a value is one of the provided
-  choices. The argument should be a sequence of possible values. If the
-  sequence is a ``dict``, then this method returns the associated value
-  instead of the key.
-* ``as_number()``: Raise an exception unless the value is of a numeric
-  type.
-* ``as_pairs()``: Get a collection as a list of pairs. The collection
-  should be a list of elements that are either pairs (i.e., two-element
-  lists) already or single-entry dicts. This can be helpful because, in
-  YAML, lists of single-element mappings have a simple syntax (``- key:
-  value``) and, unlike real mappings, preserve order.
-* ``as_str_seq()``: Given either a string or a list of strings, return a list
-  of strings. A single string is split on whitespace.
+::
 
-For example, ``config['path'].as_filename()`` ensures that you get a
-reasonable filename string from the configuration. And calling
-``config['direction'].as_choice(['up', 'down'])`` will raise a
-``ConfigValueError`` unless the ``direction`` value is either "up" or
-"down".
+  as_bool
 
+Return ``True`` for non-zero integers, ``"t"``, ``"true"``, ``"on"``, and
+``"yes"``; return ``False`` for ``0``, ``"f"``, ``"false"``, ``"off"``, and
+``"no"``. String values are case insensitive.
 
-Command-Line Options
---------------------
+::
 
-Arguments to command-line programs can be seen as just another *source*
-for configuration options. Just as options in a user-specific
-configuration file should override those from a system-wide config,
-command-line options should take priority over all configuration files.
+  as_int(check=None)
+  as_float(check=None)
 
-You can use the `argparse`_ and `optparse`_ modules from the standard
-library with Confit to accomplish this. Just call the ``set_args``
-method on any view and pass in the object returned by the command-line
-parsing library. Values from the command-line option namespace object
-will be added to the overlay for the view in question. For example, with
-argparse::
+Return an integer or float after asserting *check* on it. If the underlying
+value is a string, it will be strictly parsed as an integer or float (after
+stripping surrounding whitespace). A common use for *check* is a range check,
+e.g.  ``lambda x: 1 <= x <= 10``.
 
-    args = parser.parse_args()
-    config.set_args(args)
+::
 
-Correspondingly, with optparse::
+  as_str(regex)
 
-    options, args = parser.parse_args()
-    config.set_args(options)
+Return a string if it matches the regular expression.
 
-This call will turn all of the command-line options into a top-level
-source in your configuration. The key associated with each option in the
-parser will become a key available in your configuration. For example,
-consider this argparse script::
+::
 
-    config = confit.Configuration('myapp')
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--foo', help='a parameter')
-    args = parser.parse_args()
-    config.set_args(args)
-    print(config['foo'].get())
+  as_strs(split=str.split)
 
-This will allow the user to override the configured value for key
-``foo`` by passing ``--foo <something>`` on the command line.
+Given either a string or a list of strings, return a list of strings. A
+single string is split using *split*; the default splits on whitespace.
 
-.. _argparse: http://docs.python.org/dev/library/argparse.html
-.. _parse_args: http://docs.python.org/library/argparse.html#the-parse-args-method
-.. _optparse: http://docs.python.org/library/optparse.html
+::
 
-Note that, while you can use the full power of your favorite
-command-line parsing library, you'll probably want to avoid specifying
-defaults in your argparse or optparse setup. This way, Confit can use
-other configuration sources---possibly your
-``config_default.yaml``---to fill in values for unspecified
-command-line switches. Otherwise, the argparse/optparse default value
-will hide options configured elsewhere.
+  as_date(formats)
+
+::
+
+  as_time(formats)
+
+::
+
+  as_datetime(formats)
+
+::
+
+  as_filename
+
+Return a filename, substituting tildes and absolute-ifying relative paths.
+The filename is relative to the source that provided it. That is, a relative
+path in a file (including a Python module) is relative to the directory
+containing the file. A relative path in a command-line argument or an
+environment variable is relative to the current working directory.
+
+::
+
+  as_choice(choices)
+
+Assert the value is among the *choices* (using the ``in`` operator) and, if
+*choices* is a ``dict``, return the associated value.
 
 
-Search Paths
-------------
+Custom casts
+^^^^^^^^^^^^
 
-Confit looks in a number of locations for your application's
-configurations. The locations are determined by the platform. For each
-platform, Confit has a list of directories in which it looks for a
-directory named after the application. For example, the first search
-location on Unix-y systems is ``$XDG_CONFIG_HOME/AppName`` for an
-application called ``AppName``.
+It is easy to define your own casts. A cast is just a function that takes a
+stack of variables, in precedence order starting with most preferred, and
+returns a value or raises an exception.
 
-Here are the default search paths for each platform:
-
-* OS X: ``~/.config/app`` and ``~/Library/Application Support/app``
-* Other Unix: ``$XDG_CONFIG_HOME/app`` and ``~/.config/app``
-* Windows: ``%APPDATA%\app`` where the `APPDATA` environment variable falls
-  back to ``%HOME%\AppData\Roaming`` if undefined
-
-Users can also add an override configuration directory with an
-environment variable. The variable name is the application name in
-capitals with "DIR" appended: for an application named ``AppName``, the
-environment variable is ``APPNAMEDIR``.
+.. note:: The stack is necessary to implement as_filename as a function
+  separate from the Configuration interface. To support user-defined casts,
+  they must be separate from the interface, and to prevent built-in casts
+  from enjoying "privileged" status such that user-defined casts cannot do
+  all the same things, they must be separate from the interface as well.
+  Without the stack, as_filename cannot read the file origin of a variable to
+  perform relative path resolution. However, demanding that casts accept a
+  stack means that built-in types, e.g. int, bool, float, cannot be used as
+  casts; users have to remember to use as_int, as_bool, as_float. It might be
+  an acceptable trade-off.
 
 
-Your Application Directory
---------------------------
+Miscellaneous
+-------------
 
-Confit provides a simple helper, ``Configuration.config_dir()``, that
-gives you a directory used to store your application's configuration. If
-a configuration file exists in any of the searched locations, then the
-highest-priority directory containing a config file is used. Otherwise,
-a directory is created for you and returned. So you can always expect
-this method to give you a directory that actually exists.
+::
 
-As an example, you may want to migrate a user's settings to Confit from
-an older configuration system such as `ConfigParser`_. Just do something
-like this::
+  type_check(config, onerror="raise")
 
-    config_filename = os.path.join(config.config_dir(),
-                                   confit.CONFIG_FILENAME)
-    with open(config_filename, 'w') as f:
-        yaml.dump(migrated_config, f)
+Check that the type of the most preferred value (final override) matches the
+type of the least preferred value (default) for each variable. If a mismatch
+is found, take the action described in *onerror*, chosen from among the
+following:
 
-.. _ConfigParser: http://docs.python.org/library/configparser.html
+"raise" | Raise a ``TypeError``.
+"warn"  | Call ``logging.warning``.
 
+::
 
-Dynamic Updates
----------------
+  flatten(config, casts=None)
 
-Occasionally, a program will need to modify its configuration while it's
-running. For example, an interactive prompt from the user might cause
-the program to change a setting for the current execution only. Or the
-program might need to add a *derived* configuration value that the user
-doesn't specify.
-
-To facilitate this, Confit lets you *assign* to view objects using
-ordinary Python assignment. Assignment will add an overlay source that
-precedes all other configuration sources in priority. Here's an example
-of programmatically setting a configuration value based on a ``DEBUG``
-constant::
-
-    if DEBUG:
-        config['verbosity'] = 100
-    ...
-    my_logger.setLevel(config['verbosity'].get(int))
-
-This example allows the constant to override the default verbosity
-level, which would otherwise come from a configuration file.
-
-Assignment works be creating a new "source" for configuration data at
-the top of the stack. This new source takes priority over all other,
-previously-loaded sources. You can cause this explicitly by calling the
-``set()`` method on any view. A related method, ``add()``, works
-similarly but instead adds a new *lowest-priority* source to the bottom
-of the stack. This can be used to provide defaults for options that may
-be overridden by previously-loaded configuration files.
+Return a copy of a configuration with variable stacks reduced to their most
+preferred value, passing them through the given *casts*. By flattening, you
+can pay the cost of lookup and cast for each variable once.
 
 
 YAML Tweaks
@@ -274,19 +441,13 @@ niceties suited to human-written configuration files. Those tweaks are:
 
 .. _OrderedDict: http://docs.python.org/2/library/collections.html#collections.OrderedDict
 
-To produce a YAML file reflecting a configuration, just call
-``config.dump()``. If you supply a filename, the YAML will be written to the
-file; otherwise, a string is returned. This does not cleanly round-trip YAML,
-but it does play some tricks to preserve comments and spacing in the original
-file.
-
 
 Configuring Large Programs
 --------------------------
 
 One problem that must be solved by a configuration system is the issue
 of global configuration for complex applications. In a large program
-with many components and many config options, it can be unwieldy to
+with many components and many configuration options, it can be unwieldy to
 explicitly pass configuration values from component to component. You
 quickly end up with monstrous function signatures with dozens of keyword
 arguments, decreasing code legibility and testability.
@@ -297,45 +458,22 @@ appropriate to use a little bit of shared global state. As evil as
 shared global state usually is, configuration is (in my opinion) one
 valid use: since configuration is mostly read-only, it's relatively
 unlikely to cause the sorts of problems that global values sometimes
-can. And having a global repository for configuration option can vastly
+can. And having a global repository for configuration options can vastly
 reduce the amount of boilerplate threading-through needed to explicitly
 pass configuration from call to call.
 
 To use global configuration, consider creating a configuration object in
-a well-known module (say, the root of a package). But since this object
-will be initialized at module load time, Confit provides a `LazyConfig`
-object that loads your configuration files on demand instead of when the
-object is constructed. (Doing complicated stuff like parsing YAML at
-module load time is generally considered a Bad Idea.)
+a well-known module (say, the root of a package). Since this object
+will be initialized during module import, all built-in file sources in Confit
+are lazy. (Doing complicated stuff like parsing YAML during module import is
+generally considered a Bad Idea.)
 
 Global state can cause problems for unit testing. To alleviate this,
 consider adding code to your test fixtures (e.g., `setUp`_ in the
-`unittest`_ module) that clears out the global configuration before each
-test is run. Something like this::
-
-    config.clear()
-    config.read(user=False)
-
-These lines will empty out the current configuration and then re-load
-the defaults (but not the user's configuration files). Your tests can
-then modify the global configuration values without affecting other
-tests since these modifications will be cleared out before the next test
-runs.
-
-.. _unittest: http://docs.python.org/2/library/unittest.html
-.. _setUp: http://docs.python.org/2/library/unittest.html#unittest.TestCase.setUp
+`unittest`_ module) that re-assigns the defaults to your module's
+configuration. Your tests can then modify the global configuration values
+without affecting other tests since these modifications will be cleared out
+before the next test runs. This won't alleviate issues with concurrent tests,
+however; that problem is fundamental to global state.
 
 
-Redaction
----------
-
-You can also mark certain configuration values as "sensitive" and avoid
-including them in output. Just set the `redact` flag::
-
-    config['key'].redact = True
-
-Then flatten or dump the configuration like so::
-
-    config.dump(redact=True)
-
-The resulting YAML will contain "key: REDACTED" instead of the original data.
