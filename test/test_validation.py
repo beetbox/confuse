@@ -1,4 +1,4 @@
-import confit
+import confuse
 import os
 from . import _root, unittest
 
@@ -10,7 +10,7 @@ class TypeCheckTest(unittest.TestCase):
 
     def test_str_type_incorrect(self):
         config = _root({'foo': 2})
-        with self.assertRaises(confit.ConfigTypeError):
+        with self.assertRaises(confuse.ConfigTypeError):
             config['foo'].get(str)
 
     def test_int_type_correct(self):
@@ -20,7 +20,7 @@ class TypeCheckTest(unittest.TestCase):
 
     def test_int_type_incorrect(self):
         config = _root({'foo': 'bar'})
-        with self.assertRaises(confit.ConfigTypeError):
+        with self.assertRaises(confuse.ConfigTypeError):
             config['foo'].get(int)
 
 class BuiltInValidatorTest(unittest.TestCase):
@@ -30,7 +30,7 @@ class BuiltInValidatorTest(unittest.TestCase):
         self.assertEqual(value, os.path.join(os.getcwd(), 'foo', 'bar'))
 
     def test_as_filename_with_file_source(self):
-        source = confit.ConfigSource({'foo': 'foo/bar'},
+        source = confuse.ConfigSource({'foo': 'foo/bar'},
                                      filename='/baz/config.yaml')
         config = _root(source)
         config.config_dir = lambda: '/config/path'
@@ -38,7 +38,7 @@ class BuiltInValidatorTest(unittest.TestCase):
         self.assertEqual(value, os.path.realpath('/config/path/foo/bar'))
 
     def test_as_filename_with_default_source(self):
-        source = confit.ConfigSource({'foo': 'foo/bar'},
+        source = confuse.ConfigSource({'foo': 'foo/bar'},
                                      filename='/baz/config.yaml',
                                      default=True)
         config = _root(source)
@@ -48,7 +48,7 @@ class BuiltInValidatorTest(unittest.TestCase):
 
     def test_as_filename_wrong_type(self):
         config = _root({'foo': None})
-        with self.assertRaises(confit.ConfigTypeError):
+        with self.assertRaises(confuse.ConfigTypeError):
             config['foo'].as_filename()
 
     def test_as_choice_correct(self):
@@ -58,7 +58,7 @@ class BuiltInValidatorTest(unittest.TestCase):
 
     def test_as_choice_error(self):
         config = _root({'foo': 'bar'})
-        with self.assertRaises(confit.ConfigValueError):
+        with self.assertRaises(confuse.ConfigValueError):
             config['foo'].as_choice(['foo', 'baz'])
 
     def test_as_choice_with_dict(self):
@@ -77,14 +77,14 @@ class BuiltInValidatorTest(unittest.TestCase):
         config = _root({'i': 2})
         config['i'].as_number()
 
-    @unittest.skipIf(confit.PY3, "long only present in Python 2")
+    @unittest.skipIf(confuse.PY3, "long only present in Python 2")
     def test_as_number_long_in_py2(self):
         config = _root({'l': long(3)})
         config['l'].as_number()
 
     def test_as_number_string(self):
         config = _root({'s': 'a'})
-        with self.assertRaises(confit.ConfigTypeError):
+        with self.assertRaises(confuse.ConfigTypeError):
             config['s'].as_number()
 
     def test_as_str_seq_str(self):

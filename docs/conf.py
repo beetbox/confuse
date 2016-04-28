@@ -2,7 +2,7 @@ extensions = []
 source_suffix = '.rst'
 master_doc = 'index'
 
-project = u'Confit'
+project = u'Confuse'
 copyright = u'2012, Adrian Sampson'
 
 version = '0.1'
@@ -16,4 +16,4 @@ pygments_style = 'sphinx'
 
 html_theme = 'default'
 html_static_path = ['_static']
-htmlhelp_basename = 'Confitdoc'
+htmlhelp_basename = 'Confusedoc'

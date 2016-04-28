@@ -1,4 +1,4 @@
-import confit
+import confuse
 import ntpath
 import os
 import platform
@@ -48,23 +48,23 @@ class LinuxTestCases(FakeSystem):
     SYS_NAME = 'Linux'
 
     def test_both_xdg_and_fallback_dirs(self):
-        self.assertEqual(confit.config_dirs(),
+        self.assertEqual(confuse.config_dirs(),
             ['/home/test/.config', '/home/test/xdgconfig'])
 
     def test_fallback_only(self):
         del os.environ['XDG_CONFIG_HOME']
-        self.assertEqual(confit.config_dirs(), ['/home/test/.config'])
+        self.assertEqual(confuse.config_dirs(), ['/home/test/.config'])
 
     def test_xdg_matching_fallback_not_duplicated(self):
         os.environ['XDG_CONFIG_HOME'] = '~/.config'
-        self.assertEqual(confit.config_dirs(), ['/home/test/.config'])
+        self.assertEqual(confuse.config_dirs(), ['/home/test/.config'])
 
 
 class OSXTestCases(FakeSystem):
     SYS_NAME = 'Darwin'
 
     def test_mac_dirs(self):
-        self.assertEqual(confit.config_dirs(),
+        self.assertEqual(confuse.config_dirs(),
             ['/Users/test/Library/Application Support', '/Users/test/.config'])
 
 
@@ -72,31 +72,31 @@ class WindowsTestCases(FakeSystem):
     SYS_NAME = 'Windows'
 
     def test_dir_from_environ(self):
-        self.assertEqual(confit.config_dirs(),
+        self.assertEqual(confuse.config_dirs(),
             ['C:\\Users\\test\\AppData\\Roaming',
             'C:\\Users\\test\\winconfig'])
 
     def test_fallback_dir(self):
         del os.environ['APPDATA']
-        self.assertEqual(confit.config_dirs(),
+        self.assertEqual(confuse.config_dirs(),
             ['C:\\Users\\test\\AppData\\Roaming'])
 
 
 class ConfigFilenamesTest(unittest.TestCase):
     def setUp(self):
-        self._old = os.path.isfile, confit.load_yaml
-        os.path.isfile, confit.load_yaml = lambda x: True, lambda x: {}
+        self._old = os.path.isfile, confuse.load_yaml
+        os.path.isfile, confuse.load_yaml = lambda x: True, lambda x: {}
 
     def tearDown(self):
-        confit.load_yaml, os.path.isfile = self._old
+        confuse.load_yaml, os.path.isfile = self._old
 
     def test_no_sources_when_files_missing(self):
-        config = confit.Configuration('myapp', read=False)
+        config = confuse.Configuration('myapp', read=False)
         filenames = [s.filename for s in config.sources]
         self.assertEqual(filenames, [])
 
     def test_search_package(self):
-        config = confit.Configuration('myapp', __name__, read=False)
+        config = confuse.Configuration('myapp', __name__, read=False)
         config._add_default_source()
 
         for source in config.sources:
@@ -118,7 +118,7 @@ class EnvVarTest(FakeSystem):
 
     def setUp(self):
         super(EnvVarTest, self).setUp()
-        self.config = confit.Configuration('myapp', read=False)
+        self.config = confuse.Configuration('myapp', read=False)
         os.environ['MYAPPDIR'] = self.home  # use the tmp home as a config dir
 
     def test_env_var_name(self):
@@ -153,7 +153,7 @@ class PrimaryConfigDirTest(FakeSystem):
             os.path.join = self.join
             os.makedirs, self._makedirs = self.makedirs, os.makedirs
 
-        self.config = confit.Configuration('test', read=False)
+        self.config = confuse.Configuration('test', read=False)
 
     def tearDown(self):
         super(PrimaryConfigDirTest, self).tearDown()
@@ -170,14 +170,14 @@ class PrimaryConfigDirTest(FakeSystem):
     def test_return_existing_dir(self):
         path = os.path.join(self.home, 'xdgconfig', 'test')
         os.makedirs(path)
-        _touch(os.path.join(path, confit.CONFIG_FILENAME))
+        _touch(os.path.join(path, confuse.CONFIG_FILENAME))
         self.assertEqual(self.config.config_dir(), path)
 
     def test_do_not_create_dir_if_lower_priority_exists(self):
         path1 = os.path.join(self.home, 'xdgconfig', 'test')
         path2 = os.path.join(self.home, '.config', 'test')
         os.makedirs(path2)
-        _touch(os.path.join(path2, confit.CONFIG_FILENAME))
+        _touch(os.path.join(path2, confuse.CONFIG_FILENAME))
         assert not os.path.exists(path1)
         assert os.path.exists(path2)
 

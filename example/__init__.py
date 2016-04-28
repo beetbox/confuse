@@ -1,26 +1,26 @@
-"""An example application using Confit for configuration."""
+"""An example application using Confuse for configuration."""
 from __future__ import print_function
 from __future__ import unicode_literals
-import confit
+import confuse
 import argparse
 
 template = {
-    'library': confit.Filename(),
-    'import_write': confit.OneOf([bool, 'ask', 'skip']),
-    'ignore': confit.StrSeq(),
+    'library': confuse.Filename(),
+    'import_write': confuse.OneOf([bool, 'ask', 'skip']),
+    'ignore': confuse.StrSeq(),
     'plugins': list,
 
     'paths': {
-        'directory': confit.Filename(),
-        'default': confit.Filename(relative_to='directory'),
+        'directory': confuse.Filename(),
+        'default': confuse.Filename(relative_to='directory'),
     }
 }
 
-config = confit.LazyConfig('ConfitExample', __name__)
+config = confuse.LazyConfig('ConfuseExample', __name__)
 
 
 def main():
-    parser = argparse.ArgumentParser(description='example Confit program')
+    parser = argparse.ArgumentParser(description='example Confuse program')
     parser.add_argument('--library', '-l', dest='library', metavar='LIBPATH',
                         help='library database file')
     parser.add_argument('--directory', '-d', dest='directory',

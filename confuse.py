@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# This file is part of Confit.
+# This file is part of Confuse.
 # Copyright 2016, Adrian Sampson.
 #
 # Permission is hereby granted, free of charge, to any person obtaining
@@ -958,7 +958,7 @@ should be raised when the value is missing.
 class Template(object):
     """A value template for configuration fields.
 
-    The template works like a type and instructs Confit about how to
+    The template works like a type and instructs Confuse about how to
     interpret a deserialized YAML value. This includes type conversions,
     providing a default value, and validating for errors. For example, a
     filepath type might expand tildes and check that the file exists.

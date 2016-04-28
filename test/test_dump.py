@@ -1,40 +1,40 @@
-import confit
+import confuse
 import textwrap
 from . import unittest, _root
 
 
 class PrettyDumpTest(unittest.TestCase):
     def test_dump_null(self):
-        config = confit.Configuration('myapp', read=False)
+        config = confuse.Configuration('myapp', read=False)
         config.add({'foo': None})
         yaml = config.dump().strip()
         self.assertEqual(yaml, 'foo:')
 
     def test_dump_true(self):
-        config = confit.Configuration('myapp', read=False)
+        config = confuse.Configuration('myapp', read=False)
         config.add({'foo': True})
         yaml = config.dump().strip()
         self.assertEqual(yaml, 'foo: yes')
 
     def test_dump_false(self):
-        config = confit.Configuration('myapp', read=False)
+        config = confuse.Configuration('myapp', read=False)
         config.add({'foo': False})
         yaml = config.dump().strip()
         self.assertEqual(yaml, 'foo: no')
 
     def test_dump_short_list(self):
-        config = confit.Configuration('myapp', read=False)
+        config = confuse.Configuration('myapp', read=False)
         config.add({'foo': ['bar', 'baz']})
         yaml = config.dump().strip()
         self.assertEqual(yaml, 'foo: [bar, baz]')
 
     def test_dump_ordered_dict(self):
-        odict = confit.OrderedDict()
+        odict = confuse.OrderedDict()
         odict['foo'] = 'bar'
         odict['bar'] = 'baz'
         odict['baz'] = 'qux'
 
-        config = confit.Configuration('myapp', read=False)
+        config = confuse.Configuration('myapp', read=False)
         config.add({'key': odict})
         yaml = config.dump().strip()
         self.assertEqual(yaml, textwrap.dedent("""
@@ -45,7 +45,7 @@ class PrettyDumpTest(unittest.TestCase):
         """).strip())
 
     def test_dump_sans_defaults(self):
-        config = confit.Configuration('myapp', read=False)
+        config = confuse.Configuration('myapp', read=False)
         config.add({'foo': 'bar'})
         config.sources[0].default = True
         config.add({'baz': 'qux'})
@@ -77,21 +77,21 @@ class RedactTest(unittest.TestCase):
         self.assertEqual(data, {'foo': 'bar'})
 
     def test_dump_redacted(self):
-        config = confit.Configuration('myapp', read=False)
+        config = confuse.Configuration('myapp', read=False)
         config.add({'foo': 'bar'})
         config['foo'].redact = True
         yaml = config.dump(redact=True).strip()
         self.assertEqual(yaml, 'foo: REDACTED')
 
     def test_dump_unredacted(self):
-        config = confit.Configuration('myapp', read=False)
+        config = confuse.Configuration('myapp', read=False)
         config.add({'foo': 'bar'})
         config['foo'].redact = True
         yaml = config.dump(redact=False).strip()
         self.assertEqual(yaml, 'foo: bar')
 
     def test_dump_redacted_sans_defaults(self):
-        config = confit.Configuration('myapp', read=False)
+        config = confuse.Configuration('myapp', read=False)
         config.add({'foo': 'bar'})
         config.sources[0].default = True
         config.add({'baz': 'qux'})

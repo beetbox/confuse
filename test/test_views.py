@@ -1,4 +1,4 @@
-import confit
+import confuse
 import sys
 from . import _root, unittest
 
@@ -17,12 +17,12 @@ class SingleSourceTest(unittest.TestCase):
 
     def test_missing_key(self):
         config = _root({'foo': 'bar'})
-        with self.assertRaises(confit.NotFoundError):
+        with self.assertRaises(confuse.NotFoundError):
             config['baz'].get()
 
     def test_missing_index(self):
         config = _root({'l': ['foo', 'bar']})
-        with self.assertRaises(confit.NotFoundError):
+        with self.assertRaises(confuse.NotFoundError):
             config['l'][5].get()
 
     def test_dict_keys(self):
@@ -42,7 +42,7 @@ class SingleSourceTest(unittest.TestCase):
 
     def test_list_keys_error(self):
         config = _root({'l': ['foo', 'bar']})
-        with self.assertRaises(confit.ConfigTypeError):
+        with self.assertRaises(confuse.ConfigTypeError):
             config['l'].keys()
 
     def test_dict_contents(self):
@@ -57,7 +57,7 @@ class SingleSourceTest(unittest.TestCase):
 
     def test_int_contents(self):
         config = _root({'n': 2})
-        with self.assertRaises(confit.ConfigTypeError):
+        with self.assertRaises(confuse.ConfigTypeError):
             list(config['n'].all_contents())
 
 class ConverstionTest(unittest.TestCase):
@@ -71,7 +71,7 @@ class ConverstionTest(unittest.TestCase):
         value = str(config['foo'])
         self.assertEqual(value, '2')
 
-    @unittest.skipIf(confit.PY3, "unicode only present in Python 2")
+    @unittest.skipIf(confuse.PY3, "unicode only present in Python 2")
     def test_unicode_conversion_from_int(self):
         config = _root({'foo': 2})
         value = unicode(config['foo'])
@@ -120,7 +120,7 @@ class MultipleSourceTest(unittest.TestCase):
 
     def test_dict_access_missing(self):
         config = _root({'qux': 'bar'}, {'foo': 'baz'})
-        with self.assertRaises(confit.NotFoundError):
+        with self.assertRaises(confuse.NotFoundError):
             config['fred'].get()
 
     def test_list_access_shadowed(self):
@@ -135,7 +135,7 @@ class MultipleSourceTest(unittest.TestCase):
 
     def test_list_access_missing(self):
         config = _root({'l': ['a', 'b']}, {'l': ['c', 'd', 'e']})
-        with self.assertRaises(confit.NotFoundError):
+        with self.assertRaises(confuse.NotFoundError):
             config['l'][3].get()
 
     def test_access_dict_replaced(self):
@@ -190,7 +190,7 @@ class MultipleSourceTest(unittest.TestCase):
 
     def test_int_contents_error(self):
         config = _root({'foo': ['bar', 'baz']}, {'foo': 5})
-        with self.assertRaises(confit.ConfigTypeError):
+        with self.assertRaises(confuse.ConfigTypeError):
             list(config['foo'].all_contents())
 
     def test_list_and_dict_contents_concatenated(self):

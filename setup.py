@@ -19,14 +19,14 @@ setup(
     description='painless YAML configuration',
     author='Adrian Sampson',
     author_email='adrian@radbox.org',
-    url='https://github.com/sampsyo/confit',
+    url='https://github.com/sampsyo/confuse',
     license='MIT',
     platforms='ALL',
     long_description=_read("README.rst"),
 
     install_requires=reqs,
 
-    py_modules=['confit'],
+    py_modules=['confuse'],
 
     classifiers=[
         'Intended Audience :: Developers',

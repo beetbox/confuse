@@ -1,4 +1,4 @@
-import confit
+import confuse
 import tempfile
 import shutil
 import os
@@ -12,7 +12,7 @@ except ImportError:
 
 
 def _root(*sources):
-    return confit.RootView([confit.ConfigSource.of(s) for s in sources])
+    return confuse.RootView([confuse.ConfigSource.of(s) for s in sources])
 
 
 class TempDir(object):
