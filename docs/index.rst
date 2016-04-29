@@ -1,5 +1,5 @@
 Confuse: Painless Configuration
-==============================
+===============================
 
 `Confuse`_ is a straightforward, full-featured configuration system
 for Python.
@@ -8,7 +8,7 @@ for Python.
 
 
 Using Confuse
-------------
+-------------
 
 Set up your Configuration object, which provides unified access to
 all of your application’s config settings::

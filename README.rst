@@ -1,5 +1,5 @@
 Confuse: painless YAML config files that Just Work
-=================================================
+==================================================
 
 .. image:: https://travis-ci.org/sampsyo/confuse.svg?branch=master
     :target: https://travis-ci.org/sampsyo/confuse
