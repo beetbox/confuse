@@ -59,8 +59,8 @@ Author
 ------
 
 Confuse is being developed by `Adrian Sampson`_. It’s not done yet, but
-you’re welcome to use it under the terms of the `MIT license`_. I'm
-building Confuse to use it with a future version of `beets`_.
+you’re welcome to use it under the terms of the `MIT license`_. Confuse was
+originally made to power `beets`_.
 
 .. _ConfigParser: http://docs.python.org/library/configparser.html
 .. _YAML: http://yaml.org/
@@ -70,4 +70,4 @@ building Confuse to use it with a future version of `beets`_.
 .. _Confuse’s documentation: http://confuse.readthedocs.org/
 .. _Adrian Sampson: https://github.com/sampsyo
 .. _MIT license: http://www.opensource.org/licenses/mit-license.php
-.. _beets: https://github.com/sampsyo/beets
+.. _beets: https://github.com/beetbox/beets
