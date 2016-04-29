@@ -1,19 +1,19 @@
-Confit: Painless Configuration
+Confuse: Painless Configuration
 ==============================
 
-`Confit`_ (*con-FEE*) is a straightforward, full-featured configuration system
+`Confuse`_ is a straightforward, full-featured configuration system
 for Python.
 
-.. _Confit: https://github.com/sampsyo/confit
+.. _Confuse: https://github.com/sampsyo/confuse
 
 
-Using Confit
+Using Confuse
 ------------
 
 Set up your Configuration object, which provides unified access to
 all of your application’s config settings::
 
-    config = confit.Configuration('MyGreatApp', __name__)
+    config = confuse.Configuration('MyGreatApp', __name__)
 
 The first parameter is required; it’s the name of your application that
 will be used to search the system for config files. The second parameter
@@ -39,19 +39,19 @@ pass that type to ``get()``::
 
     int_value = config['number_of_goats'].get(int)
 
-This way, Confit will either give you an integer or raise a
+This way, Confuse will either give you an integer or raise a
 ``ConfigTypeError`` if the user has messed up the configuration. You’re
 safe to assume after this call that ``int_value`` has the right type. If
-the key doesn’t exist in any configuration file, Confit will raise a
+the key doesn’t exist in any configuration file, Confuse will raise a
 ``NotFoundError``. Together, catching these exceptions (both subclasses
-of ``confit.ConfigError``) lets you painlessly validate the user’s
+of ``confuse.ConfigError``) lets you painlessly validate the user’s
 configuration as you go.
 
 
 View Theory
 -----------
 
-The Confit API is based on the concept of *views*. You can think of a
+The Confuse API is based on the concept of *views*. You can think of a
 view as a *place to look* in a config file: for example, one view might
 say “get the value for key ``number_of_goats``”. Another might say “get
 the value at index 8 inside the sequence for key ``animal_counts``”. To
@@ -77,8 +77,8 @@ the user’s config rates them a 10, then clearly
 ``config['deliciousness']['carrots'].get()`` should return 10. But what
 if the two data sources have different sets of vegetables? If the user
 provides a value for broccoli and zucchini but not carrots, should
-carrots have a default deliciousness value of 8 or should Confit just
-throw an exception? With Confit’s views, the application gets to decide.
+carrots have a default deliciousness value of 8 or should Confuse just
+throw an exception? With Confuse’s views, the application gets to decide.
 
 The above expression, ``config['deliciousness']['carrots'].get()``,
 returns 10 (falling back on the default). However, you can also write
@@ -96,7 +96,7 @@ Validation
 
 We saw above that you can easily assert that a configuration value has a
 certain type by passing that type to ``get()``. But sometimes you need
-to do more than just type checking. For this reason, Confit provides a
+to do more than just type checking. For this reason, Confuse provides a
 few methods on views that perform fancier validation or even
 conversion:
 
@@ -138,7 +138,7 @@ configuration file should override those from a system-wide config,
 command-line options should take priority over all configuration files.
 
 You can use the `argparse`_ and `optparse`_ modules from the standard
-library with Confit to accomplish this. Just call the ``set_args``
+library with Confuse to accomplish this. Just call the ``set_args``
 method on any view and pass in the object returned by the command-line
 parsing library. Values from the command-line option namespace object
 will be added to the overlay for the view in question. For example, with
@@ -157,7 +157,7 @@ source in your configuration. The key associated with each option in the
 parser will become a key available in your configuration. For example,
 consider this argparse script::
 
-    config = confit.Configuration('myapp')
+    config = confuse.Configuration('myapp')
     parser = argparse.ArgumentParser()
     parser.add_argument('--foo', help='a parameter')
     args = parser.parse_args()
@@ -173,7 +173,7 @@ This will allow the user to override the configured value for key
 
 Note that, while you can use the full power of your favorite
 command-line parsing library, you'll probably want to avoid specifying
-defaults in your argparse or optparse setup. This way, Confit can use
+defaults in your argparse or optparse setup. This way, Confuse can use
 other configuration sources---possibly your
 ``config_default.yaml``---to fill in values for unspecified
 command-line switches. Otherwise, the argparse/optparse default value
@@ -183,9 +183,9 @@ will hide options configured elsewhere.
 Search Paths
 ------------
 
-Confit looks in a number of locations for your application's
+Confuse looks in a number of locations for your application's
 configurations. The locations are determined by the platform. For each
-platform, Confit has a list of directories in which it looks for a
+platform, Confuse has a list of directories in which it looks for a
 directory named after the application. For example, the first search
 location on Unix-y systems is ``$XDG_CONFIG_HOME/AppName`` for an
 application called ``AppName``.
@@ -206,19 +206,19 @@ environment variable is ``APPNAMEDIR``.
 Your Application Directory
 --------------------------
 
-Confit provides a simple helper, ``Configuration.config_dir()``, that
+Confuse provides a simple helper, ``Configuration.config_dir()``, that
 gives you a directory used to store your application's configuration. If
 a configuration file exists in any of the searched locations, then the
 highest-priority directory containing a config file is used. Otherwise,
 a directory is created for you and returned. So you can always expect
 this method to give you a directory that actually exists.
 
-As an example, you may want to migrate a user's settings to Confit from
+As an example, you may want to migrate a user's settings to Confuse from
 an older configuration system such as `ConfigParser`_. Just do something
 like this::
 
     config_filename = os.path.join(config.config_dir(),
-                                   confit.CONFIG_FILENAME)
+                                   confuse.CONFIG_FILENAME)
     with open(config_filename, 'w') as f:
         yaml.dump(migrated_config, f)
 
@@ -234,7 +234,7 @@ the program to change a setting for the current execution only. Or the
 program might need to add a *derived* configuration value that the user
 doesn't specify.
 
-To facilitate this, Confit lets you *assign* to view objects using
+To facilitate this, Confuse lets you *assign* to view objects using
 ordinary Python assignment. Assignment will add an overlay source that
 precedes all other configuration sources in priority. Here's an example
 of programmatically setting a configuration value based on a ``DEBUG``
@@ -260,7 +260,7 @@ be overridden by previously-loaded configuration files.
 YAML Tweaks
 -----------
 
-Confit uses the `PyYAML`_ module to parse YAML configuration files. However, it
+Confuse uses the `PyYAML`_ module to parse YAML configuration files. However, it
 deviates very slightly from the official YAML specification to provide a few
 niceties suited to human-written configuration files. Those tweaks are:
 
@@ -303,7 +303,7 @@ pass configuration from call to call.
 
 To use global configuration, consider creating a configuration object in
 a well-known module (say, the root of a package). But since this object
-will be initialized at module load time, Confit provides a `LazyConfig`
+will be initialized at module load time, Confuse provides a `LazyConfig`
 object that loads your configuration files on demand instead of when the
 object is constructed. (Doing complicated stuff like parsing YAML at
 module load time is generally considered a Bad Idea.)

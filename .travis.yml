@@ -11,7 +11,7 @@ install:
     # backports on Python < 2.7
     - "[[ $TRAVIS_PYTHON_VERSION == '2.6' ]] && pip install unittest2 || true"
 
-script: nosetests --with-coverage --cover-package=confit
+script: nosetests --with-coverage --cover-package=confuse
 
 # coveralls.io reporting, using https://github.com/coagulant/coveralls-python
 # Only report coverage for one version.
