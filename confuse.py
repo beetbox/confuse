@@ -51,7 +51,6 @@ PY3 = sys.version_info[0] == 3
 STRING = str if PY3 else unicode
 BASESTRING = str if PY3 else basestring
 NUMERIC_TYPES = (int, float) if PY3 else (int, float, long)
-TYPE_TYPES = (type,) if PY3 else (type, types.ClassType)
 
 
 def iter_first(sequence):
