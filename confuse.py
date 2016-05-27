@@ -59,10 +59,7 @@ def iter_first(sequence):
     """
     it = iter(sequence)
     try:
-        if PY3:
-            return next(it)
-        else:
-            return it.next()
+        return next(it)
     except StopIteration:
         raise ValueError()
 
