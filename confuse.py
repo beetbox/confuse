@@ -22,7 +22,6 @@ import os
 import pkgutil
 import sys
 import yaml
-import types
 import collections
 import re
 try:
