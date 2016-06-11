@@ -1,7 +1,8 @@
 import confuse
 import os
 import collections
-from . import _root, unittest
+import unittest
+from . import _root
 
 
 class ValidConfigTest(unittest.TestCase):

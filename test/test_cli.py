@@ -1,7 +1,8 @@
 import confuse
 import argparse
 import optparse
-from . import unittest
+import unittest
+
 
 class ArgparseTest(unittest.TestCase):
     def setUp(self):

@@ -5,8 +5,7 @@ import platform
 import posixpath
 import shutil
 import tempfile
-
-from . import unittest
+import unittest
 
 DEFAULT = [platform.system, os.environ, os.path]
 SYSTEMS = {

@@ -1,6 +1,7 @@
 import confuse
 import textwrap
-from . import unittest, _root
+import unittest
+from . import _root
 
 
 class PrettyDumpTest(unittest.TestCase):

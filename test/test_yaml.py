@@ -1,9 +1,12 @@
 import confuse
 import yaml
-from . import unittest, TempDir
+import unittest
+from . import TempDir
+
 
 def load(s):
     return yaml.load(s, Loader=confuse.Loader)
+
 
 class ParseTest(unittest.TestCase):
     def test_dict_parsed_as_ordereddict(self):
@@ -14,6 +17,7 @@ class ParseTest(unittest.TestCase):
     def test_string_beginning_with_percent(self):
         v = load("foo: %bar")
         self.assertEqual(v['foo'], '%bar')
+
 
 class FileParseTest(unittest.TestCase):
     def _parse_contents(self, contents):

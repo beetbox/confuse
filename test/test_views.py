@@ -1,8 +1,10 @@
 import confuse
 import sys
-from . import _root, unittest
+import unittest
+from . import _root
 
 PY3 = sys.version_info[0] == 3
+
 
 class SingleSourceTest(unittest.TestCase):
     def test_dict_access(self):
@@ -60,6 +62,7 @@ class SingleSourceTest(unittest.TestCase):
         with self.assertRaises(confuse.ConfigTypeError):
             list(config['n'].all_contents())
 
+
 class ConverstionTest(unittest.TestCase):
     def test_str_conversion_from_str(self):
         config = _root({'foo': 'bar'})
@@ -87,6 +90,7 @@ class ConverstionTest(unittest.TestCase):
         value = bool(config['foo'])
         self.assertEqual(value, False)
 
+
 class NameTest(unittest.TestCase):
     def test_root_name(self):
         config = _root()
@@ -106,6 +110,7 @@ class NameTest(unittest.TestCase):
         config = _root()
         name = config[5]['foo']['bar'][20].name
         self.assertEqual(name, "#5.foo.bar#20")
+
 
 class MultipleSourceTest(unittest.TestCase):
     def test_dict_access_shadowed(self):
@@ -203,6 +208,7 @@ class MultipleSourceTest(unittest.TestCase):
         config.add({'baz': 'qux'})
         self.assertEqual(config['foo'].get(), 'bar')
         self.assertEqual(config['baz'].get(), 'qux')
+
 
 class SetTest(unittest.TestCase):
     def test_set_missing_top_level_key(self):

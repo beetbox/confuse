@@ -1,6 +1,8 @@
 import confuse
 import os
-from . import _root, unittest
+import unittest
+from . import _root
+
 
 class TypeCheckTest(unittest.TestCase):
     def test_str_type_correct(self):
@@ -22,6 +24,7 @@ class TypeCheckTest(unittest.TestCase):
         config = _root({'foo': 'bar'})
         with self.assertRaises(confuse.ConfigTypeError):
             config['foo'].get(int)
+
 
 class BuiltInValidatorTest(unittest.TestCase):
     def test_as_filename_with_non_file_source(self):
