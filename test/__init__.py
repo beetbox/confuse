@@ -4,13 +4,6 @@ import shutil
 import os
 
 
-# Use unittest2 on Python < 2.7.
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest  # noqa
-
-
 def _root(*sources):
     return confuse.RootView([confuse.ConfigSource.of(s) for s in sources])
 
