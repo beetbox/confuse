@@ -1,3 +1,5 @@
+from __future__ import division, absolute_import, print_function
+
 import confuse
 import os
 import collections
@@ -105,13 +107,13 @@ class AsTemplateTest(unittest.TestCase):
 
     @unittest.skipIf(confuse.PY3, "unicode only present in Python 2")
     def test_unicode_type_as_template(self):
-        typ = confuse.as_template(unicode)
+        typ = confuse.as_template(unicode)  # noqa ignore=F821
         self.assertIsInstance(typ, confuse.String)
         self.assertEqual(typ.default, confuse.REQUIRED)
 
     @unittest.skipIf(confuse.PY3, "basestring only present in Python 2")
     def test_basestring_as_template(self):
-        typ = confuse.as_template(basestring)
+        typ = confuse.as_template(basestring)  # noqa ignore=F821
         self.assertIsInstance(typ, confuse.String)
         self.assertEqual(typ.default, confuse.REQUIRED)
 
@@ -375,7 +377,7 @@ class FilenameTest(unittest.TestCase):
 
     def test_filename_with_file_source(self):
         source = confuse.ConfigSource({'foo': 'foo/bar'},
-                                     filename='/baz/config.yaml')
+                                      filename='/baz/config.yaml')
         config = _root(source)
         config.config_dir = lambda: '/config/path'
         valid = config['foo'].get(confuse.Filename())
@@ -383,8 +385,8 @@ class FilenameTest(unittest.TestCase):
 
     def test_filename_with_default_source(self):
         source = confuse.ConfigSource({'foo': 'foo/bar'},
-                                     filename='/baz/config.yaml',
-                                     default=True)
+                                      filename='/baz/config.yaml',
+                                      default=True)
         config = _root(source)
         config.config_dir = lambda: '/config/path'
         valid = config['foo'].get(confuse.Filename())

@@ -1,3 +1,5 @@
+from __future__ import division, absolute_import, print_function
+
 import confuse
 import ntpath
 import os
@@ -7,10 +9,12 @@ import shutil
 import tempfile
 import unittest
 
+
 DEFAULT = [platform.system, os.environ, os.path]
+
 SYSTEMS = {
     'Linux': [{'HOME': '/home/test', 'XDG_CONFIG_HOME': '~/xdgconfig'},
-        posixpath],
+              posixpath],
     'Darwin': [{'HOME': '/Users/test'}, posixpath],
     'Windows': [{'APPDATA': '~\\winconfig', 'HOME': 'C:\\Users\\test'}, ntpath]
 }
@@ -48,7 +52,7 @@ class LinuxTestCases(FakeSystem):
 
     def test_both_xdg_and_fallback_dirs(self):
         self.assertEqual(confuse.config_dirs(),
-            ['/home/test/.config', '/home/test/xdgconfig'])
+                         ['/home/test/.config', '/home/test/xdgconfig'])
 
     def test_fallback_only(self):
         del os.environ['XDG_CONFIG_HOME']
@@ -64,7 +68,8 @@ class OSXTestCases(FakeSystem):
 
     def test_mac_dirs(self):
         self.assertEqual(confuse.config_dirs(),
-            ['/Users/test/Library/Application Support', '/Users/test/.config'])
+                         ['/Users/test/Library/Application Support',
+                          '/Users/test/.config'])
 
 
 class WindowsTestCases(FakeSystem):
@@ -72,13 +77,13 @@ class WindowsTestCases(FakeSystem):
 
     def test_dir_from_environ(self):
         self.assertEqual(confuse.config_dirs(),
-            ['C:\\Users\\test\\AppData\\Roaming',
-            'C:\\Users\\test\\winconfig'])
+                         ['C:\\Users\\test\\AppData\\Roaming',
+                          'C:\\Users\\test\\winconfig'])
 
     def test_fallback_dir(self):
         del os.environ['APPDATA']
         self.assertEqual(confuse.config_dirs(),
-            ['C:\\Users\\test\\AppData\\Roaming'])
+                         ['C:\\Users\\test\\AppData\\Roaming'])
 
 
 class ConfigFilenamesTest(unittest.TestCase):

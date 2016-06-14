@@ -1,3 +1,5 @@
+from __future__ import division, absolute_import, print_function
+
 import confuse
 import argparse
 import optparse
@@ -36,6 +38,7 @@ class ArgparseTest(unittest.TestCase):
         self._parse('--foo bar')
         self.assertEqual(self.config['foo'].get(), 'bar')
 
+
 class OptparseTest(unittest.TestCase):
     def setUp(self):
         self.config = confuse.Configuration('test', read=False)
@@ -68,9 +71,11 @@ class OptparseTest(unittest.TestCase):
         self._parse('--foo bar')
         self.assertEqual(self.config['foo'].get(), 'bar')
 
+
 class Namespace(object):
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
+
 
 class GenericNamespaceTest(unittest.TestCase):
     def setUp(self):

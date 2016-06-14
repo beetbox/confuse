@@ -1,3 +1,5 @@
+from __future__ import division, absolute_import, print_function
+
 import confuse
 import sys
 import unittest
@@ -77,8 +79,8 @@ class ConverstionTest(unittest.TestCase):
     @unittest.skipIf(confuse.PY3, "unicode only present in Python 2")
     def test_unicode_conversion_from_int(self):
         config = _root({'foo': 2})
-        value = unicode(config['foo'])
-        self.assertEqual(value, unicode('2'))
+        value = unicode(config['foo'])  # noqa ignore=F821
+        self.assertEqual(value, unicode('2'))  # noqa ignore=F821
 
     def test_bool_conversion_from_bool(self):
         config = _root({'foo': True})

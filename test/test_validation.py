@@ -1,3 +1,5 @@
+from __future__ import division, absolute_import, print_function
+
 import confuse
 import os
 import unittest
@@ -34,7 +36,7 @@ class BuiltInValidatorTest(unittest.TestCase):
 
     def test_as_filename_with_file_source(self):
         source = confuse.ConfigSource({'foo': 'foo/bar'},
-                                     filename='/baz/config.yaml')
+                                      filename='/baz/config.yaml')
         config = _root(source)
         config.config_dir = lambda: '/config/path'
         value = config['foo'].as_filename()
@@ -42,8 +44,8 @@ class BuiltInValidatorTest(unittest.TestCase):
 
     def test_as_filename_with_default_source(self):
         source = confuse.ConfigSource({'foo': 'foo/bar'},
-                                     filename='/baz/config.yaml',
-                                     default=True)
+                                      filename='/baz/config.yaml',
+                                      default=True)
         config = _root(source)
         config.config_dir = lambda: '/config/path'
         value = config['foo'].as_filename()
@@ -82,7 +84,7 @@ class BuiltInValidatorTest(unittest.TestCase):
 
     @unittest.skipIf(confuse.PY3, "long only present in Python 2")
     def test_as_number_long_in_py2(self):
-        config = _root({'l': long(3)})
+        config = _root({'l': long(3)})  # noqa ignore=F821
         config['l'].as_number()
 
     def test_as_number_string(self):
