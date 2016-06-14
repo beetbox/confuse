@@ -49,6 +49,7 @@ class test(Command):  # noqa: ignore=N801
 
         # Add eggs to PYTHONPATH. We need to do this to ensure our eggs are
         # seen by Tox.
+        # Without this, Tox can't find it's dependencies.
         self.distribution.export_live_eggs()
 
         shlex = __import__('shlex')
