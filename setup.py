@@ -5,6 +5,7 @@ from os import path
 import sys
 from setuptools.dist import Distribution
 from setuptools import setup, Command
+import shlex
 
 
 class CustomDistribution(Distribution):
@@ -52,7 +53,6 @@ class test(Command):  # noqa: ignore=N801
         # Without this, Tox can't find it's dependencies.
         self.distribution.export_live_eggs()
 
-        shlex = __import__('shlex')
         tox = __import__('tox')
 
         parsed_args = shlex.split(self.tox_args)
