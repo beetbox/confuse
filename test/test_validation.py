@@ -84,7 +84,7 @@ class BuiltInValidatorTest(unittest.TestCase):
 
     @unittest.skipIf(confuse.PY3, "long only present in Python 2")
     def test_as_number_long_in_py2(self):
-        config = _root({'l': long(3)})
+        config = _root({'l': long(3)})  # noqa ignore=F821
         config['l'].as_number()
 
     def test_as_number_string(self):

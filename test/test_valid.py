@@ -107,13 +107,13 @@ class AsTemplateTest(unittest.TestCase):
 
     @unittest.skipIf(confuse.PY3, "unicode only present in Python 2")
     def test_unicode_type_as_template(self):
-        typ = confuse.as_template(unicode)
+        typ = confuse.as_template(unicode)  # noqa ignore=F821
         self.assertIsInstance(typ, confuse.String)
         self.assertEqual(typ.default, confuse.REQUIRED)
 
     @unittest.skipIf(confuse.PY3, "basestring only present in Python 2")
     def test_basestring_as_template(self):
-        typ = confuse.as_template(basestring)
+        typ = confuse.as_template(basestring)  # noqa ignore=F821
         self.assertIsInstance(typ, confuse.String)
         self.assertEqual(typ.default, confuse.REQUIRED)
 
