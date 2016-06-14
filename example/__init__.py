@@ -1,8 +1,8 @@
 """An example application using Confuse for configuration."""
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import division, absolute_import, print_function
 import confuse
 import argparse
+
 
 template = {
     'library': confuse.Filename(),

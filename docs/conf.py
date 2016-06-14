@@ -1,3 +1,6 @@
+from __future__ import division, absolute_import, print_function
+
+
 extensions = []
 source_suffix = '.rst'
 master_doc = 'index'
@@ -12,7 +15,7 @@ exclude_patterns = ['_build']
 
 pygments_style = 'sphinx'
 
-# -- Options for HTML output ---------------------------------------------------
+# -- Options for HTML output --------------------------------------------------
 
 html_theme = 'default'
 html_static_path = ['_static']

@@ -26,6 +26,7 @@ import collections
 import re
 from collections import OrderedDict
 
+
 UNIX_DIR_VAR = 'XDG_CONFIG_HOME'
 UNIX_DIR_FALLBACK = '~/.config'
 WINDOWS_DIR_VAR = 'APPDATA'
