@@ -28,10 +28,9 @@ matrix:
 # To install dependencies, tell tox to do everything but actually running the
 # test.
 install:
-    - travis_retry pip install tox
-    - travis_retry tox --notest
+    - travis_retry python setup.py test -a "--notest"
 
-script: tox
+script: python setup.py test
 
 # Report coverage to codecov.io.
 before_install:
