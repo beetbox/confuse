@@ -6,6 +6,7 @@ __pycache__/
 *.py[cod]
 build/
 dist/
+docs/_build/
 
 # Installer logs
 pip-log.txt
