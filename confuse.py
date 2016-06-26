@@ -26,7 +26,6 @@ import collections
 import re
 from collections import OrderedDict
 
-
 UNIX_DIR_VAR = 'XDG_CONFIG_HOME'
 UNIX_DIR_FALLBACK = '~/.config'
 WINDOWS_DIR_VAR = 'APPDATA'
@@ -482,11 +481,10 @@ class Subview(ConfigView):
                 self.name += '.'
         if isinstance(self.key, int):
             self.name += u'#{0}'.format(self.key)
-        elif isinstance(self.key, BASESTRING):
-            if isinstance(self.key, bytes):
-                self.name += self.key.decode('utf8')
-            else:
-                self.name += self.key
+        elif isinstance(self.key, bytes):
+            self.name += self.key.decode('utf8')
+        elif isinstance(self.key, STRING):
+            self.name += self.key
         else:
             self.name += repr(self.key)
 
