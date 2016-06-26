@@ -105,3 +105,12 @@ class BuiltInValidatorTest(unittest.TestCase):
             config['k'].as_str_seq(),
             ['a b', 'c']
         )
+
+    def test_as_str(self):
+        config = _root({'s': 'foo'})
+        config['s'].as_str()
+
+    def test_as_str_non_string(self):
+        config = _root({'f': 1.0})
+        with self.assertRaises(confuse.ConfigTypeError):
+            config['f'].as_str()
