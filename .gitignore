@@ -1,12 +1,14 @@
 .DS_Store
 .idea
 *~
+.python-version
 
 __pycache__/
 *.py[cod]
 build/
 dist/
 docs/_build/
+*.egg-info/
 
 # Installer logs
 pip-log.txt
