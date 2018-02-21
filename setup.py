@@ -63,7 +63,10 @@ class test(Command):  # noqa: ignore=N801
 
 def _read(fn):
     path = os.path.join(os.path.dirname(__file__), fn)
-    return open(path).read()
+    with open(path, "rb") as f:
+        data = f.read()
+
+    return data.decode("utf-8")
 
 
 setup(
