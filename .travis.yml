@@ -25,12 +25,11 @@ matrix:
         - python: 2.7
           env: {TOXENV: docs}
 
-# To install dependencies, tell tox to do everything but actually running the
-# test.
+# Install tox for testing.
 install:
-    - travis_retry python setup.py test -a "--notest"
+    - travis_retry pip install tox
 
-script: python setup.py test
+script: tox
 
 # Report coverage to codecov.io.
 before_install:
