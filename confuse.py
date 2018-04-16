@@ -1226,14 +1226,14 @@ class StrSeq(Template):
     Validates both actual YAML string lists and single strings. Strings
     can optionally be split on whitespace.
     """
-    def __init__(self, split=True):
+    def __init__(self, split=True, default=REQUIRED):
         """Create a new template.
 
         `split` indicates whether, when the underlying value is a single
         string, it should be split on whitespace. Otherwise, the
         resulting value is a list containing a single string.
         """
-        super(StrSeq, self).__init__()
+        super(StrSeq, self).__init__(default)
         self.split = split
 
     def convert(self, value, view):
