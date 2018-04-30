@@ -167,6 +167,24 @@ consider this argparse script::
 This will allow the user to override the configured value for key
 ``foo`` by passing ``--foo <something>`` on the command line.
 
+Overriding nested values can be accomplished by passing `dots=True` and
+have dot-delimited properties on the incoming object.::
+
+    parser.add_argument('--bar', help='nested parameter', dest='foo.bar')
+    args = parser.parse_args()  # args looks like: {'foo.bar': 'value'}
+    config.set_args(args, dots=True)
+    print(config['foo']['bar'].get())
+
+`parse_args` works with generic dictionaries too.::
+
+    args = {
+      'foo': {
+        'bar': 1
+      }
+    }
+    config.set_args(args, dots=True)
+    print(config['foo']['bar'].get())
+
 .. _argparse: http://docs.python.org/dev/library/argparse.html
 .. _parse_args: http://docs.python.org/library/argparse.html#the-parse-args-method
 .. _optparse: http://docs.python.org/library/optparse.html

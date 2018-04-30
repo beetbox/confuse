@@ -23,7 +23,7 @@ def main():
     parser = argparse.ArgumentParser(description='example Confuse program')
     parser.add_argument('--library', '-l', dest='library', metavar='LIBPATH',
                         help='library database file')
-    parser.add_argument('--directory', '-d', dest='directory',
+    parser.add_argument('--directory', '-d', dest='paths.directory',
                         metavar='DIRECTORY',
                         help='destination music directory')
     parser.add_argument('--verbose', '-v', dest='verbose', action='store_true',
