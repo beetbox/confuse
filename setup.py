@@ -71,7 +71,7 @@ def _read(fn):
 
 setup(
     name='confuse',
-    version='0.4.0',
+    version='0.5.0',
     description='painless YAML configuration',
     author='Adrian Sampson',
     author_email='adrian@radbox.org',
@@ -79,6 +79,7 @@ setup(
     license='MIT',
     platforms='ALL',
     long_description=_read("README.rst"),
+    long_description_content_type='text/x-rst',
     install_requires=['pyyaml'],
     tests_require=['tox'],
     py_modules=['confuse'],
