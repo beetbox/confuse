@@ -51,9 +51,9 @@ Here’s what Confuse brings to the table:
    command-line options to override configured defaults.
 
 Using Confuse
-------------
+-------------
 
-`Confuse’s documentation`_ describes its API in detail.
+`Confuse's documentation`_ describes its API in detail.
 
 Author
 ------
