@@ -17,8 +17,13 @@
 """
 from __future__ import division, absolute_import, print_function
 
+try:
+    import enum
+    SUPPORTS_ENUM = True
+except ImportError:
+    SUPPORTS_ENUM = False
+
 import argparse
-import enum
 import optparse
 import platform
 import os
@@ -1234,13 +1239,15 @@ class Choice(Template):
         """Ensure that the value is among the choices (and remap if the
         choices are a mapping).
         """
-        if isinstance(self.choices, type) and issubclass(self.choices, enum.Enum):
+        if (SUPPORTS_ENUM and isinstance(self.choices, type) and
+                issubclass(self.choices, enum.Enum)):
             try:
                 return self.choices(value)
             except ValueError:
                 self.fail(
                     u'must be one of {0}, not {1}'.format(
-                        repr(choice.value for choice in self.choices), repr(value)
+                        repr(c.value for c in self.choices),
+                        repr(value)
                     ),
                     view
                 )

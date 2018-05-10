@@ -1,7 +1,12 @@
 from __future__ import division, absolute_import, print_function
 
+try:
+    import enum
+    SUPPORTS_ENUM = True
+except ImportError:
+    SUPPORTS_ENUM = False
+
 import confuse
-import enum
 import os
 import unittest
 from . import _root
@@ -75,14 +80,14 @@ class BuiltInValidatorTest(unittest.TestCase):
         })
         self.assertEqual(res, 'baz')
 
+    @unittest.skipUnless(SUPPORTS_ENUM, "enum not supported in this version of Python")
     def test_as_choice_with_enum(self):
-        class Fruit(enum.Enum):
-            Apple = 'apple'
-            Banana = 'banana'
+        class Foobar(enum.Enum):
+            Foo = 'bar'
 
-        config = _root({'foo': Fruit.Apple.value})
-        res = config['foo'].as_choice(Fruit)
-        self.assertEqual(res, Fruit.Apple)
+        config = _root({'foo': Foobar.Foo.value})
+        res = config['foo'].as_choice(Foobar)
+        self.assertEqual(res, Foobar.Foo)
 
     def test_as_number_float(self):
         config = _root({'f': 1.0})
