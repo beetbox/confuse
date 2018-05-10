@@ -1246,7 +1246,7 @@ class Choice(Template):
             except ValueError:
                 self.fail(
                     u'must be one of {0}, not {1}'.format(
-                        repr(c.value for c in self.choices),
+                        repr([c.value for c in self.choices]),
                         repr(value)
                     ),
                     view

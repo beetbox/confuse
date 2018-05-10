@@ -90,6 +90,16 @@ class BuiltInValidatorTest(unittest.TestCase):
         res = config['foo'].as_choice(Foobar)
         self.assertEqual(res, Foobar.Foo)
 
+    @unittest.skipUnless(SUPPORTS_ENUM,
+                         "enum not supported in this version of Python.")
+    def test_as_choice_with_enum_error(self):
+        class Foobar(enum.Enum):
+            Foo = 'bar'
+
+        config = _root({'foo': 'foo'})
+        with self.assertRaises(confuse.ConfigValueError):
+            config['foo'].as_choice(Foobar)
+
     def test_as_number_float(self):
         config = _root({'f': 1.0})
         config['f'].as_number()
