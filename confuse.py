@@ -18,6 +18,7 @@
 from __future__ import division, absolute_import, print_function
 
 import argparse
+import enum
 import optparse
 import platform
 import os
@@ -1223,6 +1224,9 @@ class Choice(Template):
 
         If `choices` is a map, then the corresponding value is emitted.
         Otherwise, the value itself is emitted.
+
+        If `choices` is a `Enum`, then the enum entry with the value is
+        emitted.
         """
         self.choices = choices
 
@@ -1230,6 +1234,17 @@ class Choice(Template):
         """Ensure that the value is among the choices (and remap if the
         choices are a mapping).
         """
+        if isinstance(self.choices, type) and issubclass(self.choices, enum.Enum):
+            try:
+                return self.choices(value)
+            except ValueError:
+                self.fail(
+                    u'must be one of {0}, not {1}'.format(
+                        repr(choice.value for choice in self.choices), repr(value)
+                    ),
+                    view
+                )
+
         if value not in self.choices:
             self.fail(
                 u'must be one of {0}, not {1}'.format(
@@ -1526,6 +1541,8 @@ def as_template(value):
     elif isinstance(value, set):
         # convert to list to avoid hash related problems
         return Choice(list(value))
+    elif isinstance(value, type) and issubclass(value, type):
+        return Choice(value)
     elif isinstance(value, list):
         return OneOf(value)
     elif value is float:

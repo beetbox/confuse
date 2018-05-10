@@ -1,6 +1,7 @@
 from __future__ import division, absolute_import, print_function
 
 import confuse
+import enum
 import os
 import unittest
 from . import _root
@@ -73,6 +74,15 @@ class BuiltInValidatorTest(unittest.TestCase):
             'x': 'y',
         })
         self.assertEqual(res, 'baz')
+
+    def test_as_choice_with_enum(self):
+        class Fruit(enum.Enum):
+            Apple = 'apple'
+            Banana = 'banana'
+
+        config = _root({'foo': Fruit.Apple.value})
+        res = config['foo'].as_choice(Fruit)
+        self.assertEqual(res, Fruit.Apple)
 
     def test_as_number_float(self):
         config = _root({'f': 1.0})
