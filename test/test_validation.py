@@ -80,7 +80,8 @@ class BuiltInValidatorTest(unittest.TestCase):
         })
         self.assertEqual(res, 'baz')
 
-    @unittest.skipUnless(SUPPORTS_ENUM, "enum not supported in this version of Python")
+    @unittest.skipUnless(SUPPORTS_ENUM,
+                         "enum not supported in this version of Python.")
     def test_as_choice_with_enum(self):
         class Foobar(enum.Enum):
             Foo = 'bar'

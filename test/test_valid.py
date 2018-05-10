@@ -176,7 +176,8 @@ class AsTemplateTest(unittest.TestCase):
         self.assertEqual(typ.typ, set)
         self.assertEqual(typ.default, confuse.REQUIRED)
 
-    @unittest.skipUnless(SUPPORTS_ENUM, "enum not supported in this version of Python")
+    @unittest.skipUnless(SUPPORTS_ENUM,
+                         "enum not supported in this version of Python.")
     def test_enum_type_as_template(self):
         typ = confuse.as_template(enum.Enum)
         self.assertIsInstance(typ, confuse.TypeTemplate)
