@@ -1,5 +1,11 @@
 from __future__ import division, absolute_import, print_function
 
+try:
+    import enum
+    SUPPORTS_ENUM = True
+except ImportError:
+    SUPPORTS_ENUM = False
+
 import confuse
 import os
 import unittest
@@ -73,6 +79,26 @@ class BuiltInValidatorTest(unittest.TestCase):
             'x': 'y',
         })
         self.assertEqual(res, 'baz')
+
+    @unittest.skipUnless(SUPPORTS_ENUM,
+                         "enum not supported in this version of Python.")
+    def test_as_choice_with_enum(self):
+        class Foobar(enum.Enum):
+            Foo = 'bar'
+
+        config = _root({'foo': Foobar.Foo.value})
+        res = config['foo'].as_choice(Foobar)
+        self.assertEqual(res, Foobar.Foo)
+
+    @unittest.skipUnless(SUPPORTS_ENUM,
+                         "enum not supported in this version of Python.")
+    def test_as_choice_with_enum_error(self):
+        class Foobar(enum.Enum):
+            Foo = 'bar'
+
+        config = _root({'foo': 'foo'})
+        with self.assertRaises(confuse.ConfigValueError):
+            config['foo'].as_choice(Foobar)
 
     def test_as_number_float(self):
         config = _root({'f': 1.0})
