@@ -148,6 +148,12 @@ class AsTemplateTest(unittest.TestCase):
         typ = confuse.as_template(set())
         self.assertIsInstance(typ, confuse.Choice)
 
+    @unittest.skipUnless(SUPPORTS_ENUM,
+                         "enum not supported in this version of Python.")
+    def test_enum_type_as_template(self):
+        typ = confuse.as_template(enum.Enum)
+        self.assertIsInstance(typ, confuse.Choice)
+
     def test_float_type_as_tempalte(self):
         typ = confuse.as_template(float)
         self.assertIsInstance(typ, confuse.Number)
@@ -174,14 +180,6 @@ class AsTemplateTest(unittest.TestCase):
         typ = confuse.as_template(set)
         self.assertIsInstance(typ, confuse.TypeTemplate)
         self.assertEqual(typ.typ, set)
-        self.assertEqual(typ.default, confuse.REQUIRED)
-
-    @unittest.skipUnless(SUPPORTS_ENUM,
-                         "enum not supported in this version of Python.")
-    def test_enum_type_as_template(self):
-        typ = confuse.as_template(enum.Enum)
-        self.assertIsInstance(typ, confuse.TypeTemplate)
-        self.assertEqual(typ.typ, enum.Enum)
         self.assertEqual(typ.default, confuse.REQUIRED)
 
     def test_other_type_as_template(self):

@@ -1245,17 +1245,16 @@ class Choice(Template):
                 return self.choices(value)
             except ValueError:
                 self.fail(
-                    u'must be one of {0}, not {1}'.format(
-                        repr([c.value for c in self.choices]),
-                        repr(value)
+                    u'must be one of {0!r}, not {1!r}'.format(
+                        [c.value for c in self.choices], value
                     ),
                     view
                 )
 
         if value not in self.choices:
             self.fail(
-                u'must be one of {0}, not {1}'.format(
-                    repr(list(self.choices)), repr(value)
+                u'must be one of {0!r}, not {1!r}'.format(
+                    list(self.choices), value
                 ),
                 view
             )
@@ -1548,7 +1547,8 @@ def as_template(value):
     elif isinstance(value, set):
         # convert to list to avoid hash related problems
         return Choice(list(value))
-    elif isinstance(value, type) and issubclass(value, type):
+    elif (SUPPORTS_ENUM and isinstance(value, type) and
+            issubclass(value, enum.Enum)):
         return Choice(value)
     elif isinstance(value, list):
         return OneOf(value)
