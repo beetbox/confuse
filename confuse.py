@@ -1223,7 +1223,7 @@ class String(Template):
 class Choice(Template):
     """A template that permits values from a sequence of choices.
     """
-    def __init__(self, choices):
+    def __init__(self, choices, default=REQUIRED):
         """Create a template that validates any of the values from the
         iterable `choices`.
 
@@ -1233,6 +1233,7 @@ class Choice(Template):
         If `choices` is a `Enum`, then the enum entry with the value is
         emitted.
         """
+        super(Choice, self).__init__(default)
         self.choices = choices
 
     def convert(self, value, view):
