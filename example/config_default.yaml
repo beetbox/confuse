@@ -35,3 +35,12 @@ paths:
     default: $albumartist/$album%aunique{}/$track $title
     singleton: Non-Album/$artist/$title
     comp: Compilations/$album%aunique{}/$track $title
+
+servers:
+    - hostname: test1.example.com
+      options:
+        - foo
+    - hostname: test2.example.com
+      options:
+        - bar
+        - baz

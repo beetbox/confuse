@@ -13,7 +13,14 @@ template = {
     'paths': {
         'directory': confuse.Filename(),
         'default': confuse.Filename(relative_to='directory'),
-    }
+    },
+
+    'servers': [
+        {
+            'hostname': str,
+            'options': confuse.StrSeq(),
+        }
+    ]
 }
 
 config = confuse.LazyConfig('ConfuseExample', __name__)
@@ -48,3 +55,4 @@ def main():
     print('library is', valid.library)
     print('directory is', valid.paths.directory)
     print('paths.default is', valid.paths.default)
+    print('servers are', [s.hostname for s in valid.servers])
