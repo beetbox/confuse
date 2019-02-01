@@ -143,6 +143,11 @@ class AsTemplateTest(unittest.TestCase):
         typ = confuse.as_template(['test'])
         self.assertIsInstance(typ, confuse.SequenceTemplate)
         self.assertIsInstance(typ.subtemplate, confuse.String)
+    
+    def test_empty_list_as_template(self):
+        typ = confuse.as_template([])
+        self.assertIsInstance(typ, confuse.SequenceTemplate)
+        self.assertIsInstance(typ.subtemplate, confuse.FailTemplate)
 
     def test_set_as_template(self):
         typ = confuse.as_template(set())

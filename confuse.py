@@ -1190,9 +1190,12 @@ class SequenceTemplate(Template):
     """
     def __init__(self, sequence):
         """Create a template based on the first item in list.
+        If given an empty list, assume the validated list must be empty.
         """
         if len(sequence) > 0:
             self.subtemplate = as_template(sequence[0])
+        else:
+            self.subtemplate = FailTemplate(message='List must be empty')
 
     def value(self, view, template=None):
         """Get a list of items validated against the template.
@@ -1538,6 +1541,21 @@ class TypeTemplate(Template):
                 True
             )
         return value
+
+    
+class FailTemplate(Template):
+    """A template that always fails to validate
+    """
+    def __init__(self, default=REQUIRED, message=None):
+        """Create a template with an optional message.
+        """
+        super(FailTemplate, self).__init__(default)
+        self.message = message
+
+    def value(self, view, template=None):
+        """Fail with a message specified in self.message
+        """
+        self.fail(self.message, view)
 
 
 class AttrDict(dict):
