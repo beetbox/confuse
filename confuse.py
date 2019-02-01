@@ -1183,6 +1183,32 @@ class MappingTemplate(Template):
         return 'MappingTemplate({0})'.format(repr(self.subtemplates))
 
 
+class SequenceTemplate(Template):
+    """A template used to validate lists of similar items.
+    Note that only the first item of the template list is used to
+    validate against.
+    """
+    def __init__(self, sequence):
+        """Create a template based on the first item in list.
+        If given an empty list, assume the validated list must be empty.
+        """
+        if len(sequence) > 0:
+            self.subtemplate = as_template(sequence[0])
+        else:
+            self.subtemplate = FailTemplate(message='List must be empty')
+
+    def value(self, view, template=None):
+        """Get a list of items validated against the template.
+        """
+        out = []
+        for item in view:
+            out.append(self.subtemplate.value(item, self))
+        return out
+
+    def __repr__(self):
+        return 'SequenceTemplate({0})'.format(repr(self.subtemplate))
+
+
 class String(Template):
     """A string configuration value template.
     """
@@ -1516,6 +1542,21 @@ class TypeTemplate(Template):
             )
         return value
 
+    
+class FailTemplate(Template):
+    """A template that always fails to validate
+    """
+    def __init__(self, default=REQUIRED, message=None):
+        """Create a template with an optional message.
+        """
+        super(FailTemplate, self).__init__(default)
+        self.message = message
+
+    def value(self, view, template=None):
+        """Fail with a message specified in self.message
+        """
+        self.fail(self.message, view)
+
 
 class AttrDict(dict):
     """A `dict` subclass that can be accessed via attributes (dot
@@ -1552,7 +1593,7 @@ def as_template(value):
             and issubclass(value, enum.Enum)):
         return Choice(value)
     elif isinstance(value, list):
-        return OneOf(value)
+        return SequenceTemplate(value)
     elif value is float:
         return Number()
     elif value is None:
