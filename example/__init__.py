@@ -15,12 +15,12 @@ template = {
         'default': confuse.Filename(relative_to='directory'),
     },
 
-    'servers': [
+    'servers': confuse.Sequence(
         {
             'hostname': str,
             'options': confuse.StrSeq(),
         }
-    ]
+    )
 }
 
 config = confuse.LazyConfig('ConfuseExample', __name__)
