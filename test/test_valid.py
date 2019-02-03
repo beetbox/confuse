@@ -447,3 +447,26 @@ class TypeTemplateTest(unittest.TestCase):
         config = _root({})
         valid = config['foo'].get(confuse.TypeTemplate(set, set([1, 2])))
         self.assertEqual(valid, set([1, 2]))
+
+
+class SequenceTest(unittest.TestCase):
+    def test_int_list(self):
+        config = _root({'foo': [1, 2, 3]})
+        valid = config['foo'].get(confuse.Sequence(int))
+        self.assertEqual(valid, [1, 2, 3])
+
+    def test_dict_list(self):
+        config = _root({'foo': [{'bar': 1, 'baz': 2}, {'bar': 3, 'baz': 4}]})
+        valid = config['foo'].get(confuse.Sequence(
+            {'bar': int, 'baz': int}
+        ))
+        self.assertEqual(valid, [
+            {'bar': 1, 'baz': 2}, {'bar': 3, 'baz': 4}
+        ])
+
+    def test_invalid_item(self):
+        config = _root({'foo': [{'bar': 1, 'baz': 2}, {'bar': 3, 'bak': 4}]})
+        with self.assertRaises(confuse.NotFoundError):
+            config['foo'].get(confuse.Sequence(
+                {'bar': int, 'baz': int}
+            ))

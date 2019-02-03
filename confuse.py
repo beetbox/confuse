@@ -1183,6 +1183,28 @@ class MappingTemplate(Template):
         return 'MappingTemplate({0})'.format(repr(self.subtemplates))
 
 
+class Sequence(Template):
+    """A template used to validate lists of similar items,
+    based on a given subtemplate.
+    """
+    def __init__(self, subtemplate):
+        """Create a template for a list with items validated
+        on a given subtemplate.
+        """
+        self.subtemplate = as_template(subtemplate)
+
+    def value(self, view, template=None):
+        """Get a list of items validated against the template.
+        """
+        out = []
+        for item in view:
+            out.append(self.subtemplate.value(item, self))
+        return out
+
+    def __repr__(self):
+        return 'Sequence({0})'.format(repr(self.subtemplate))
+
+
 class String(Template):
     """A string configuration value template.
     """
