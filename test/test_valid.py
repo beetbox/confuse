@@ -448,6 +448,7 @@ class TypeTemplateTest(unittest.TestCase):
         valid = config['foo'].get(confuse.TypeTemplate(set, set([1, 2])))
         self.assertEqual(valid, set([1, 2]))
 
+
 class SequenceTest(unittest.TestCase):
     def test_int_list(self):
         config = _root({'foo': [1, 2, 3]})
@@ -462,7 +463,7 @@ class SequenceTest(unittest.TestCase):
         self.assertEqual(valid, [
             {'bar': 1, 'baz': 2}, {'bar': 3, 'baz': 4}
         ])
-    
+
     def test_invalid_item(self):
         config = _root({'foo': [{'bar': 1, 'baz': 2}, {'bar': 3, 'bak': 4}]})
         with self.assertRaises(confuse.NotFoundError):
