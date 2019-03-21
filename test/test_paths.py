@@ -62,6 +62,13 @@ class LinuxTestCases(FakeSystem):
         os.environ['XDG_CONFIG_HOME'] = '~/.config'
         self.assertEqual(confuse.config_dirs(), ['/home/test/.config'])
 
+    def test_xdg_config_dirs(self):
+        os.environ['XDG_CONFIG_DIRS'] = '/usr/local/etc/xdg:/etc/xdg'
+        self.assertEqual(confuse.config_dirs(), ['/home/test/.config',
+                                                 '/usr/local/etc/xdg',
+                                                 '/etc/xdg',
+                                                 '/home/test/xdgconfig'])
+
 
 class OSXTestCases(FakeSystem):
     SYS_NAME = 'Darwin'
@@ -70,6 +77,14 @@ class OSXTestCases(FakeSystem):
         self.assertEqual(confuse.config_dirs(),
                          ['/Users/test/Library/Application Support',
                           '/Users/test/.config'])
+
+    def test_xdg_config_dirs(self):
+        os.environ['XDG_CONFIG_DIRS'] = '/usr/local/etc/xdg:/etc/xdg'
+        self.assertEqual(confuse.config_dirs(),
+                         ['/Users/test/Library/Application Support',
+                          '/Users/test/.config',
+                          '/usr/local/etc/xdg',
+                          '/etc/xdg'])
 
 
 class WindowsTestCases(FakeSystem):

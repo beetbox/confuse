@@ -671,6 +671,8 @@ def config_dirs():
     if platform.system() == 'Darwin':
         paths.append(MAC_DIR)
         paths.append(UNIX_DIR_FALLBACK)
+        if 'XDG_CONFIG_DIRS' in os.environ:
+            paths.extend(os.environ['XDG_CONFIG_DIRS'].split(':'))
         if UNIX_DIR_VAR in os.environ:
             paths.append(os.environ[UNIX_DIR_VAR])
 
@@ -682,6 +684,8 @@ def config_dirs():
     else:
         # Assume Unix.
         paths.append(UNIX_DIR_FALLBACK)
+        if 'XDG_CONFIG_DIRS' in os.environ:
+            paths.extend(os.environ['XDG_CONFIG_DIRS'].split(':'))
         if UNIX_DIR_VAR in os.environ:
             paths.append(os.environ[UNIX_DIR_VAR])
 
