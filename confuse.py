@@ -34,7 +34,6 @@ import collections
 import re
 from collections import OrderedDict
 
-UNIX_DIR_VAR = 'XDG_CONFIG_HOME'
 UNIX_DIR_FALLBACK = '~/.config'
 WINDOWS_DIR_VAR = 'APPDATA'
 WINDOWS_DIR_FALLBACK = '~\\AppData\\Roaming'
@@ -658,6 +657,18 @@ def _package_path(name):
     return os.path.dirname(os.path.abspath(filepath))
 
 
+def xdg_config_dirs():
+    """Returns a list of paths taken from the XDG_CONFIG_DIRS
+    and XDG_CONFIG_HOME environment varibables if they exist
+    """
+    paths = []
+    if 'XDG_CONFIG_DIRS' in os.environ:
+        paths.extend(os.environ['XDG_CONFIG_DIRS'].split(':'))
+    if 'XDG_CONFIG_HOME' in os.environ:
+        paths.append(os.environ['XDG_CONFIG_HOME'])
+    return paths
+
+
 def config_dirs():
     """Return a platform-specific list of candidates for user
     configuration directories on the system.
@@ -671,8 +682,7 @@ def config_dirs():
     if platform.system() == 'Darwin':
         paths.append(MAC_DIR)
         paths.append(UNIX_DIR_FALLBACK)
-        if UNIX_DIR_VAR in os.environ:
-            paths.append(os.environ[UNIX_DIR_VAR])
+        paths.extend(xdg_config_dirs())
 
     elif platform.system() == 'Windows':
         paths.append(WINDOWS_DIR_FALLBACK)
@@ -682,8 +692,7 @@ def config_dirs():
     else:
         # Assume Unix.
         paths.append(UNIX_DIR_FALLBACK)
-        if UNIX_DIR_VAR in os.environ:
-            paths.append(os.environ[UNIX_DIR_VAR])
+        paths.extend(xdg_config_dirs())
 
     # Expand and deduplicate paths.
     out = []
