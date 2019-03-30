@@ -52,22 +52,25 @@ class LinuxTestCases(FakeSystem):
 
     def test_both_xdg_and_fallback_dirs(self):
         self.assertEqual(confuse.config_dirs(),
-                         ['/home/test/.config', '/home/test/xdgconfig'])
+                         ['/home/test/.config', '/home/test/xdgconfig',
+                          '/etc/xdg', '/etc'])
 
     def test_fallback_only(self):
         del os.environ['XDG_CONFIG_HOME']
-        self.assertEqual(confuse.config_dirs(), ['/home/test/.config'])
+        self.assertEqual(confuse.config_dirs(), ['/home/test/.config',
+                                                 '/etc/xdg', '/etc'])
 
     def test_xdg_matching_fallback_not_duplicated(self):
         os.environ['XDG_CONFIG_HOME'] = '~/.config'
-        self.assertEqual(confuse.config_dirs(), ['/home/test/.config'])
+        self.assertEqual(confuse.config_dirs(), ['/home/test/.config',
+                                                 '/etc/xdg', '/etc'])
 
     def test_xdg_config_dirs(self):
         os.environ['XDG_CONFIG_DIRS'] = '/usr/local/etc/xdg:/etc/xdg'
         self.assertEqual(confuse.config_dirs(), ['/home/test/.config',
+                                                 '/home/test/xdgconfig',
                                                  '/usr/local/etc/xdg',
-                                                 '/etc/xdg',
-                                                 '/home/test/xdgconfig'])
+                                                 '/etc/xdg'])
 
 
 class OSXTestCases(FakeSystem):
@@ -76,7 +79,7 @@ class OSXTestCases(FakeSystem):
     def test_mac_dirs(self):
         self.assertEqual(confuse.config_dirs(),
                          ['/Users/test/Library/Application Support',
-                          '/Users/test/.config'])
+                          '/Users/test/.config', '/etc/xdg', '/etc'])
 
     def test_xdg_config_dirs(self):
         os.environ['XDG_CONFIG_DIRS'] = '/usr/local/etc/xdg:/etc/xdg'
@@ -180,7 +183,7 @@ class PrimaryConfigDirTest(FakeSystem):
             os.makedirs = self._makedirs
 
     def test_create_dir_if_none_exists(self):
-        path = os.path.join(self.home, 'xdgconfig', 'test')
+        path = os.path.join(self.home, '.config', 'test')
         assert not os.path.exists(path)
 
         self.assertEqual(self.config.config_dir(), path)

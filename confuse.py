@@ -662,10 +662,12 @@ def xdg_config_dirs():
     and XDG_CONFIG_HOME environment varibables if they exist
     """
     paths = []
-    if 'XDG_CONFIG_DIRS' in os.environ:
-        paths.extend(os.environ['XDG_CONFIG_DIRS'].split(':'))
     if 'XDG_CONFIG_HOME' in os.environ:
         paths.append(os.environ['XDG_CONFIG_HOME'])
+    if 'XDG_CONFIG_DIRS' in os.environ:
+        paths.extend(os.environ['XDG_CONFIG_DIRS'].split(':'))
+    else:
+        paths.extend(['/etc/xdg', '/etc'])
     return paths
 
 
@@ -953,11 +955,14 @@ class Configuration(RootView):
 
         else:
             # Search platform-specific locations. If no config file is
-            # found, fall back to the final directory in the list.
-            for confdir in config_dirs():
+            # found, fall back to the first directory in the list.
+            configdirs = config_dirs()
+            for confdir in configdirs:
                 appdir = os.path.join(confdir, self.appname)
                 if os.path.isfile(os.path.join(appdir, CONFIG_FILENAME)):
                     break
+            else:
+                appdir = os.path.join(configdirs[0], self.appname)
 
         # Ensure that the directory exists.
         if not os.path.isdir(appdir):
