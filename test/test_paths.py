@@ -70,7 +70,7 @@ class LinuxTestCases(FakeSystem):
         self.assertEqual(confuse.config_dirs(), ['/home/test/.config',
                                                  '/home/test/xdgconfig',
                                                  '/usr/local/etc/xdg',
-                                                 '/etc/xdg'])
+                                                 '/etc/xdg', '/etc'])
 
 
 class OSXTestCases(FakeSystem):
@@ -87,7 +87,7 @@ class OSXTestCases(FakeSystem):
                          ['/Users/test/Library/Application Support',
                           '/Users/test/.config',
                           '/usr/local/etc/xdg',
-                          '/etc/xdg'])
+                          '/etc/xdg', '/etc'])
 
 
 class WindowsTestCases(FakeSystem):

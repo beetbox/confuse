@@ -667,7 +667,8 @@ def xdg_config_dirs():
     if 'XDG_CONFIG_DIRS' in os.environ:
         paths.extend(os.environ['XDG_CONFIG_DIRS'].split(':'))
     else:
-        paths.extend(['/etc/xdg', '/etc'])
+        paths.append('/etc/xdg')
+    paths.append('/etc')
     return paths
 
 
