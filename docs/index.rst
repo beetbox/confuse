@@ -211,9 +211,13 @@ application called ``AppName``.
 Here are the default search paths for each platform:
 
 * OS X: ``~/.config/app`` and ``~/Library/Application Support/app``
-* Other Unix: ``$XDG_CONFIG_HOME/app`` and ``~/.config/app``
+* Other Unix: ``~/.config/app`` and ``/etc/app``
 * Windows: ``%APPDATA%\app`` where the `APPDATA` environment variable falls
   back to ``%HOME%\AppData\Roaming`` if undefined
+
+Both OS X and other Unix operating sytems also try to use the
+``XDG_CONFIG_HOME`` and ``XDG_CONFIG_DIRS`` environment variables if set
+then search those directories as well.
 
 Users can also add an override configuration directory with an
 environment variable. The variable name is the application name in
