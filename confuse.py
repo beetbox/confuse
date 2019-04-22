@@ -892,7 +892,10 @@ class Configuration(RootView):
 
         # Resolve default source location. We do this ahead of time to
         # avoid unexpected problems if the working directory changes.
-        self._package_path = _package_path(appname)
+        if self.modname:
+            self._package_path = _package_path(self.modname)
+        else:
+            self._package_path = None
 
         self._env_var = '{0}DIR'.format(self.appname.upper())
 
