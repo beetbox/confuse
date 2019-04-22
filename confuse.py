@@ -497,7 +497,7 @@ class ConfigView(object):
 
     def as_str_seq(self, split=True):
         """Get the value as a sequence of strings. Equivalent to
-        `get(StrSeq())`.
+        `get(StrSeq(split=split))`.
         """
         return self.get(StrSeq(split=split))
 
