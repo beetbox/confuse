@@ -1018,7 +1018,7 @@ class Configuration(RootView):
             with open(default_source.filename, 'rb') as fp:
                 default_data = fp.read()
             yaml_out = restore_yaml_comments(yaml_out,
-                                             default_data.decode('utf8'))
+                                             default_data.decode('utf-8'))
 
         return yaml_out
 
