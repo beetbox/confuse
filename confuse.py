@@ -54,9 +54,9 @@ REDACTED_TOMBSTONE = 'REDACTED'
 # Utilities.
 
 PY3 = sys.version_info[0] == 3
-STRING = str if PY3 else unicode  # noqa ignore=F821
-BASESTRING = str if PY3 else basestring  # noqa ignore=F821
-NUMERIC_TYPES = (int, float) if PY3 else (int, float, long)  # noqa ignore=F821
+STRING = str if PY3 else unicode  # noqa: F821
+BASESTRING = str if PY3 else basestring  # noqa: F821
+NUMERIC_TYPES = (int, float) if PY3 else (int, float, long)  # noqa: F821
 
 
 def iter_first(sequence):
@@ -498,11 +498,11 @@ class ConfigView(object):
         """
         return self.get(Number())
 
-    def as_str_seq(self):
+    def as_str_seq(self, split=True):
         """Get the value as a sequence of strings. Equivalent to
-        `get(StrSeq())`.
+        `get(StrSeq(split=split))`.
         """
-        return self.get(StrSeq())
+        return self.get(StrSeq(split=split))
 
     def as_str(self):
         """Get the value as a (Unicode) string. Equivalent to
@@ -595,7 +595,7 @@ class Subview(ConfigView):
         if isinstance(self.key, int):
             self.name += u'#{0}'.format(self.key)
         elif isinstance(self.key, bytes):
-            self.name += self.key.decode('utf8')
+            self.name += self.key.decode('utf-8')
         elif isinstance(self.key, STRING):
             self.name += self.key
         else:
@@ -772,7 +772,7 @@ def load_yaml(filename):
     parsed, a ConfigReadError is raised.
     """
     try:
-        with open(filename, 'r') as f:
+        with open(filename, 'rb') as f:
             return yaml.load(f, Loader=Loader)
     except (IOError, yaml.error.YAMLError) as exc:
         raise ConfigReadError(filename, exc)
@@ -893,6 +893,13 @@ class Configuration(RootView):
         self.appname = appname
         self.modname = modname
 
+        # Resolve default source location. We do this ahead of time to
+        # avoid unexpected problems if the working directory changes.
+        if self.modname:
+            self._package_path = _package_path(self.modname)
+        else:
+            self._package_path = None
+
         self._env_var = '{0}DIR'.format(self.appname.upper())
 
         if read:
@@ -920,9 +927,8 @@ class Configuration(RootView):
         `modname` if it was given.
         """
         if self.modname:
-            pkg_path = _package_path(self.modname)
-            if pkg_path:
-                filename = os.path.join(pkg_path, DEFAULT_FILENAME)
+            if self._package_path:
+                filename = os.path.join(self._package_path, DEFAULT_FILENAME)
                 if os.path.isfile(filename):
                     self.add(ConfigSource(load_yaml(filename), filename, True))
 
@@ -1015,9 +1021,10 @@ class Configuration(RootView):
                 default_source = source
                 break
         if default_source and default_source.filename:
-            with open(default_source.filename, 'r') as fp:
+            with open(default_source.filename, 'rb') as fp:
                 default_data = fp.read()
-            yaml_out = restore_yaml_comments(yaml_out, default_data)
+            yaml_out = restore_yaml_comments(yaml_out,
+                                             default_data.decode('utf-8'))
 
         return yaml_out
 
@@ -1388,7 +1395,7 @@ class StrSeq(Template):
 
     def convert(self, value, view):
         if isinstance(value, bytes):
-            value = value.decode('utf8', 'ignore')
+            value = value.decode('utf-8', 'ignore')
 
         if isinstance(value, STRING):
             if self.split:
@@ -1406,7 +1413,7 @@ class StrSeq(Template):
             if isinstance(x, STRING):
                 return x
             elif isinstance(x, bytes):
-                return x.decode('utf8', 'ignore')
+                return x.decode('utf-8', 'ignore')
             else:
                 self.fail(u'must be a list of strings', view, True)
         return list(map(convert, value))
