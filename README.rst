@@ -1,5 +1,5 @@
-Confuse: painless YAML config files that Just Work
-==================================================
+Confuse: painless YAML config files
+===================================
 
 .. image:: https://travis-ci.org/sampsyo/confuse.svg?branch=master
     :target: https://travis-ci.org/sampsyo/confuse
@@ -7,17 +7,9 @@ Confuse: painless YAML config files that Just Work
 .. image:: http://img.shields.io/pypi/v/confuse.svg
     :target: https://pypi.python.org/pypi/confuse
 
-
-I'm tired of fiddling around with `ConfigParser`_. I don’t even really
-like INI syntax. I'm tired of writing boilerplate code to check for
-missing values, fall back to defaults, override config values with
-command-line options, and all that. I think a configuration library
-should be able to handle a lot more for me.
-
-So I'm writing **Confuse** to magically take care of defaults, overrides,
-type checking, command-line integration, human-readable errors, and
-standard OS-specific locations. The configuration files will be based on
-`YAML`_, which is a great syntax for writing down data.
+**Confuse** is a configuration library for Python that uses `YAML`_. It takes
+care of defaults, overrides, type checking, command-line integration,
+human-readable errors, and standard OS-specific locations.
 
 What It Does
 ------------
@@ -58,9 +50,8 @@ Using Confuse
 Author
 ------
 
-Confuse is being developed by `Adrian Sampson`_. It’s not done yet, but
-you’re welcome to use it under the terms of the `MIT license`_. Confuse was
-originally made to power `beets`_.
+Confuse was made to power `beets`_.
+Like beets, it is available under the `MIT license`_.
 
 .. _ConfigParser: http://docs.python.org/library/configparser.html
 .. _YAML: http://yaml.org/
