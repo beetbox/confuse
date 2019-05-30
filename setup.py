@@ -71,7 +71,7 @@ def _read(fn):
 
 setup(
     name='confuse',
-    version='0.5.0',
+    version='1.0.0',
     description='painless YAML configuration',
     author='Adrian Sampson',
     author_email='adrian@radbox.org',
@@ -92,6 +92,8 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
     distclass=CustomDistribution
 )
