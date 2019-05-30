@@ -75,7 +75,7 @@ setup(
     description='painless YAML configuration',
     author='Adrian Sampson',
     author_email='adrian@radbox.org',
-    url='https://github.com/sampsyo/confuse',
+    url='https://github.com/beetbox/confuse',
     license='MIT',
     platforms='ALL',
     long_description=_read("README.rst"),

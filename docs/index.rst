@@ -4,7 +4,7 @@ Confuse: Painless Configuration
 `Confuse`_ is a straightforward, full-featured configuration system
 for Python.
 
-.. _Confuse: https://github.com/sampsyo/confuse
+.. _Confuse: https://github.com/beetbox/confuse
 
 
 Using Confuse

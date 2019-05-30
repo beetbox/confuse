@@ -1,8 +1,8 @@
 Confuse: painless YAML config files
 ===================================
 
-.. image:: https://travis-ci.org/sampsyo/confuse.svg?branch=master
-    :target: https://travis-ci.org/sampsyo/confuse
+.. image:: https://travis-ci.org/beetbox/confuse.svg?branch=master
+    :target: https://travis-ci.org/beetbox/confuse
 
 .. image:: http://img.shields.io/pypi/v/confuse.svg
     :target: https://pypi.python.org/pypi/confuse
@@ -59,6 +59,5 @@ Like beets, it is available under the `MIT license`_.
 .. _argparse: http://docs.python.org/dev/library/argparse.html
 .. _logging: http://docs.python.org/library/logging.html
 .. _Confuse's documentation: http://confuse.readthedocs.org/
-.. _Adrian Sampson: https://github.com/sampsyo
 .. _MIT license: http://www.opensource.org/licenses/mit-license.php
 .. _beets: https://github.com/beetbox/beets
