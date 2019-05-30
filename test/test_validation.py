@@ -140,3 +140,10 @@ class BuiltInValidatorTest(unittest.TestCase):
         config = _root({'f': 1.0})
         with self.assertRaises(confuse.ConfigTypeError):
             config['f'].as_str()
+
+    def test_as_pairs(self):
+        config = _root({'k': [{'a': 'A'}, 'b', ['c', 'C']]})
+        self.assertEqual(
+            [('a', 'A'), ('b', None), ('c', 'C')],
+            config['k'].as_pairs()
+        )
