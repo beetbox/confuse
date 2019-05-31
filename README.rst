@@ -47,8 +47,8 @@ Using Confuse
 
 `Confuse's documentation`_ describes its API in detail.
 
-Author
-------
+Credits
+-------
 
 Confuse was made to power `beets`_.
 Like beets, it is available under the `MIT license`_.
