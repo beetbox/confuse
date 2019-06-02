@@ -4,5 +4,9 @@ include README.rst
 recursive-include docs *.rst *.py Makefile *.png
 prune docs/_build
 
+# Include tests without pyc etc.
+prune test
+include test/*.py
+
 # Exclude junk.
 global-exclude .DS_Store
