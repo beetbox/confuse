@@ -31,7 +31,7 @@ Here’s what Confuse brings to the table:
 
 -  Look for configuration files in **platform-specific paths**. Like
    ``$XDG_CONFIG_HOME`` or ``~/.config`` on Unix; "Application Support" on
-   Mac OS X; ``%APPDATA%`` on Windows. Your program gets its own
+   macOS; ``%APPDATA%`` on Windows. Your program gets its own
    directory, which you can use to store additional data. You can
    transparently create this directory on demand if, for example, you
    need to initialize the configuration file on first run. And an
