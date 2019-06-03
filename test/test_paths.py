@@ -78,14 +78,15 @@ class OSXTestCases(FakeSystem):
 
     def test_mac_dirs(self):
         self.assertEqual(confuse.config_dirs(),
-                         ['/Users/test/Library/Application Support',
-                          '/Users/test/.config', '/etc/xdg', '/etc'])
+                         ['/Users/test/.config',
+                          '/Users/test/Library/Application Support',
+                          '/etc/xdg', '/etc'])
 
     def test_xdg_config_dirs(self):
         os.environ['XDG_CONFIG_DIRS'] = '/usr/local/etc/xdg:/etc/xdg'
         self.assertEqual(confuse.config_dirs(),
-                         ['/Users/test/Library/Application Support',
-                          '/Users/test/.config',
+                         ['/Users/test/.config',
+                          '/Users/test/Library/Application Support',
                           '/usr/local/etc/xdg',
                           '/etc/xdg', '/etc'])
 

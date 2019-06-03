@@ -692,8 +692,8 @@ def config_dirs():
     paths = []
 
     if platform.system() == 'Darwin':
-        paths.append(MAC_DIR)
         paths.append(UNIX_DIR_FALLBACK)
+        paths.append(MAC_DIR)
         paths.extend(xdg_config_dirs())
 
     elif platform.system() == 'Windows':
