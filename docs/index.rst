@@ -175,7 +175,7 @@ have dot-delimited properties on the incoming object.::
     config.set_args(args, dots=True)
     print(config['foo']['bar'].get())
 
-`parse_args` works with generic dictionaries too.::
+`set_args` works with generic dictionaries too.::
 
     args = {
       'foo': {
