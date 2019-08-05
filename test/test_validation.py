@@ -141,6 +141,11 @@ class BuiltInValidatorTest(unittest.TestCase):
         with self.assertRaises(confuse.ConfigTypeError):
             config['f'].as_str()
 
+    def test_as_str_expanded(self):
+        config = _root({'s': '${CONFUSE_TEST_VAR}/bar'})
+        os.environ["CONFUSE_TEST_VAR"] = 'foo'
+        self.assertEqual(config['s'].as_str_expanded(), 'foo/bar')
+
     def test_as_pairs(self):
         config = _root({'k': [{'a': 'A'}, 'b', ['c', 'C']]})
         self.assertEqual(

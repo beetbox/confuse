@@ -121,6 +121,10 @@ conversion:
   value``) and, unlike real mappings, preserve order.
 * ``as_str_seq()``: Given either a string or a list of strings, return a list
   of strings. A single string is split on whitespace.
+* ``as_str_expanded()``: Expand any environment variables contained in
+  a string using `os.path.expandvars()`_.
+
+.. _os.path.expandvars(): https://docs.python.org/library/os.path.html#os.path.expandvars
 
 For example, ``config['path'].as_filename()`` ensures that you get a
 reasonable filename string from the configuration. And calling

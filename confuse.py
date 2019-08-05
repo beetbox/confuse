@@ -516,6 +516,12 @@ class ConfigView(object):
         """
         return self.get(String())
 
+    def as_str_expanded(self):
+        """Get the value as a (Unicode) string, with env vars
+        expanded by `os.path.expandvars()`.
+        """
+        return self.get(String(expand_vars=True))
+
     # Redaction.
 
     @property
@@ -1239,12 +1245,13 @@ class Sequence(Template):
 class String(Template):
     """A string configuration value template.
     """
-    def __init__(self, default=REQUIRED, pattern=None):
+    def __init__(self, default=REQUIRED, pattern=None, expand_vars=False):
         """Create a template with the added optional `pattern` argument,
         a regular expression string that the value should match.
         """
         super(String, self).__init__(default)
         self.pattern = pattern
+        self.expand_vars = expand_vars
         if pattern:
             self.regex = re.compile(pattern)
 
@@ -1262,15 +1269,19 @@ class String(Template):
     def convert(self, value, view):
         """Check that the value is a string and matches the pattern.
         """
-        if isinstance(value, BASESTRING):
-            if self.pattern and not self.regex.match(value):
-                self.fail(
-                    u"must match the pattern {0}".format(self.pattern),
-                    view
-                )
-            return value
-        else:
+        if not isinstance(value, BASESTRING):
             self.fail(u'must be a string', view, True)
+
+        if self.pattern and not self.regex.match(value):
+            self.fail(
+                u"must match the pattern {0}".format(self.pattern),
+                view
+            )
+
+        if self.expand_vars:
+            return os.path.expandvars(value)
+        else:
+            return value
 
 
 class Choice(Template):
