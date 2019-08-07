@@ -16,7 +16,7 @@ all of your application’s config settings::
     config = confuse.Configuration('MyGreatApp', __name__)
 
 The first parameter is required; it’s the name of your application, which
-will be used to search the system for a config file named `config.yaml`.
+will be used to search the system for a config file named ``config.yaml``.
 See :ref:`Search Paths` for the specific locations searched.
 
 The second parameter is optional: it’s the name of a module that will
