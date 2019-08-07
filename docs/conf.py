@@ -1,7 +1,9 @@
 from __future__ import division, absolute_import, print_function
 
 
-extensions = []
+extensions = [
+    'sphinx.ext.autosectionlabel',
+]
 source_suffix = '.rst'
 master_doc = 'index'
 

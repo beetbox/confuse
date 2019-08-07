@@ -15,10 +15,12 @@ all of your application’s config settings::
 
     config = confuse.Configuration('MyGreatApp', __name__)
 
-The first parameter is required; it’s the name of your application that
-will be used to search the system for config files. The second parameter
-is optional: it’s the name of a module that will guide the search for a
-*defaults* file. Use this if you want to include a
+The first parameter is required; it’s the name of your application, which
+will be used to search the system for a config file named ``config.yaml``.
+See :ref:`Search Paths` for the specific locations searched.
+
+The second parameter is optional: it’s the name of a module that will
+guide the search for a *defaults* file. Use this if you want to include a
 ``config_default.yaml`` file inside your package. (The included
 ``example`` package does exactly this.)
 
