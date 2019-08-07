@@ -33,8 +33,8 @@ a value::
 
 Under the hood, accessing items in your configuration tree builds up a
 *view* into your app’s configuration. Then, ``get()`` flattens this view
-into a file, performing a search through each configuration data source
-to find an answer. More on view later.
+into a value, performing a search through each configuration data source
+to find an answer. (More on views later.)
 
 If you know that a configuration value should have a specific type, just
 pass that type to ``get()``::
