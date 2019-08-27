@@ -865,7 +865,7 @@ def restore_yaml_comments(data, default_data):
     def has_comment(line):
         if not line:
             return True
-        elif re.match("^\s*#.*$", line):
+        elif re.match(r'^\s*#.*$', line):
             return True
         else:
             return False
