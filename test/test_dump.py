@@ -82,9 +82,10 @@ class PrettyDumpTest(unittest.TestCase):
             # TODO: add more keys
         """)
         self.assertEqual(
-            default_data, 
+            default_data,
             confuse.restore_yaml_comments(data, default_data)
         )
+
 
 class RedactTest(unittest.TestCase):
     def test_no_redaction(self):
