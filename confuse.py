@@ -870,25 +870,25 @@ def restore_yaml_comments(data, default_data):
         else:
             return False
 
+    comment_map = dict()
     comment = ""
-    out_data = ""
     default_lines = iter(default_data.splitlines())
-    out_lines = iter(data.splitlines())
-
     for line in default_lines:
         if has_comment(line):
             comment += "{0}\n".format(line)
         else:
-            out_data += comment
-            comment = ""
             key = line.split(':')[0].strip()
-            out_line = next(out_lines)
-            while key != out_line.split(':')[0].strip():
-                out_data += "{0}\n".format(out_line)
-                out_line = next(out_lines)
-            out_data += "{0}\n".format(out_line)
-    out_data += comment
-    return out_data
+            if comment != "":
+                comment_map[key] = comment
+            comment = ""
+    out_data = ""
+    out_lines = iter(data.splitlines())
+    for line in out_lines:
+        key = line.split(':')[0].strip()
+        if key in comment_map:
+            out_data += comment_map.pop(key, None)
+        out_data += "{0}\n".format(line)
+    return out_data + comment
 
 
 # Main interface.
