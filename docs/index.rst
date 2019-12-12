@@ -276,7 +276,7 @@ constant::
 This example allows the constant to override the default verbosity
 level, which would otherwise come from a configuration file.
 
-Assignment works be creating a new "source" for configuration data at
+Assignment works by creating a new "source" for configuration data at
 the top of the stack. This new source takes priority over all other,
 previously-loaded sources. You can cause this explicitly by calling the
 ``set()`` method on any view. A related method, ``add()``, works
