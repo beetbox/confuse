@@ -302,9 +302,8 @@ niceties suited to human-written configuration files. Those tweaks are:
 
 .. _OrderedDict: http://docs.python.org/2/library/collections.html#collections.OrderedDict
 
-To produce a YAML file reflecting a configuration, just call
-``config.dump()``. If you supply a filename, the YAML will be written to the
-file; otherwise, a string is returned. This does not cleanly round-trip YAML,
+To produce a YAML string reflecting a configuration, just call
+``config.dump()``. This does not cleanly round-trip YAML,
 but it does play some tricks to preserve comments and spacing in the original
 file.
 

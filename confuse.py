@@ -1005,9 +1005,6 @@ class Configuration(RootView):
         configuration file. All keys not in the default configuration
         will be appended to the end of the file.
 
-        :param filename:  The file to dump the configuration to, or None
-                          if the YAML string should be returned instead
-        :type filename:   unicode
         :param full:      Dump settings that don't differ from the defaults
                           as well
         :param redact:    Remove sensitive information (views with the `redact`
