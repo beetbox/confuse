@@ -62,6 +62,19 @@ class BuiltInValidatorTest(unittest.TestCase):
         with self.assertRaises(confuse.ConfigTypeError):
             config['foo'].as_filename()
 
+    def test_as_path(self):
+        config = _root({'foo': 'foo/bar'})
+        path = os.path.join(os.getcwd(), 'foo', 'bar')
+        try:
+            import pathlib
+        except ImportError:
+            with self.assertRaises(ImportError):
+                value = config['foo'].as_path()
+        else:
+            value = config['foo'].as_path()
+            path = pathlib.Path(path)
+            self.assertEqual(value, path)
+
     def test_as_choice_correct(self):
         config = _root({'foo': 'bar'})
         value = config['foo'].as_choice(['foo', 'bar', 'baz'])

@@ -486,6 +486,11 @@ class ConfigView(object):
         """
         return self.get(Filename())
 
+    def as_path(self):
+        """Get the value as a `pathlib.Path` object. Equivalent to `get(Path())`.
+        """
+        return self.get(Path())
+
     def as_choice(self, choices):
         """Get the value from a list of choices. Equivalent to
         `get(Choice(choices))`.
@@ -1598,6 +1603,20 @@ class Filename(Template):
                 path = os.path.join(view.root().config_dir(), path)
 
         return os.path.abspath(path)
+
+
+class Path(Filename):
+    """A template that validates strings as `pathlib.Path` objects.
+
+    Filenames are parsed equivalent to the `Filename` template and then
+    converted to `pathlib.Path` objects.
+
+    For Python 2 it returns the original path as returned by the `Filename`
+    template.
+    """
+    def value(self, view, template=None):
+        import pathlib
+        return pathlib.Path(super(Path, self).value(view, template))
 
 
 class TypeTemplate(Template):
