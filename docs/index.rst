@@ -366,3 +366,23 @@ Then flatten or dump the configuration like so::
     config.dump(redact=True)
 
 The resulting YAML will contain "key: REDACTED" instead of the original data.
+
+
+Changelog
+---------
+
+v1.1.0
+''''''
+
+- A new ``Path`` template produces a `pathlib`_ Path object.
+- Drop support for Python 3.4 (following in the footsteps of PyYAML).
+- String templates support environment variable expansion.
+
+.. _pathlib: https://docs.python.org/3/library/pathlib.html
+
+v1.0.0
+''''''
+
+The first stable release, and the first that `beets`_ depends on externally.
+
+.. _beets: https://beets.io
