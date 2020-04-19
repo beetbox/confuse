@@ -6,9 +6,13 @@ try:
 except ImportError:
     SUPPORTS_ENUM = False
 
+try:
+    from collections.abc import Mapping, Sequence
+except ImportError:
+    from collections import Mapping, Sequence
+
 import confuse
 import os
-import collections
 import unittest
 from . import _root
 
@@ -167,13 +171,13 @@ class AsTemplateTest(unittest.TestCase):
     def test_dict_type_as_template(self):
         typ = confuse.as_template(dict)
         self.assertIsInstance(typ, confuse.TypeTemplate)
-        self.assertEqual(typ.typ, collections.Mapping)
+        self.assertEqual(typ.typ, Mapping)
         self.assertEqual(typ.default, confuse.REQUIRED)
 
     def test_list_type_as_template(self):
         typ = confuse.as_template(list)
         self.assertIsInstance(typ, confuse.TypeTemplate)
-        self.assertEqual(typ.typ, collections.Sequence)
+        self.assertEqual(typ.typ, Sequence)
         self.assertEqual(typ.default, confuse.REQUIRED)
 
     def test_set_type_as_template(self):
