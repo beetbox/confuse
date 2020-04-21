@@ -81,7 +81,7 @@ setup(
     long_description=_read("README.rst"),
     long_description_content_type='text/x-rst',
     install_requires=['pyyaml'],
-    tests_require=['tox'],
+    tests_require=['tox', 'pathlib'],
     py_modules=['confuse'],
     cmdclass={'test': test},
     classifiers=[
