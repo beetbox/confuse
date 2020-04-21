@@ -1125,15 +1125,21 @@ class Template(object):
         May raise a `NotFoundError` if the value is missing (and the
         template requires it) or a `ConfigValueError` for invalid values.
         """
-        if view.exists():
+        try:
             value, _ = view.first()
             return self.convert(value, view)
-        elif self.default is REQUIRED:
+        except NotFoundError:
+            pass
+
+        # get default value, raise if required
+        return self.get_default_value(view.name)
+
+    def get_default_value(self, key_name='default'):
+        if self.default is REQUIRED:
             # Missing required value. This is an error.
-            raise NotFoundError(u"{0} not found".format(view.name))
-        else:
-            # Missing value, but not required.
-            return self.default
+            raise NotFoundError(u"{} not found".format(key_name))
+        # Missing value, but not required.
+        return self.default
 
     def convert(self, value, view):
         """Convert the YAML-deserialized value to a value of the desired
@@ -1578,7 +1584,11 @@ class Filename(Template):
         return view.parent.get(next_template)[self.relative_to]
 
     def value(self, view, template=None):
-        path, source = view.first()
+        try:
+            path, source = view.first()
+        except NotFoundError:
+            return self.get_default_value(view.name)
+
         if not isinstance(path, BASESTRING):
             self.fail(
                 u'must be a filename, not {0}'.format(type(path).__name__),
@@ -1615,8 +1625,11 @@ class Path(Filename):
     template.
     """
     def value(self, view, template=None):
+        value = super(Path, self).value(view, template)
+        if value is None:
+            return
         import pathlib
-        return pathlib.Path(super(Path, self).value(view, template))
+        return pathlib.Path(value)
 
 
 class TypeTemplate(Template):
