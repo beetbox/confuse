@@ -453,7 +453,6 @@ class PathTest(unittest.TestCase):
             config['foo'].get(confuse.Path())
 
 
-
 class BaseTemplateTest(unittest.TestCase):
     def test_base_template_accepts_any_value(self):
         config = _root({'foo': 4.2})
