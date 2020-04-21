@@ -1681,6 +1681,8 @@ def as_template(value):
         return OneOf(value)
     elif value is float:
         return Number()
+    elif isinstance(value, float):
+        return Number(value)
     elif value is None:
         return Template()
     elif value is dict:
