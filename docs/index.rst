@@ -376,6 +376,7 @@ v1.2.0
 
 - `float` values (like ``4.2``) can now be used in templates (just like
   ``42`` works as an `int` template).
+- The `Filename` and `Path` templates now correctly accept default values.
 
 v1.1.0
 ''''''

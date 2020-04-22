@@ -1131,7 +1131,7 @@ class Template(object):
         except NotFoundError:
             pass
 
-        # get default value, raise if required
+        # Get default value, or raise if required.
         return self.get_default_value(view.name)
 
     def get_default_value(self, key_name='default'):
