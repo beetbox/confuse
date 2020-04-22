@@ -342,6 +342,21 @@ class StrSeqTest(unittest.TestCase):
 
 
 class FilenameTest(unittest.TestCase):
+    def test_default_value(self):
+        config = _root({})
+        valid = config['foo'].get(confuse.Filename('foo/bar'))
+        self.assertEqual(valid, 'foo/bar')
+
+    def test_default_none(self):
+        config = _root({})
+        valid = config['foo'].get(confuse.Filename(None))
+        self.assertEqual(valid, None)
+
+    def test_missing_required_value(self):
+        config = _root({})
+        with self.assertRaises(confuse.NotFoundError):
+            config['foo'].get(confuse.Filename())
+
     def test_filename_relative_to_working_dir(self):
         config = _root({'foo': 'bar'})
         valid = config['foo'].get(confuse.Filename(cwd='/dev/null'))
@@ -417,6 +432,30 @@ class FilenameTest(unittest.TestCase):
         config = _root({'foo': 8})
         with self.assertRaises(confuse.ConfigTypeError):
             config['foo'].get(confuse.Filename())
+
+
+class PathTest(unittest.TestCase):
+    def test_path_value(self):
+        import pathlib
+        config = _root({'foo': 'foo/bar'})
+        valid = config['foo'].get(confuse.Path())
+        self.assertEqual(valid, pathlib.Path(os.path.abspath('foo/bar')))
+
+    def test_default_value(self):
+        import pathlib
+        config = _root({})
+        valid = config['foo'].get(confuse.Path('foo/bar'))
+        self.assertEqual(valid, pathlib.Path('foo/bar'))
+
+    def test_default_none(self):
+        config = _root({})
+        valid = config['foo'].get(confuse.Path(None))
+        self.assertEqual(valid, None)
+
+    def test_missing_required_value(self):
+        config = _root({})
+        with self.assertRaises(confuse.NotFoundError):
+            config['foo'].get(confuse.Path())
 
 
 class BaseTemplateTest(unittest.TestCase):
