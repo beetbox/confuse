@@ -371,6 +371,12 @@ The resulting YAML will contain "key: REDACTED" instead of the original data.
 Changelog
 ---------
 
+v1.2.0
+''''''
+
+- `float` values (like ``4.2``) can now be used in templates (just like
+  ``42`` works as an `int` template).
+
 v1.1.0
 ''''''
 
