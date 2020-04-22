@@ -163,6 +163,11 @@ class AsTemplateTest(unittest.TestCase):
         self.assertIsInstance(typ, confuse.Number)
         self.assertEqual(typ.default, confuse.REQUIRED)
 
+    def test_concrete_float_as_template(self):
+        typ = confuse.as_template(2.)
+        self.assertIsInstance(typ, confuse.Number)
+        self.assertEqual(typ.default, 2.)
+
     def test_none_as_template(self):
         typ = confuse.as_template(None)
         self.assertIs(type(typ), confuse.Template)
