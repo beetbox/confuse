@@ -120,7 +120,7 @@ class ConfigFilenamesTest(unittest.TestCase):
 
     def test_search_package(self):
         config = confuse.Configuration('myapp', __name__, read=False)
-        config._add_default_source()
+        config.read(user=False, defaults=True)
 
         for source in config.sources:
             if source.default:
@@ -141,8 +141,11 @@ class EnvVarTest(FakeSystem):
 
     def setUp(self):
         super(EnvVarTest, self).setUp()
-        self.config = confuse.Configuration('myapp', read=False)
         os.environ['MYAPPDIR'] = self.home  # use the tmp home as a config dir
+
+    @property
+    def config(self):
+        return confuse.Configuration('myapp', read=False)
 
     def test_env_var_name(self):
         self.assertEqual(self.config._env_var, 'MYAPPDIR')
@@ -176,7 +179,9 @@ class PrimaryConfigDirTest(FakeSystem):
             os.path.join = self.join
             os.makedirs, self._makedirs = self.makedirs, os.makedirs
 
-        self.config = confuse.Configuration('test', read=False)
+    @property
+    def config(self):
+        return confuse.Configuration('test', read=False)
 
     def tearDown(self):
         super(PrimaryConfigDirTest, self).tearDown()
@@ -207,3 +212,8 @@ class PrimaryConfigDirTest(FakeSystem):
         self.assertEqual(self.config.config_dir(), path2)
         self.assertFalse(os.path.isdir(path1))
         self.assertTrue(os.path.isdir(path2))
+
+    def test_override_config_dir(self):
+        path = os.path.join(self.home, 'asdfasdfasdfd', 'test')
+        config = confuse.Configuration('test', source=path, read=False)
+        self.assertEqual(config.config_dir(), path)

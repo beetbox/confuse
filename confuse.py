@@ -726,6 +726,66 @@ def config_dirs():
     return out
 
 
+def find_user_config_files(appname, env_var=None, config_fname=CONFIG_FILENAME,
+                           first=True):
+    """Get the path to the user configuration directory. The
+    directory is guaranteed to exist as a postcondition (one may be
+    created if none exist).
+
+    If the application's ``...DIR`` environment variable is set, it
+    is used as the configuration directory. Otherwise,
+    platform-specific standard configuration locations are searched
+    for a ``config.yaml`` file. If no configuration file is found, a
+    fallback path is used.
+
+    Arguments:
+        appname (str): the subdirectory to search for in default config
+            locations.
+        env_var (str, optional): the environment variable to look for
+        config_fname (str): the config filename to look for.
+        first (bool): only return the first config file. Set to False to
+            return all matching config files. This will create directories
+            for all files returned.
+
+    Returns:
+        config_file (str) if ``first == True`` else config_files (list(str)).
+    """
+    foundcfgs = []
+
+    # If environment variable is set, use it.
+    if env_var and env_var in os.environ:
+        appdir = os.path.abspath(os.path.expanduser(os.environ[env_var]))
+        foundcfgs.append(
+            appdir if os.path.isfile(appdir) else
+            os.path.join(appdir, config_fname))
+
+    # Search platform-specific locations. If no config file is
+    # found, fall back to the first directory in the list.
+    cfgfiles = [os.path.join(d, appname, config_fname) for d in config_dirs()]
+    foundcfgs.extend(
+        [f for f in cfgfiles if os.path.isfile(f)] or cfgfiles[:1])
+
+    return foundcfgs[0] if first else foundcfgs
+
+
+def find_package_config(modname, config_fname=DEFAULT_FILENAME):
+    '''Return a package default config file if it exists.'''
+    package_path = _package_path(modname)
+    if package_path:
+        default_config_file = os.path.join(package_path, config_fname)
+        if os.path.isfile(default_config_file):
+            return default_config_file
+    return None
+
+
+def _ensure_list(x):
+    '''Convert to list. e.g. 1 => [1], (1, 2) => [1, 2], None => [].'''
+    return (
+        x if isinstance(x, list) else
+        list(x) if isinstance(x, tuple) else
+        [x] if x else [])
+
+
 # YAML loading.
 
 class Loader(yaml.SafeLoader):
@@ -895,7 +955,8 @@ def restore_yaml_comments(data, default_data):
 # Main interface.
 
 class Configuration(RootView):
-    def __init__(self, appname, modname=None, read=True):
+    def __init__(self, appname, modname=None, source=None, read=True,
+                 config_filename=None, default_filename=None):
         """Create a configuration object by reading the
         automatically-discovered config files for the application for a
         given name. If `modname` is specified, it should be the import
@@ -909,45 +970,44 @@ class Configuration(RootView):
         super(Configuration, self).__init__([])
         self.appname = appname
         self.modname = modname
+        self.config_filename = config_filename or CONFIG_FILENAME
+        self.default_filename = default_filename or DEFAULT_FILENAME
 
-        # Resolve default source location. We do this ahead of time to
-        # avoid unexpected problems if the working directory changes.
-        if self.modname:
-            self._package_path = _package_path(self.modname)
-        else:
-            self._package_path = None
+        # convert user-provided sources to a list of config files
+        self._sources = [
+            self._to_filename(s) if isinstance(s, BASESTRING) else s
+            for s in _ensure_list(source)]
+        self._env_var = env_var = '{}DIR'.format(self.appname.upper())
 
-        self._env_var = '{0}DIR'.format(self.appname.upper())
+        # search the users system for config files
+        if not self._sources:
+            self._sources.append(
+                find_user_config_files(
+                    self.appname, env_var,
+                    config_fname=self.config_filename,
+                    first=True))
+
+        # if user specified a module name, load the config
+        self.default_config_file = modname and find_package_config(
+            modname, self.default_filename)
 
         if read:
             self.read()
 
-    def user_config_path(self):
-        """Points to the location of the user configuration.
-
-        The file may not exist.
+    def config_dir(self):
+        """Get the path to the user configuration directory. This
+        looks for the first source that has a filename and uses the
+        file's parent directory. Returns None if none are found.
         """
-        return os.path.join(self.config_dir(), CONFIG_FILENAME)
-
-    def _add_user_source(self):
-        """Add the configuration options from the YAML file in the
-        user's configuration directory (given by `config_dir`) if it
-        exists.
-        """
-        filename = self.user_config_path()
-        if os.path.isfile(filename):
-            self.add(ConfigSource(load_yaml(filename) or {}, filename))
-
-    def _add_default_source(self):
-        """Add the package's default configuration settings. This looks
-        for a YAML file located inside the package for the module
-        `modname` if it was given.
-        """
-        if self.modname:
-            if self._package_path:
-                filename = os.path.join(self._package_path, DEFAULT_FILENAME)
-                if os.path.isfile(filename):
-                    self.add(ConfigSource(load_yaml(filename), filename, True))
+        for source in self.sources or self._sources:
+            if isinstance(source, ConfigSource):
+                source = source.filename
+            if source and isinstance(source, BASESTRING):
+                dir = os.path.dirname(source)
+                if not os.path.isdir(dir):
+                    os.makedirs(dir)
+                return dir
+        return None
 
     def read(self, user=True, defaults=True):
         """Find and read the files for this configuration and set them
@@ -956,52 +1016,50 @@ class Configuration(RootView):
         set `user` or `defaults` to `False`.
         """
         if user:
-            self._add_user_source()
-        if defaults:
-            self._add_default_source()
-
-    def config_dir(self):
-        """Get the path to the user configuration directory. The
-        directory is guaranteed to exist as a postcondition (one may be
-        created if none exist).
-
-        If the application's ``...DIR`` environment variable is set, it
-        is used as the configuration directory. Otherwise,
-        platform-specific standard configuration locations are searched
-        for a ``config.yaml`` file. If no configuration file is found, a
-        fallback path is used.
-        """
-        # If environment variable is set, use it.
-        if self._env_var in os.environ:
-            appdir = os.environ[self._env_var]
-            appdir = os.path.abspath(os.path.expanduser(appdir))
-            if os.path.isfile(appdir):
-                raise ConfigError(u'{0} must be a directory'.format(
-                    self._env_var
-                ))
-
-        else:
-            # Search platform-specific locations. If no config file is
-            # found, fall back to the first directory in the list.
-            configdirs = config_dirs()
-            for confdir in configdirs:
-                appdir = os.path.join(confdir, self.appname)
-                if os.path.isfile(os.path.join(appdir, CONFIG_FILENAME)):
-                    break
-            else:
-                appdir = os.path.join(configdirs[0], self.appname)
-
-        # Ensure that the directory exists.
-        if not os.path.isdir(appdir):
-            os.makedirs(appdir)
-        return appdir
+            for filename in self._sources:
+                self.add_source(filename, ignore_missing=True)
+        # load a config if specified/found in the package
+        if defaults and self.default_config_file:
+            self.add_source(self.default_config_file, default=True)
 
     def set_file(self, filename):
         """Parses the file as YAML and inserts it into the configuration
         sources with highest priority.
         """
-        filename = os.path.abspath(filename)
-        self.set(ConfigSource(load_yaml(filename), filename))
+        self.set(self._as_source(filename))
+
+    def add_source(self, source, **kw):
+        source = self._as_source(source, **kw)
+        if source is not None:
+            self.add(source)
+
+    def _to_filename(self, path, default=False):
+        '''Convert a config directory/file to an absolute config file.'''
+        path = os.path.abspath(path)
+        # if the source is a directory, look for a config file inside
+        if (os.path.isdir(path)
+                or os.path.splitext(path)[1] not in {'.yaml', '.yml'}):
+            fname = self.default_filename if default else self.config_filename
+            path = os.path.join(path, fname)
+
+        # ensure directory exists
+        cfgdir = os.path.dirname(path)
+        if not os.path.isdir(cfgdir):
+            os.makedirs(cfgdir)
+        return path
+
+    def _as_source(self, source, default=False, ignore_missing=False):
+        '''Convert {filename, ConfigSource} to ConfigSource.'''
+        if isinstance(source, ConfigSource):
+            return source
+        if isinstance(source, BASESTRING):
+            source = self._to_filename(source)
+            # skip over files that don't exist
+            if ignore_missing and not os.path.isfile(source):
+                return
+            return ConfigSource(load_yaml(source), source, default=default)
+
+        raise TypeError(u'source value must be a ConfigSource or yaml path')
 
     def dump(self, full=True, redact=False):
         """Dump the Configuration object to a YAML file.
@@ -1048,8 +1106,9 @@ class LazyConfig(Configuration):
     accessed. This is appropriate for using as a global config object at
     the module level.
     """
-    def __init__(self, appname, modname=None):
-        super(LazyConfig, self).__init__(appname, modname, False)
+    def __init__(self, appname, modname=None, *a, **kw):
+        super(LazyConfig, self).__init__(
+            appname, modname, *a, read=False, **kw)
         self._materialized = False  # Have we read the files yet?
         self._lazy_prefix = []  # Pre-materialization calls to set().
         self._lazy_suffix = []  # Calls to add().
