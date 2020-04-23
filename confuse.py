@@ -182,7 +182,7 @@ class ConfigSource(dict):
     def load(self):
         '''Ensure that the source is loaded.'''
         if not self.loaded:
-            self.make_config_dir()
+            self.ensure_config_dir()
             self.loaded = self._load() is not False
         return self
 
@@ -192,13 +192,14 @@ class ConfigSource(dict):
         Otherwise it will be assumed to be loaded.
         '''
 
-    def make_config_dir(self):
+    def ensure_config_dir(self):
         '''Create the config dir, if there's a filename associated with the
         source.'''
         if self.filename:
             dirname = os.path.dirname(self.filename)
             if dirname and not os.path.isdir(dirname): # for PY2 -_-
                 os.makedirs(dirname)
+            return dirname
 
     @classmethod
     def is_of_type(cls, value):
@@ -1061,24 +1062,25 @@ class Configuration(RootView):
         self.modname = modname
         self.config_filename = config_filename or CONFIG_FILENAME
         self.default_filename = default_filename or DEFAULT_FILENAME
+        self._env_var = env_var = '{}DIR'.format(self.appname.upper())
+        self._base_sources = []
 
         # convert user-provided sources to a list of config files
-        self._sources = [
-            self._to_filename(s) if isinstance(s, BASESTRING) else s
-            for s in _ensure_list(source)]
-        self._env_var = env_var = '{}DIR'.format(self.appname.upper())
+        for source in _ensure_list(source):
+            self._add_base(source)
 
         # search the users system for config files
-        if not self._sources:
-            self._sources.append(
+        if not self.sources:
+            self._add_base(
                 find_user_config_files(
                     self.appname, env_var,
                     config_fname=self.config_filename,
-                    first=True))
+                    first=True), ignore_missing=True)
 
         # if user specified a module name, load the config
-        self.default_config_file = modname and find_package_config(
-            modname, self.default_filename)
+        if modname:
+            self._add_base(find_package_config(
+                modname, self.default_filename), default=True)
 
         if read:
             self.read()
@@ -1088,14 +1090,9 @@ class Configuration(RootView):
         looks for the first source that has a filename and uses the
         file's parent directory. Returns None if none are found.
         """
-        for source in self.sources or self._sources:
-            if isinstance(source, ConfigSource):
-                source = source.filename
-            if source and isinstance(source, BASESTRING):
-                dir = os.path.dirname(source)
-                if not os.path.isdir(dir):
-                    os.makedirs(dir)
-                return dir
+        for source in self.sources + self._base_sources:
+            if source.filename:
+                return source.ensure_config_dir()
         return None
 
     def read(self, user=True, defaults=True):
@@ -1104,51 +1101,47 @@ class Configuration(RootView):
         discovered user configuration files or the in-package defaults,
         set `user` or `defaults` to `False`.
         """
-        if user:
-            for filename in self._sources:
-                self.add_source(filename, ignore_missing=True)
-        # load a config if specified/found in the package
-        if defaults and self.default_config_file:
-            self.add_source(self.default_config_file, default=True)
+        self.add_base()
+        for source in self.sources:
+            if user and not source.default:
+                source.load()
+            if defaults and source.default:
+                source.load()
 
-    def set_file(self, filename):
-        """Parses the file as YAML and inserts it into the configuration
-        sources with highest priority.
-        """
-        self.set(self._as_source(filename))
+    def set(self, source, **kw):
+        super(Configuration, self).set(
+            ConfigSource.of(self._to_filename(source), **kw))
 
-    def add_source(self, source, **kw):
-        source = self._as_source(source, **kw)
-        if source is not None:
+    def add(self, source, **kw):
+        super(Configuration, self).add(
+            ConfigSource.of(self._to_filename(source), **kw))
+
+    def _add_base(self, source, **kw):
+        self._base_sources.append(
+            ConfigSource.of(self._to_filename(source), **kw))
+
+    def add_base(self):
+        for source in self._base_sources:
             self.add(source)
 
-    def _to_filename(self, path, default=False):
+    def _to_filename(self, source, default=False):
         '''Convert a config directory/file to an absolute config file.'''
-        path = os.path.abspath(path)
-        # if the source is a directory, look for a config file inside
-        if (os.path.isdir(path)
-                or os.path.splitext(path)[1] not in {'.yaml', '.yml'}):
-            fname = self.default_filename if default else self.config_filename
-            path = os.path.join(path, fname)
-
-        # ensure directory exists
-        cfgdir = os.path.dirname(path)
-        if not os.path.isdir(cfgdir):
-            os.makedirs(cfgdir)
-        return path
-
-    def _as_source(self, source, default=False, ignore_missing=False):
-        '''Convert {filename, ConfigSource} to ConfigSource.'''
         if isinstance(source, ConfigSource):
             return source
         if isinstance(source, BASESTRING):
-            source = self._to_filename(source)
-            # skip over files that don't exist
-            if ignore_missing and not os.path.isfile(source):
-                return
-            return ConfigSource(load_yaml(source), source, default=default)
+            source = os.path.abspath(source)
+            # if the source is a directory, look for a config file inside
+            if (os.path.isdir(source)
+                    or os.path.splitext(source)[1] not in {'.yaml', '.yml'}):
+                source = os.path.join(source, (
+                    self.default_filename if default
+                    else self.config_filename))
 
-        raise TypeError(u'source value must be a ConfigSource or yaml path')
+            # ensure directory exists
+            cfgdir = os.path.dirname(source)
+            if not os.path.isdir(cfgdir):
+                os.makedirs(cfgdir)
+        return source
 
     def dump(self, full=True, redact=False):
         """Dump the Configuration object to a YAML file.
@@ -1198,41 +1191,6 @@ class LazyConfig(Configuration):
     def __init__(self, appname, modname=None, *a, **kw):
         super(LazyConfig, self).__init__(
             appname, modname, *a, read=False, **kw)
-        self._materialized = False  # Have we read the files yet?
-        self._lazy_prefix = []  # Pre-materialization calls to set().
-        self._lazy_suffix = []  # Calls to add().
-
-    def read(self, user=True, defaults=True):
-        self._materialized = True
-        super(LazyConfig, self).read(user, defaults)
-
-    def resolve(self):
-        if not self._materialized:
-            # Read files and unspool buffers.
-            self.read()
-            self.sources += self._lazy_suffix
-            self.sources[:0] = self._lazy_prefix
-        return super(LazyConfig, self).resolve()
-
-    def add(self, value):
-        super(LazyConfig, self).add(value)
-        if not self._materialized:
-            # Buffer additions to end.
-            self._lazy_suffix += self.sources
-            del self.sources[:]
-
-    def set(self, value):
-        super(LazyConfig, self).set(value)
-        if not self._materialized:
-            # Buffer additions to beginning.
-            self._lazy_prefix[:0] = self.sources
-            del self.sources[:]
-
-    def clear(self):
-        """Remove all sources from this configuration."""
-        super(LazyConfig, self).clear()
-        self._lazy_suffix = []
-        self._lazy_prefix = []
 
 
 # "Validated" configuration views: experimental!

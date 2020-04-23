@@ -115,7 +115,7 @@ class ConfigFilenamesTest(unittest.TestCase):
 
     def test_no_sources_when_files_missing(self):
         config = confuse.Configuration('myapp', read=False)
-        filenames = [s.filename for s in config.sources]
+        filenames = [s.filename for s in config.sources if s.loaded]
         self.assertEqual(filenames, [])
 
     def test_search_package(self):
