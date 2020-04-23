@@ -739,12 +739,13 @@ def find_user_config_files(appname, env_var=None, config_fname=CONFIG_FILENAME,
     fallback path is used.
 
     Arguments:
-        appname (str): the subdirectory to search for in default config locations.
+        appname (str): the subdirectory to search for in default config
+            locations.
         env_var (str, optional): the environment variable to look for
         config_fname (str): the config filename to look for.
-        first (bool): only return the first config file. Set to False to return
-            all matching config files. This will create directories for all files
-            returned.
+        first (bool): only return the first config file. Set to False to
+            return all matching config files. This will create directories
+            for all files returned.
 
     Returns:
         config_file (str) if ``first == True`` else config_files (list(str)).
@@ -761,11 +762,9 @@ def find_user_config_files(appname, env_var=None, config_fname=CONFIG_FILENAME,
     # Search platform-specific locations. If no config file is
     # found, fall back to the first directory in the list.
     cfgfiles = [os.path.join(d, appname, config_fname) for d in config_dirs()]
-    foundcfgs.extend([f for f in cfgfiles if os.path.isfile(f)] or cfgfiles[:1])
+    foundcfgs.extend(
+        [f for f in cfgfiles if os.path.isfile(f)] or cfgfiles[:1])
 
-    # Ensure that the directory exists.
-    for f in foundcfgs[:1] if first else foundcfgs:
-        os.makedirs(os.path.dirname(f), exist_ok=True)
     return foundcfgs[0] if first else foundcfgs
 
 
@@ -780,7 +779,7 @@ def find_package_config(modname, config_fname=DEFAULT_FILENAME):
 
 
 def _ensure_list(x):
-    '''Convert to list. e.g. 1 => [1], (1, 2) => [1, 2], None => [], [1] => [1].'''
+    '''Convert to list. e.g. 1 => [1], (1, 2) => [1, 2], None => [].'''
     return (
         x if isinstance(x, list) else
         list(x) if isinstance(x, tuple) else
@@ -956,7 +955,7 @@ def restore_yaml_comments(data, default_data):
 # Main interface.
 
 class Configuration(RootView):
-    def __init__(self, appname, modname=None, sources=None, read=True,
+    def __init__(self, appname, modname=None, source=None, read=True,
                  config_filename=None, default_filename=None):
         """Create a configuration object by reading the
         automatically-discovered config files for the application for a
@@ -974,7 +973,10 @@ class Configuration(RootView):
         self.config_filename = config_filename or CONFIG_FILENAME
         self.default_filename = default_filename or DEFAULT_FILENAME
 
-        self._sources = [self._to_filename(s) for s in _ensure_list(sources)]
+        # convert user-provided sources to a list of config files
+        self._sources = [
+            self._to_filename(s) if isinstance(s, BASESTRING) else s
+            for s in _ensure_list(source)]
         self._env_var = env_var = '{}DIR'.format(self.appname.upper())
 
         # search the users system for config files
@@ -1012,7 +1014,7 @@ class Configuration(RootView):
         """
         if user:
             for filename in self._sources:
-                self.add(self._as_source(filename))
+                self.add(self._as_source(filename, ignore_missing=True))
         # load a config if specified/found in the package
         if defaults and self.default_config_file:
             self.add(self._as_source(self.default_config_file, default=True))
@@ -1027,9 +1029,15 @@ class Configuration(RootView):
         '''Convert a config directory/file to an absolute config file.'''
         path = os.path.abspath(path)
         # if the source is a directory, look for a config file inside
-        if os.path.isdir(path) or os.path.splitext(path)[1] not in {'.yaml', '.yml'}:
+        if (os.path.isdir(path) or
+                os.path.splitext(path)[1] not in {'.yaml', '.yml'}):
             fname = self.default_filename if default else self.config_filename
             path = os.path.join(path, fname)
+
+        # ensure directory exists
+        cfgdir = os.path.dirname(path)
+        if not os.path.isdir(cfgdir):
+            os.makedirs(cfgdir)
         return path
 
     def _as_source(self, source, default=False, ignore_missing=False):
@@ -1091,8 +1099,8 @@ class LazyConfig(Configuration):
     accessed. This is appropriate for using as a global config object at
     the module level.
     """
-    def __init__(self, appname, modname=None):
-        super(LazyConfig, self).__init__(appname, modname, False)
+    def __init__(self, appname, modname=None, *a, **kw):
+        super(LazyConfig, self).__init__(appname, modname, *a, read=False, **kw)
         self._materialized = False  # Have we read the files yet?
         self._lazy_prefix = []  # Pre-materialization calls to set().
         self._lazy_suffix = []  # Calls to add().
