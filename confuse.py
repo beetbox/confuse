@@ -32,6 +32,7 @@ import sys
 import yaml
 import re
 from collections import OrderedDict
+from functools import wraps
 if sys.version_info >= (3, 3):
     from collections import abc
 else:
@@ -134,36 +135,124 @@ class ConfigReadError(ConfigError):
 
 # Views and sources.
 
+
+UNSET = object() # sentinel
+
+
+def _load_first(func):
+    '''Call self.load() before the function is called - used for lazy source
+    loading'''
+    @wraps(func)
+    def inner(self, *a, **kw):
+        self.load()
+        return func(self, *a, **kw)
+    return inner
+
+
+def all_subclasses(cls):
+    return set(cls.__subclasses__()).union(
+        s for c in cls.__subclasses__() for s in all_subclasses(c))
+
+
 class ConfigSource(dict):
-    """A dictionary augmented with metadata about the source of the
+    '''A dictionary augmented with metadata about the source of the
     configuration.
-    """
-    def __init__(self, value, filename=None, default=False):
-        super(ConfigSource, self).__init__(value)
+    '''
+    def __init__(self, value=UNSET, filename=None, default=False):
+        # track whether a config source has been set yet
+        self.loaded = value is not UNSET
+        super(ConfigSource, self).__init__(value if self.loaded else {})
         if filename is not None and not isinstance(filename, BASESTRING):
             raise TypeError(u'filename must be a string or None')
         self.filename = filename
         self.default = default
 
     def __repr__(self):
-        return 'ConfigSource({0!r}, {1!r}, {2!r})'.format(
-            super(ConfigSource, self),
-            self.filename,
-            self.default,
-        )
+        return 'ConfigSource({}, filename={}, default={})'.format(
+            super(ConfigSource, self).__repr__() if self.loaded else '*Unloaded*',
+            self.filename, self.default)
+
+    @property
+    def exists(self):
+        '''Does this config have access to usable configuration values?'''
+        # if has a file attached - see if a file is attached and exists
+        # or if value is set.
+        return self.loaded or self.filename and os.path.isfile(self.filename)
+
+    def load(self):
+        '''Ensure that the source is loaded.'''
+        if not self.loaded:
+            self.make_config_dir()
+            self.loaded = self._load() is not False
+        return self
+
+    def _load(self):
+        '''Load config from source and update self.
+        If it doesn't load, return False to keep it marked as unloaded.
+        Otherwise it will be assumed to be loaded.
+        '''
+
+    def make_config_dir(self):
+        '''Create the config dir, if there's a filename associated with the
+        source.'''
+        if self.filename:
+            dirname = os.path.dirname(self.filename)
+            if dirname and not os.path.isdir(dirname): # for PY2 -_-
+                os.makedirs(dirname)
 
     @classmethod
-    def of(cls, value):
-        """Given either a dictionary or a `ConfigSource` object, return
-        a `ConfigSource` object. This lets a function accept either type
-        of object as an argument.
-        """
+    def is_of_type(cls, value):
+        '''Determine if value is a valid parameter for this Source.'''
+        return
+
+    # overriding dict methods so that the configuration is loaded before any
+    # of them are run
+    __getitem__ = _load_first(dict.__getitem__)
+    __iter__ = _load_first(dict.__iter__)
+    # __len__ = _load_first(dict.__len__)
+    keys = _load_first(dict.keys)
+    values = _load_first(dict.values)
+
+    @classmethod
+    def of(cls, value, **kw):
+        '''Try to convert value to a `ConfigSource` object. This lets a
+        function accept values that are convertable to a source.
+        '''
+        # ignore if already a source
         if isinstance(value, ConfigSource):
             return value
-        elif isinstance(value, dict):
-            return ConfigSource(value)
-        else:
-            raise TypeError(u'source value must be a dict')
+
+        # convert using one of the configsource subtypes
+        for subcls in all_subclasses(ConfigSource):
+            if subcls.is_of_type(value):
+                return subcls(value, **kw)
+
+        # if none matched, use convert dict to ConfigSource
+        if isinstance(value, dict):
+            return ConfigSource(value, **kw)
+        raise TypeError(
+            u'ConfigSource.of value unable to cast to ConfigSource.')
+
+
+class YamlSource(ConfigSource):
+    EXTENSIONS = '.yaml', '.yml'
+    def __init__(self, filename=None, value=UNSET, default=False, ignore_missing=False):
+        self.ignore_missing = ignore_missing
+        super(YamlSource, self).__init__(value, filename, default)
+
+    @classmethod
+    def is_of_type(cls, value):
+        '''Does value look like a .yaml file?'''
+        return (
+            isinstance(value, BASESTRING) and
+            os.path.splitext(value)[1] in cls.EXTENSIONS)
+
+    _loader = lambda self, f: load_yaml(f)
+    def _load(self):
+        '''Load the file if it exists.'''
+        if self.ignore_missing and not os.path.isfile(self.filename):
+            return False
+        self.update(self._loader(self.filename))
 
 
 class ConfigView(object):
