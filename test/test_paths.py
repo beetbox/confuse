@@ -215,5 +215,5 @@ class PrimaryConfigDirTest(FakeSystem):
 
     def test_override_config_dir(self):
         path = os.path.join(self.home, 'asdfasdfasdfd', 'test')
-        config = confuse.Configuration('test', sources=path, read=False)
+        config = confuse.Configuration('test', source=path, read=False)
         self.assertEqual(config.config_dir(), path)

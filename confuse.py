@@ -1092,7 +1092,10 @@ class Configuration(RootView):
             if isinstance(source, ConfigSource):
                 source = source.filename
             if source and isinstance(source, BASESTRING):
-                return os.path.dirname(source)
+                dir = os.path.dirname(source)
+                if not os.path.isdir(dir):
+                    os.makedirs(dir)
+                return dir
         return None
 
     def read(self, user=True, defaults=True):
@@ -1103,10 +1106,10 @@ class Configuration(RootView):
         """
         if user:
             for filename in self._sources:
-                self.add(self._as_source(filename, ignore_missing=True))
+                self.add_source(filename, ignore_missing=True)
         # load a config if specified/found in the package
         if defaults and self.default_config_file:
-            self.add(self._as_source(self.default_config_file, default=True))
+            self.add_source(self.default_config_file, default=True)
 
     def set_file(self, filename):
         """Parses the file as YAML and inserts it into the configuration
@@ -1114,12 +1117,17 @@ class Configuration(RootView):
         """
         self.set(self._as_source(filename))
 
+    def add_source(self, source, **kw):
+        source = self._as_source(source, **kw)
+        if source is not None:
+            self.add(source)
+
     def _to_filename(self, path, default=False):
         '''Convert a config directory/file to an absolute config file.'''
         path = os.path.abspath(path)
         # if the source is a directory, look for a config file inside
-        if (os.path.isdir(path) or
-                os.path.splitext(path)[1] not in {'.yaml', '.yml'}):
+        if (os.path.isdir(path)
+                or os.path.splitext(path)[1] not in {'.yaml', '.yml'}):
             fname = self.default_filename if default else self.config_filename
             path = os.path.join(path, fname)
 
@@ -1133,7 +1141,6 @@ class Configuration(RootView):
         '''Convert {filename, ConfigSource} to ConfigSource.'''
         if isinstance(source, ConfigSource):
             return source
-
         if isinstance(source, BASESTRING):
             source = self._to_filename(source)
             # skip over files that don't exist
@@ -1189,7 +1196,8 @@ class LazyConfig(Configuration):
     the module level.
     """
     def __init__(self, appname, modname=None, *a, **kw):
-        super(LazyConfig, self).__init__(appname, modname, *a, read=False, **kw)
+        super(LazyConfig, self).__init__(
+            appname, modname, *a, read=False, **kw)
         self._materialized = False  # Have we read the files yet?
         self._lazy_prefix = []  # Pre-materialization calls to set().
         self._lazy_suffix = []  # Calls to add().
