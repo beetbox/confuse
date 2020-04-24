@@ -168,22 +168,22 @@ class ConfigSource(dict):
         self.default = default
 
     def __repr__(self):
-        return 'ConfigSource({}, filename={}, default={})'.format(
-            super(ConfigSource, self).__repr__() if self.loaded
-            else '*Unloaded*',
+        return '{}({}, filename={}, default={})'.format(
+            self.__class__.__name__,
+            dict.__repr__(self)
+            if self.loaded else '[Unloaded]'
+            if self.exists else "[Source doesn't exist]",
             self.filename, self.default)
 
     @property
     def exists(self):
         '''Does this config have access to usable configuration values?'''
-        # if has a file attached - see if a file is attached and exists
-        # or if value is set.
         return self.loaded or self.filename and os.path.isfile(self.filename)
 
     def load(self):
         '''Ensure that the source is loaded.'''
         if not self.loaded:
-            self.ensure_config_dir()
+            self.config_dir()
             self.loaded = self._load() is not False
         return self
 
@@ -193,7 +193,7 @@ class ConfigSource(dict):
         Otherwise it will be assumed to be loaded.
         '''
 
-    def ensure_config_dir(self):
+    def config_dir(self):
         '''Create the config dir, if there's a filename associated with the
         source.'''
         if self.filename:
@@ -268,6 +268,13 @@ class EnvSource(ConfigSource):
         self._sep = sep
         super(EnvSource, self).__init__(
             value=value, filename=None, default=False)
+
+    def __repr__(self):
+        return '{}({}, prefix={}, separator={})'.format(
+            self.__class__.__name__,
+            dict.__repr__(self)
+            if self.loaded else '[Unloaded]',
+            self._prefix, self._sep)
 
     def _load(self):
         self.update(nest_keys(
@@ -1118,7 +1125,7 @@ class Configuration(RootView):
 
         # convert user-provided sources to a list of config files
         for source in _ensure_list(source):
-            self._add_base(source)
+            self._add_base(source, ignore_missing=True)
 
         # search the users system for config files
         if not self.sources:
@@ -1143,7 +1150,7 @@ class Configuration(RootView):
         """
         for source in self.sources + self._base_sources:
             if source.filename:
-                return source.ensure_config_dir()
+                return source.config_dir()
         return None
 
     def read(self, user=True, defaults=True):
@@ -1185,7 +1192,7 @@ class Configuration(RootView):
         if isinstance(source, ConfigSource):
             return source
         if isinstance(source, BASESTRING):
-            source = os.path.abspath(source)
+            source = os.path.abspath(os.path.expanduser(source))
             # if the source is a directory, look for a config file inside
             if (os.path.isdir(source)
                     or os.path.splitext(source)[1] not in {'.yaml', '.yml'}):
