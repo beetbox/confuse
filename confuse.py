@@ -169,7 +169,8 @@ class ConfigSource(dict):
 
     def __repr__(self):
         return 'ConfigSource({}, filename={}, default={})'.format(
-            super(ConfigSource, self).__repr__() if self.loaded else '*Unloaded*',
+            super(ConfigSource, self).__repr__() if self.loaded
+            else '*Unloaded*',
             self.filename, self.default)
 
     @property
@@ -200,6 +201,7 @@ class ConfigSource(dict):
             if dirname and not os.path.isdir(dirname): # for PY2 -_-
                 os.makedirs(dirname)
             return dirname
+        return None
 
     @classmethod
     def is_of_type(cls, value):
@@ -236,8 +238,10 @@ class ConfigSource(dict):
 
 
 class YamlSource(ConfigSource):
+    '''A config source pulled from yaml files.'''
     EXTENSIONS = '.yaml', '.yml'
-    def __init__(self, filename=None, value=UNSET, default=False, ignore_missing=False):
+    def __init__(self, filename=None, value=UNSET, default=False,
+                 ignore_missing=False):
         self.ignore_missing = ignore_missing
         super(YamlSource, self).__init__(value, filename, default)
 
@@ -254,6 +258,53 @@ class YamlSource(ConfigSource):
         if self.ignore_missing and not os.path.isfile(self.filename):
             return False
         self.update(self._loader(self.filename))
+
+
+class EnvSource(ConfigSource):
+    '''A config source pulled from environment variables.'''
+    DEFAULT_PREFIX = 'CONFUSE'
+    def __init__(self, prefix=None, sep='__', value=UNSET):
+        self._prefix = prefix
+        self._sep = sep
+        super(EnvSource, self).__init__(
+            value=value, filename=None, default=False)
+
+    def _load(self):
+        self.update(nest_keys(
+            os.environ, sep=self._sep,
+            prefix=self._prefix or self.DEFAULT_PREFIX))
+
+
+def nest_keys(value, sep='.', prefix='', overwrite_higher=False,
+              overwrite_lower=False):
+    '''Convert a flat dict with splittable keys to a nested dict split by
+    that separator.'''
+    out = {}
+    # filter by prefix and split by separator
+    items = ((k[len(prefix):].split(sep), v)
+             for k, v in value.items()
+             if k.startswith(prefix))
+
+    # for each environment variable
+    for ks, val in sorted(items, key=lambda x: -len(x[0])):
+        # recursively set keys
+        dct = out
+        for k in ks[:-1]:
+            if (not overwrite_higher and k in dct
+                    and not isinstance(dct[k], dict)):
+                raise ValueError(
+                    'Trying to overwrite another value with a nested dict.')
+
+            if k not in dct:
+                dct[k] = {}
+            dct = dct[k]
+
+        k = ks[-1]
+        if not overwrite_lower and k in dct and isinstance(dct[k], dict):
+            raise ValueError(
+                'Trying to overwrite a nested dict with another value.')
+        dct[k] = val
+    return out
 
 
 class ConfigView(object):
@@ -1108,6 +1159,10 @@ class Configuration(RootView):
             if defaults and source.default:
                 source.load()
 
+    def resolve(self):
+        self.add_base()
+        return super(Configuration, self).resolve()
+
     def set(self, source, **kw):
         super(Configuration, self).set(
             ConfigSource.of(self._to_filename(source), **kw))
@@ -1123,6 +1178,7 @@ class Configuration(RootView):
     def add_base(self):
         for source in self._base_sources:
             self.add(source)
+        self._base_sources = [] # don't add twice
 
     def _to_filename(self, source, default=False):
         '''Convert a config directory/file to an absolute config file.'''
