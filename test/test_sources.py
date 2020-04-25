@@ -47,6 +47,14 @@ class ConfigSourceTest(unittest.TestCase):
     def test_load_cast_dict(self):
         src = confuse.ConfigSource.of('asdf.yml')
         self.assertEqual(src.loaded, False)
+        class a(dict):
+            def __getattribute__(self, k):
+                print(k)
+                return super(a, self).__getattribute__(k)
+        b = a()
+        print('<<<<<')
+        x = dict(b)
+        print('>>>>>')
         self.assertEqual(dict(src), {'a': 5, 'file': 'asdf.yml'})
         self.assertEqual(src.loaded, True)
 
