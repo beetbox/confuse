@@ -136,17 +136,24 @@ class ConfigReadError(ConfigError):
 # Views and sources.
 
 
-UNSET = object() # sentinel
+UNSET = object()  # sentinel
 
 
 def _load_first(func):
     '''Call self.load() before the function is called - used for lazy source
     loading'''
-    @wraps(func)
     def inner(self, *a, **kw):
         self.load()
         return func(self, *a, **kw)
-    return inner
+
+    try:
+        return wraps(func)(inner)
+    except AttributeError:
+        # in v2 they don't ignore missing attributes
+        # v3: https://github.com/python/cpython/blob/3.8/Lib/functools.py
+        # v2: https://github.com/python/cpython/blob/2.7/Lib/functools.py
+        inner.__name__ = func.__name__
+        return inner
 
 
 def all_subclasses(cls):
@@ -198,7 +205,7 @@ class ConfigSource(dict):
         source.'''
         if self.filename:
             dirname = os.path.dirname(self.filename)
-            if dirname and not os.path.isdir(dirname): # for PY2 -_-
+            if dirname and not os.path.isdir(dirname):  # for PY2 -_-
                 os.makedirs(dirname)
             return dirname
         return None
@@ -240,6 +247,7 @@ class ConfigSource(dict):
 class YamlSource(ConfigSource):
     '''A config source pulled from yaml files.'''
     EXTENSIONS = '.yaml', '.yml'
+
     def __init__(self, filename=None, value=UNSET, default=False,
                  ignore_missing=False):
         self.ignore_missing = ignore_missing
@@ -249,10 +257,11 @@ class YamlSource(ConfigSource):
     def is_of_type(cls, value):
         '''Does value look like a .yaml file?'''
         return (
-            isinstance(value, BASESTRING) and
-            os.path.splitext(value)[1] in cls.EXTENSIONS)
+            isinstance(value, BASESTRING)
+            and os.path.splitext(value)[1] in cls.EXTENSIONS)
 
     _loader = lambda self, f: load_yaml(f)
+
     def _load(self):
         '''Load the file if it exists.'''
         if self.ignore_missing and not os.path.isfile(self.filename):
@@ -263,6 +272,7 @@ class YamlSource(ConfigSource):
 class EnvSource(ConfigSource):
     '''A config source pulled from environment variables.'''
     DEFAULT_PREFIX = 'CONFUSE'
+
     def __init__(self, prefix=None, sep='__', value=UNSET):
         self._prefix = prefix
         self._sep = sep
@@ -1185,7 +1195,7 @@ class Configuration(RootView):
     def add_base(self):
         for source in self._base_sources:
             self.add(source)
-        self._base_sources = [] # don't add twice
+        self._base_sources = []  # don't add twice
 
     def _to_filename(self, source, default=False):
         '''Convert a config directory/file to an absolute config file.'''
