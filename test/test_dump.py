@@ -49,8 +49,8 @@ class PrettyDumpTest(unittest.TestCase):
 
     def test_dump_sans_defaults(self):
         config = confuse.Configuration('myapp', read=False)
-        config.add({'foo': 'bar'})
-        config.sources[0].default = True
+        src = config.add({'foo': 'bar'})
+        src.default = True
         config.add({'baz': 'qux'})
 
         yaml = config.dump().strip()
@@ -95,8 +95,8 @@ class RedactTest(unittest.TestCase):
 
     def test_dump_redacted_sans_defaults(self):
         config = confuse.Configuration('myapp', read=False)
-        config.add({'foo': 'bar'})
-        config.sources[0].default = True
+        src = config.add({'foo': 'bar'})
+        src.default = True
         config.add({'baz': 'qux'})
         config['baz'].redact = True
 

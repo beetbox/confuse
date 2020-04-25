@@ -200,12 +200,12 @@ class ConfigSource(dict):
         Otherwise it will be assumed to be loaded.
         '''
 
-    def config_dir(self):
+    def config_dir(self, create=True):
         '''Create the config dir, if there's a filename associated with the
         source.'''
         if self.filename:
             dirname = os.path.dirname(self.filename)
-            if dirname and not os.path.isdir(dirname):  # for PY2 -_-
+            if create and dirname and not os.path.isdir(dirname):
                 os.makedirs(dirname)
             return dirname
         return None
@@ -724,10 +724,14 @@ class RootView(ConfigView):
         self.redactions = set()
 
     def add(self, obj):
-        self.sources.append(ConfigSource.of(obj))
+        src = ConfigSource.of(obj)
+        self.sources.append(src)
+        return src
 
     def set(self, value):
-        self.sources.insert(0, ConfigSource.of(value))
+        src = ConfigSource.of(value)
+        self.sources.insert(0, src)
+        return src
 
     def resolve(self):
         return ((dict(s), s) for s in self.sources)
@@ -796,10 +800,10 @@ class Subview(ConfigView):
             yield value, source
 
     def set(self, value):
-        self.parent.set({self.key: value})
+        return self.parent.set({self.key: value})
 
     def add(self, value):
-        self.parent.add({self.key: value})
+        return self.parent.add({self.key: value})
 
     def root(self):
         return self.parent.root()
@@ -1114,7 +1118,7 @@ def restore_yaml_comments(data, default_data):
 
 class Configuration(RootView):
     def __init__(self, appname, modname=None, source=None, read=True,
-                 config_filename=None, default_filename=None):
+                 config_filename=None, default_filename=None, user=None):
         """Create a configuration object by reading the
         automatically-discovered config files for the application for a
         given name. If `modname` is specified, it should be the import
@@ -1135,11 +1139,11 @@ class Configuration(RootView):
 
         # convert user-provided sources to a list of config files
         for source in _ensure_list(source):
-            self._add_base(source, ignore_missing=True)
+            self.add(source, ignore_missing=True)
 
         # search the users system for config files
-        if not self.sources:
-            self._add_base(
+        if user is not False or not self.sources:
+            self.add(
                 find_user_config_files(
                     self.appname, env_var,
                     config_fname=self.config_filename,
@@ -1147,7 +1151,7 @@ class Configuration(RootView):
 
         # if user specified a module name, load the config
         if modname:
-            self._add_base(find_package_config(
+            self.add(find_package_config(
                 modname, self.default_filename), default=True)
 
         if read:
@@ -1169,33 +1173,19 @@ class Configuration(RootView):
         discovered user configuration files or the in-package defaults,
         set `user` or `defaults` to `False`.
         """
-        self.add_base()
         for source in self.sources:
             if user and not source.default:
                 source.load()
             if defaults and source.default:
                 source.load()
 
-    def resolve(self):
-        self.add_base()
-        return super(Configuration, self).resolve()
-
     def set(self, source, **kw):
-        super(Configuration, self).set(
+        return super(Configuration, self).set(
             ConfigSource.of(self._to_filename(source), **kw))
 
     def add(self, source, **kw):
-        super(Configuration, self).add(
+        return super(Configuration, self).add(
             ConfigSource.of(self._to_filename(source), **kw))
-
-    def _add_base(self, source, **kw):
-        self._base_sources.append(
-            ConfigSource.of(self._to_filename(source), **kw))
-
-    def add_base(self):
-        for source in self._base_sources:
-            self.add(source)
-        self._base_sources = []  # don't add twice
 
     def _to_filename(self, source, default=False):
         '''Convert a config directory/file to an absolute config file.'''
