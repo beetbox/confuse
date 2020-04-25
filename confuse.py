@@ -734,7 +734,7 @@ class RootView(ConfigView):
         return src
 
     def resolve(self):
-        return ((dict(s), s) for s in self.sources)
+        return ((dict(s.load()), s) for s in self.sources)
 
     def clear(self):
         """Remove all sources (and redactions) from this
