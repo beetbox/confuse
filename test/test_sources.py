@@ -47,7 +47,7 @@ class ConfigSourceTest(unittest.TestCase):
     def test_load_cast_dict(self):
         src = confuse.ConfigSource.of('asdf.yml')
         self.assertEqual(src.loaded, False)
-        self.assertEqual(dict(src)['a'], 5)
+        self.assertEqual(dict(src), {'a': 5, 'file': 'asdf.yml'})
         self.assertEqual(src.loaded, True)
 
     def test_load_keys(self):
@@ -56,22 +56,22 @@ class ConfigSourceTest(unittest.TestCase):
         self.assertEqual(set(src.keys()), {'a', 'file'})
         self.assertEqual(src.loaded, True)
 
+
 class EnvSourceTest(unittest.TestCase):
     def setenv(self, *a, **kw):
         for dct in a + (kw,):
             os.environ.update({k: str(v) for k, v in dct.items()})
 
     def test_env_var_load(self):
-        #
-        PREFIX = 'asdf'
+        prefix = 'asdf'
         expected = {'a': {'b': '5', 'c': '6'}, 'b': '7'}
 
         # setup environment
         before = set(os.environ.keys())
-        self.setenv({PREFIX + 'a__b': 5, PREFIX + 'a__c': 6, PREFIX + 'b': 7})
+        self.setenv({prefix + 'a__b': 5, prefix + 'a__c': 6, prefix + 'b': 7})
         self.assertGreater(len(set(os.environ.keys()) - before), 0)
 
-        src = confuse.EnvSource(PREFIX)
+        src = confuse.EnvSource(prefix)
         self.assertEqual(src.loaded, False)
         src.load()
         self.assertEqual(src.loaded, True)
