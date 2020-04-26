@@ -31,6 +31,7 @@ import pkgutil
 import sys
 import yaml
 import re
+import functools
 from collections import OrderedDict
 if sys.version_info >= (3, 3):
     from collections import abc
@@ -134,36 +135,121 @@ class ConfigReadError(ConfigError):
 
 # Views and sources.
 
+
+UNSET = object()  # sentinel
+
+
+def _load_first(func):
+    '''Call self.load() before the function is called - used for lazy source
+    loading'''
+    def inner(self, *a, **kw):
+        self.load()
+        return func(self, *a, **kw)
+
+    try:
+        return functools.wraps(func)(inner)
+    except AttributeError:
+        # in v2 they don't ignore missing attributes
+        # v3: https://github.com/python/cpython/blob/3.8/Lib/functools.py
+        # v2: https://github.com/python/cpython/blob/2.7/Lib/functools.py
+        inner.__name__ = func.__name__
+        return inner
+
+
 class ConfigSource(dict):
-    """A dictionary augmented with metadata about the source of the
+    '''A dictionary augmented with metadata about the source of the
     configuration.
-    """
-    def __init__(self, value, filename=None, default=False):
-        super(ConfigSource, self).__init__(value)
+    '''
+    def __init__(self, value=UNSET, filename=None, default=False):
+        # track whether a config source has been set yet
+        self.loaded = value is not UNSET
+        super(ConfigSource, self).__init__(value if self.loaded else {})
         if filename is not None and not isinstance(filename, BASESTRING):
             raise TypeError(u'filename must be a string or None')
         self.filename = filename
         self.default = default
 
     def __repr__(self):
-        return 'ConfigSource({0!r}, {1!r}, {2!r})'.format(
-            super(ConfigSource, self),
-            self.filename,
-            self.default,
-        )
+        return '{}({}, filename={}, default={})'.format(
+            self.__class__.__name__,
+            dict.__repr__(self)
+            if self.loaded else '[Unloaded]'
+            if self.exists else "[Source doesn't exist]",
+            self.filename, self.default)
+
+    @property
+    def exists(self):
+        """Does this config have access to usable configuration values?"""
+        return self.loaded or self.filename and os.path.isfile(self.filename)
+
+    def load(self):
+        """Ensure that the source is loaded."""
+        if not self.loaded:
+            self.config_dir()
+            self.loaded = self._load() is not False
+        return self
+
+    def _load(self):
+        """Load config from source and update self.
+        If it doesn't load, return False to keep it marked as unloaded.
+        Otherwise it will be assumed to be loaded.
+        """
+
+    def config_dir(self, create=True):
+        """Create the config dir, if there's a filename associated with the
+        source."""
+        if self.filename:
+            dirname = os.path.dirname(self.filename)
+            if create and dirname and not os.path.isdir(dirname):
+                os.makedirs(dirname)
+            return dirname
+        return None
+
+    # overriding dict methods so that the configuration is loaded before any
+    # of them are run
+    __getitem__ = _load_first(dict.__getitem__)
+    __iter__ = _load_first(dict.__iter__)
+    # __len__ = _load_first(dict.__len__)
+    keys = _load_first(dict.keys)
+    values = _load_first(dict.values)
 
     @classmethod
-    def of(cls, value):
-        """Given either a dictionary or a `ConfigSource` object, return
-        a `ConfigSource` object. This lets a function accept either type
-        of object as an argument.
+    def of(cls, value, **kw):
+        """Try to convert value to a `ConfigSource` object. This lets a
+        function accept values that are convertable to a source.
         """
+        # ignore if already a source
         if isinstance(value, ConfigSource):
             return value
-        elif isinstance(value, dict):
-            return ConfigSource(value)
-        else:
-            raise TypeError(u'source value must be a dict')
+
+        # if it's a yaml file
+        if (isinstance(value, BASESTRING)
+                and os.path.splitext(value)[1] in YamlSource.EXTENSIONS):
+            return YamlSource(value, **kw)
+
+        # if it's an explicit config dict
+        if isinstance(value, dict):
+            return ConfigSource(value, **kw)
+
+        # none of the above
+        raise TypeError(
+            u'ConfigSource.of value unable to cast to ConfigSource.')
+
+
+class YamlSource(ConfigSource):
+    """A config source pulled from yaml files."""
+    EXTENSIONS = '.yaml', '.yml'
+
+    def __init__(self, filename=None, value=UNSET, default=False,
+                 ignore_missing=False):
+        self.ignore_missing = ignore_missing
+        super(YamlSource, self).__init__(value, filename, default)
+
+    def _load(self):
+        '''Load the file if it exists.'''
+        if self.ignore_missing and not os.path.isfile(self.filename):
+            return False
+        self.update(load_yaml(self.filename))
 
 
 class ConfigView(object):
@@ -936,7 +1022,7 @@ class Configuration(RootView):
         """
         filename = self.user_config_path()
         if os.path.isfile(filename):
-            self.add(ConfigSource(load_yaml(filename) or {}, filename))
+            self.add(ConfigSource.of(filename))
 
     def _add_default_source(self):
         """Add the package's default configuration settings. This looks
@@ -947,7 +1033,7 @@ class Configuration(RootView):
             if self._package_path:
                 filename = os.path.join(self._package_path, DEFAULT_FILENAME)
                 if os.path.isfile(filename):
-                    self.add(ConfigSource(load_yaml(filename), filename, True))
+                    self.add(ConfigSource.of(filename, default=True))
 
     def read(self, user=True, defaults=True):
         """Find and read the files for this configuration and set them
@@ -1001,7 +1087,7 @@ class Configuration(RootView):
         sources with highest priority.
         """
         filename = os.path.abspath(filename)
-        self.set(ConfigSource(load_yaml(filename), filename))
+        self.set(ConfigSource.of(filename))
 
     def dump(self, full=True, redact=False):
         """Dump the Configuration object to a YAML file.
@@ -1049,42 +1135,7 @@ class LazyConfig(Configuration):
     the module level.
     """
     def __init__(self, appname, modname=None):
-        super(LazyConfig, self).__init__(appname, modname, False)
-        self._materialized = False  # Have we read the files yet?
-        self._lazy_prefix = []  # Pre-materialization calls to set().
-        self._lazy_suffix = []  # Calls to add().
-
-    def read(self, user=True, defaults=True):
-        self._materialized = True
-        super(LazyConfig, self).read(user, defaults)
-
-    def resolve(self):
-        if not self._materialized:
-            # Read files and unspool buffers.
-            self.read()
-            self.sources += self._lazy_suffix
-            self.sources[:0] = self._lazy_prefix
-        return super(LazyConfig, self).resolve()
-
-    def add(self, value):
-        super(LazyConfig, self).add(value)
-        if not self._materialized:
-            # Buffer additions to end.
-            self._lazy_suffix += self.sources
-            del self.sources[:]
-
-    def set(self, value):
-        super(LazyConfig, self).set(value)
-        if not self._materialized:
-            # Buffer additions to beginning.
-            self._lazy_prefix[:0] = self.sources
-            del self.sources[:]
-
-    def clear(self):
-        """Remove all sources from this configuration."""
-        super(LazyConfig, self).clear()
-        self._lazy_suffix = []
-        self._lazy_prefix = []
+        super(LazyConfig, self).__init__(appname, modname, read=False)
 
 
 # "Validated" configuration views: experimental!
