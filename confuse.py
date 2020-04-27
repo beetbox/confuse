@@ -160,9 +160,11 @@ class ConfigSource(dict):
     '''A dictionary augmented with metadata about the source of the
     configuration.
     '''
-    def __init__(self, value=UNSET, filename=None, default=False):
+    def __init__(self, value=UNSET, filename=None, default=False,
+                 retry=False):
         # track whether a config source has been set yet
         self.loaded = value is not UNSET
+        self.retry = retry
         super(ConfigSource, self).__init__(value if self.loaded else {})
         if filename is not None and not isinstance(filename, BASESTRING):
             raise TypeError(u'filename must be a string or None')
@@ -186,7 +188,7 @@ class ConfigSource(dict):
         """Ensure that the source is loaded."""
         if not self.loaded:
             self.config_dir()
-            self.loaded = self._load() is not False
+            self.loaded = self._load() is not False or not self.retry
         return self
 
     def _load(self):
@@ -240,14 +242,13 @@ class YamlSource(ConfigSource):
     """A config source pulled from yaml files."""
     EXTENSIONS = '.yaml', '.yml'
 
-    def __init__(self, filename=None, value=UNSET, default=False,
-                 ignore_missing=False):
-        self.ignore_missing = ignore_missing
-        super(YamlSource, self).__init__(value, filename, default)
+    def __init__(self, filename=None, value=UNSET, optional=False, **kw):
+        self.optional = optional
+        super(YamlSource, self).__init__(value, filename, **kw)
 
     def _load(self):
         '''Load the file if it exists.'''
-        if self.ignore_missing and not os.path.isfile(self.filename):
+        if self.optional and not os.path.isfile(self.filename):
             return False
         self.update(load_yaml(self.filename))
 
