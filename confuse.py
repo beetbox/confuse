@@ -779,18 +779,27 @@ class Loader(yaml.SafeLoader):
         return plain or self.peek() == '%'
 
 
-Loader.add_constructor('tag:yaml.org,2002:str', Loader._construct_unicode)
-Loader.add_constructor('tag:yaml.org,2002:map', Loader.construct_yaml_map)
-Loader.add_constructor('tag:yaml.org,2002:omap', Loader.construct_yaml_map)
-
-
-def load_yaml(filename):
+def load_yaml(filename, loader=Loader, override=True):
     """Read a YAML document from a file. If the file cannot be read or
     parsed, a ConfigReadError is raised.
+    You can specify a custom Loader (instead of the default confuse Loader
+    based on pyYaml SafeLoader which have some limitations).
+    As Confuse offers some more complex constructors you may want to use
+    even with a custom Loader, you can specify 'override' to add the
+    constructors to your Loader for str map and omap types mapping
+    from Confuse library (defaults True).
     """
+    if isinstance(loader, Loader) or override:
+        loader.add_constructor('tag:yaml.org,2002:str',
+                               Loader._construct_unicode)
+        loader.add_constructor('tag:yaml.org,2002:map',
+                               Loader.construct_yaml_map)
+        loader.add_constructor('tag:yaml.org,2002:omap',
+                               Loader.construct_yaml_map)
+
     try:
         with open(filename, 'rb') as f:
-            return yaml.load(f, Loader=Loader)
+            return yaml.load(f, Loader=loader)
     except (IOError, yaml.error.YAMLError) as exc:
         raise ConfigReadError(filename, exc)
 
@@ -895,7 +904,8 @@ def restore_yaml_comments(data, default_data):
 # Main interface.
 
 class Configuration(RootView):
-    def __init__(self, appname, modname=None, read=True):
+    def __init__(self, appname, modname=None, read=True,
+                 loader=Loader, override=True):
         """Create a configuration object by reading the
         automatically-discovered config files for the application for a
         given name. If `modname` is specified, it should be the import
@@ -905,10 +915,14 @@ class Configuration(RootView):
         configuration files. Use this when creating a configuration
         object at module load time and then call the `read` method
         later.
+        Specify the Loader class with 'loader' and tells if confuse
+        constructors must be added to your choosen Loader with 'override'.
         """
         super(Configuration, self).__init__([])
         self.appname = appname
         self.modname = modname
+        self.loader = loader
+        self.override = override
 
         # Resolve default source location. We do this ahead of time to
         # avoid unexpected problems if the working directory changes.
@@ -936,7 +950,9 @@ class Configuration(RootView):
         """
         filename = self.user_config_path()
         if os.path.isfile(filename):
-            self.add(ConfigSource(load_yaml(filename) or {}, filename))
+            yaml_data = load_yaml(filename, loader=self.loader,
+                                  override=self.override) or {}
+            self.add(ConfigSource(yaml_data, filename))
 
     def _add_default_source(self):
         """Add the package's default configuration settings. This looks
@@ -947,7 +963,9 @@ class Configuration(RootView):
             if self._package_path:
                 filename = os.path.join(self._package_path, DEFAULT_FILENAME)
                 if os.path.isfile(filename):
-                    self.add(ConfigSource(load_yaml(filename), filename, True))
+                    yaml_data = load_yaml(filename, loader=self.loader,
+                                          override=self.override)
+                    self.add(ConfigSource(yaml_data, filename, True))
 
     def read(self, user=True, defaults=True):
         """Find and read the files for this configuration and set them
@@ -1001,7 +1019,9 @@ class Configuration(RootView):
         sources with highest priority.
         """
         filename = os.path.abspath(filename)
-        self.set(ConfigSource(load_yaml(filename), filename))
+        yaml_data = load_yaml(filename, loader=self.loader,
+                              override=self.override)
+        self.set(ConfigSource(yaml_data, filename))
 
     def dump(self, full=True, redact=False):
         """Dump the Configuration object to a YAML file.
