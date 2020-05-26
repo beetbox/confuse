@@ -780,6 +780,11 @@ class Loader(yaml.SafeLoader):
 
     @staticmethod
     def override(loader):
+        """Overrides yaml Loader constructors with Confuse fancy
+        constructors. Call this method on your custom
+        Loader before Configuration intialization and if you need
+        enhanced Confuse's lists and ordered dicts
+        """
         loader.add_constructor('tag:yaml.org,2002:str',
                                Loader._construct_unicode)
         loader.add_constructor('tag:yaml.org,2002:map',
@@ -976,14 +981,6 @@ class Configuration(RootView):
             self._add_user_source()
         if defaults:
             self._add_default_source()
-
-    def override_loader(self):
-        """Overrides yaml Loader constructors with Confuse fancy
-        constructors. Call this method if you use a custom
-        Loader at Configuration intialization and if you need
-        enhanced Confuse's lists and ordered dicts
-        """
-        Loader.override(self.loader)
 
     def config_dir(self):
         """Get the path to the user configuration directory. The
