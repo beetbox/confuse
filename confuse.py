@@ -779,11 +779,10 @@ class Loader(yaml.SafeLoader):
         return plain or self.peek() == '%'
 
     @staticmethod
-    def override(loader):
-        """Overrides yaml Loader constructors with Confuse fancy
-        constructors. Call this method on your custom
-        Loader before Configuration intialization and if you need
-        enhanced Confuse's lists and ordered dicts
+    def add_constructors(loader):
+        """Modify a PyYAML Loader class to add extra constructors for strings
+        and maps. Call this method on a custom Loader class to make it behave
+        like Confuse's own Loader
         """
         loader.add_constructor('tag:yaml.org,2002:str',
                                Loader._construct_unicode)
@@ -793,18 +792,15 @@ class Loader(yaml.SafeLoader):
                                Loader.construct_yaml_map)
 
 
-Loader.override(Loader)
+Loader.add_constructors(Loader)
 
 
 def load_yaml(filename, loader=Loader):
     """Read a YAML document from a file. If the file cannot be read or
     parsed, a ConfigReadError is raised.
-    You can specify a custom Loader (instead of the default confuse Loader
-    based on pyYaml SafeLoader which have some limitations).
-    As Confuse offers some more complex constructors you may want to use
-    even with a custom Loader, you can specify 'override' to add the
-    constructors to your Loader for str map and omap types mapping
-    from Confuse library (defaults True).
+    loader is the PyYAML Loader class to use to parse the YAML. By default,
+    this is Confuse's own Loader class, which is like SafeLoader with
+    extra constructors.
     """
     try:
         with open(filename, 'rb') as f:
