@@ -108,7 +108,8 @@ class WindowsTestCases(FakeSystem):
 class ConfigFilenamesTest(unittest.TestCase):
     def setUp(self):
         self._old = os.path.isfile, confuse.load_yaml
-        os.path.isfile, confuse.load_yaml = lambda x: True, lambda x: {}
+        os.path.isfile = lambda x: True
+        confuse.load_yaml = lambda *args, **kwargs: {}
 
     def tearDown(self):
         confuse.load_yaml, os.path.isfile = self._old

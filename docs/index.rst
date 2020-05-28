@@ -49,6 +49,19 @@ the key doesn’t exist in any configuration file, Confuse will raise a
 of ``confuse.ConfigError``) lets you painlessly validate the user’s
 configuration as you go.
 
+Confuse uses a custom loader based on pyyaml's SafeLoader with extra
+contructors for yaml tags.
+You can replace this Loader by a one of your own with an extra loader=
+parameter::
+
+    config = confuse.Configuration("name", loader=yaml.Loaded)
+
+You can even add yo your custom loader the confuse's loader feature
+by calling add_constructors::
+
+    loader = yaml.Loader
+    confuse.Loader.add_constructors(loader)
+    config = confuse.Configuration("name", loader=loader)
 
 View Theory
 -----------

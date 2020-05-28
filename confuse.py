@@ -778,19 +778,33 @@ class Loader(yaml.SafeLoader):
         plain = super(Loader, self).check_plain()
         return plain or self.peek() == '%'
 
+    @staticmethod
+    def add_constructors(loader):
+        """Modify a PyYAML Loader class to add extra constructors for strings
+        and maps. Call this method on a custom Loader class to make it behave
+        like Confuse's own Loader
+        """
+        loader.add_constructor('tag:yaml.org,2002:str',
+                               Loader._construct_unicode)
+        loader.add_constructor('tag:yaml.org,2002:map',
+                               Loader.construct_yaml_map)
+        loader.add_constructor('tag:yaml.org,2002:omap',
+                               Loader.construct_yaml_map)
 
-Loader.add_constructor('tag:yaml.org,2002:str', Loader._construct_unicode)
-Loader.add_constructor('tag:yaml.org,2002:map', Loader.construct_yaml_map)
-Loader.add_constructor('tag:yaml.org,2002:omap', Loader.construct_yaml_map)
+
+Loader.add_constructors(Loader)
 
 
-def load_yaml(filename):
+def load_yaml(filename, loader=Loader):
     """Read a YAML document from a file. If the file cannot be read or
     parsed, a ConfigReadError is raised.
+    loader is the PyYAML Loader class to use to parse the YAML. By default,
+    this is Confuse's own Loader class, which is like SafeLoader with
+    extra constructors.
     """
     try:
         with open(filename, 'rb') as f:
-            return yaml.load(f, Loader=Loader)
+            return yaml.load(f, Loader=loader)
     except (IOError, yaml.error.YAMLError) as exc:
         raise ConfigReadError(filename, exc)
 
@@ -895,7 +909,7 @@ def restore_yaml_comments(data, default_data):
 # Main interface.
 
 class Configuration(RootView):
-    def __init__(self, appname, modname=None, read=True):
+    def __init__(self, appname, modname=None, read=True, loader=Loader):
         """Create a configuration object by reading the
         automatically-discovered config files for the application for a
         given name. If `modname` is specified, it should be the import
@@ -905,10 +919,12 @@ class Configuration(RootView):
         configuration files. Use this when creating a configuration
         object at module load time and then call the `read` method
         later.
+        Specify the Loader class with 'loader' kw arg.
         """
         super(Configuration, self).__init__([])
         self.appname = appname
         self.modname = modname
+        self.loader = loader
 
         # Resolve default source location. We do this ahead of time to
         # avoid unexpected problems if the working directory changes.
@@ -936,7 +952,8 @@ class Configuration(RootView):
         """
         filename = self.user_config_path()
         if os.path.isfile(filename):
-            self.add(ConfigSource(load_yaml(filename) or {}, filename))
+            yaml_data = load_yaml(filename, loader=self.loader) or {}
+            self.add(ConfigSource(yaml_data, filename))
 
     def _add_default_source(self):
         """Add the package's default configuration settings. This looks
@@ -947,7 +964,8 @@ class Configuration(RootView):
             if self._package_path:
                 filename = os.path.join(self._package_path, DEFAULT_FILENAME)
                 if os.path.isfile(filename):
-                    self.add(ConfigSource(load_yaml(filename), filename, True))
+                    yaml_data = load_yaml(filename, loader=self.loader)
+                    self.add(ConfigSource(yaml_data, filename, True))
 
     def read(self, user=True, defaults=True):
         """Find and read the files for this configuration and set them
@@ -1001,7 +1019,8 @@ class Configuration(RootView):
         sources with highest priority.
         """
         filename = os.path.abspath(filename)
-        self.set(ConfigSource(load_yaml(filename), filename))
+        yaml_data = load_yaml(filename, loader=self.loader)
+        self.set(ConfigSource(yaml_data, filename))
 
     def dump(self, full=True, redact=False):
         """Dump the Configuration object to a YAML file.
