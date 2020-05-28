@@ -310,19 +310,19 @@ file.
 Custom YAML Loaders
 '''''''''''''''''''
 
-Confuse uses a custom loader based on pyyaml's SafeLoader with extra
-contructors for yaml tags.
-You can replace this Loader by a one of your own with an extra loader=
-parameter::
+You can also specify your own `PyYAML`_ `Loader` object to parse YAML
+files. Supply the `loader` parameter to a `Configuration` constructor,
+like this::
 
     config = confuse.Configuration("name", loader=yaml.Loaded)
 
-You can even add yo your custom loader the confuse's loader feature
-by calling add_constructors::
+To imbue a loader with Confuse's special parser overrides, use its
+`add_constructors` method::
 
-    loader = yaml.Loader
-    confuse.Loader.add_constructors(loader)
-    config = confuse.Configuration("name", loader=loader)
+    class MyLoader(yaml.Loader):
+        ...
+    confuse.Loader.add_constructors(MyLoader)
+    config = confuse.Configuration("name", loader=MyLoader)
 
 
 Configuring Large Programs
@@ -394,6 +394,8 @@ v1.2.0
 - `float` values (like ``4.2``) can now be used in templates (just like
   ``42`` works as an `int` template).
 - The `Filename` and `Path` templates now correctly accept default values.
+- It's now possible to provide custom PyYAML `Loader` objects for
+  parsing config files.
 
 v1.1.0
 ''''''
