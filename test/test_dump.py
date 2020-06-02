@@ -59,6 +59,33 @@ class PrettyDumpTest(unittest.TestCase):
         yaml = config.dump(full=False).strip()
         self.assertEqual(yaml, "baz: qux")
 
+    def test_restore_yaml_comments(self):
+        odict = confuse.OrderedDict()
+        odict['foo'] = 'bar'
+        odict['bar'] = 'baz'
+
+        config = confuse.Configuration('myapp', read=False)
+        config.add({'key1': odict})
+        config.add({'key2': odict})
+        data = config.dump()
+        default_data = textwrap.dedent("""
+            # Comment 1
+            key1:
+                # Comment 2
+                foo: bar
+                bar: baz
+
+            key2:
+                foo: bar
+                bar: baz
+
+            # TODO: add more keys
+        """)
+        self.assertEqual(
+            default_data,
+            confuse.restore_yaml_comments(data, default_data)
+        )
+
 
 class RedactTest(unittest.TestCase):
     def test_no_redaction(self):

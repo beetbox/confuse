@@ -880,30 +880,34 @@ def restore_yaml_comments(data, default_data):
     Only works with comments that are on one or more own lines, i.e.
     not next to a yaml mapping.
     """
+
+    def has_comment(line):
+        if not line:
+            return True
+        elif re.match(r'^\s*#.*$', line):
+            return True
+        else:
+            return False
+
     comment_map = dict()
+    comment = ""
     default_lines = iter(default_data.splitlines())
     for line in default_lines:
-        if not line:
-            comment = "\n"
-        elif line.startswith("#"):
-            comment = "{0}\n".format(line)
-        else:
-            continue
-        while True:
-            line = next(default_lines)
-            if line and not line.startswith("#"):
-                break
+        if has_comment(line):
             comment += "{0}\n".format(line)
-        key = line.split(':')[0].strip()
-        comment_map[key] = comment
-    out_lines = iter(data.splitlines())
+        else:
+            key = line.split(':')[0].strip()
+            if comment != "":
+                comment_map[key] = comment
+            comment = ""
     out_data = ""
+    out_lines = iter(data.splitlines())
     for line in out_lines:
         key = line.split(':')[0].strip()
         if key in comment_map:
-            out_data += comment_map[key]
+            out_data += comment_map.pop(key, None)
         out_data += "{0}\n".format(line)
-    return out_data
+    return out_data + comment
 
 
 # Main interface.
