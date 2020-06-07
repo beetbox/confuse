@@ -2,8 +2,7 @@ from __future__ import division, absolute_import, print_function
 
 from collections import OrderedDict
 import yaml
-from .exceptions import ConfigReadError
-
+import confuse
 
 # YAML loading.
 
@@ -85,7 +84,7 @@ def load_yaml(filename, loader=Loader):
         with open(filename, 'rb') as f:
             return yaml.load(f, Loader=loader)
     except (IOError, yaml.error.YAMLError) as exc:
-        raise ConfigReadError(filename, exc)
+        raise confuse.ConfigReadError(filename, exc)
 
 
 # YAML dumping.
