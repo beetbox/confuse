@@ -1,6 +1,8 @@
+from __future__ import division, absolute_import, print_function
 
 from .util import BASESTRING
 
+__all__ = ['ConfigSource']
 
 class ConfigSource(dict):
     """A dictionary augmented with metadata about the source of the

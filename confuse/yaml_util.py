@@ -1,3 +1,5 @@
+from __future__ import division, absolute_import, print_function
+
 from collections import OrderedDict
 import yaml
 from .exceptions import ConfigReadError

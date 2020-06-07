@@ -17,14 +17,8 @@
 """
 from __future__ import division, absolute_import, print_function
 
-import argparse
-import optparse
-import platform
 import os
-import pkgutil
-import sys
 import yaml
-import re
 from collections import OrderedDict
 
 from .exceptions import *

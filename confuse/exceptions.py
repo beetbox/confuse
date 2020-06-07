@@ -1,8 +1,12 @@
+from __future__ import division, absolute_import, print_function
+
 import yaml
 
+__all__ = [
+    'ConfigError', 'NotFoundError', 'ConfigValueError', 'ConfigTypeError',
+    'ConfigTemplateError', 'ConfigReadError']
 
 YAML_TAB_PROBLEM = "found character '\\t' that cannot start any token"
-
 
 # Exceptions.
 
@@ -37,8 +41,8 @@ class ConfigReadError(ConfigError):
         self.reason = reason
 
         message = u'file {0} could not be read'.format(filename)
-        if isinstance(reason, yaml.scanner.ScannerError) and \
-                reason.problem == YAML_TAB_PROBLEM:
+        if (isinstance(reason, yaml.scanner.ScannerError) and
+                reason.problem == YAML_TAB_PROBLEM):
             # Special-case error message for tab indentation in YAML markup.
             message += u': found tab character at line {0}, column {1}'.format(
                 reason.problem_mark.line + 1,

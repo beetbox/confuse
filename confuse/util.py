@@ -1,3 +1,5 @@
+from __future__ import division, absolute_import, print_function
+
 import os
 import sys
 import argparse
@@ -10,7 +12,6 @@ PY3 = sys.version_info[0] == 3
 STRING = str if PY3 else unicode  # noqa: F821
 BASESTRING = str if PY3 else basestring  # noqa: F821
 NUMERIC_TYPES = (int, float) if PY3 else (int, float, long)  # noqa: F821
-
 
 
 UNIX_DIR_FALLBACK = '~/.config'
@@ -43,8 +44,6 @@ def namespace_to_dict(obj):
     if isinstance(obj, (argparse.Namespace, optparse.Values)):
         return vars(obj)
     return obj
-
-
 
 # Config file paths, including platform-specific paths and in-package
 # defaults.
