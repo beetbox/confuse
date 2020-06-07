@@ -29,7 +29,7 @@ from collections import OrderedDict
 
 from .exceptions import *
 from .util import *
-from .yaml import *
+from .yaml_util import *
 from .sources import *
 from .templates import *
 
