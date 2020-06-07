@@ -341,7 +341,7 @@ class ConfigView(object):
         you expect.
 
         May raise a `ConfigValueError` (or its subclass,
-        `confuse.ConfigTypeError`) or a `confuse.NotFoundError` when the configuration
+        `ConfigTypeError`) or a `NotFoundError` when the configuration
         doesn't satisfy the template.
         """
         return confuse.as_template(template).value(self, template)
@@ -520,12 +520,12 @@ class Subview(ConfigView):
         return (kp[1:] for kp in self.parent.get_redactions()
                 if kp and kp[0] == self.key)
 
-
-
 # Main interface.
 
+
 class Configuration(RootView):
-    def __init__(self, appname, modname=None, read=True, loader=confuse.Loader):
+    def __init__(self, appname, modname=None, read=True,
+                 loader=confuse.Loader):
         """Create a configuration object by reading the
         automatically-discovered config files for the application for a
         given name. If `modname` is specified, it should be the import

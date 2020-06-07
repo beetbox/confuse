@@ -6,6 +6,7 @@ import confuse
 
 # YAML loading.
 
+
 class Loader(yaml.SafeLoader):
     """A customized YAML loader. This loader deviates from the official
     YAML spec in a few convenient ways:

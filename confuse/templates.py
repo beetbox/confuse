@@ -18,7 +18,6 @@ else:
     import collections as abc
 
 
-
 REQUIRED = object()
 """A sentinel indicating that there is no default value and an exception
 should be raised when the value is missing.
@@ -88,10 +87,10 @@ class Template(object):
         mismatch rather than a malformed value. In this case, a more
         specific exception is raised.
         """
-        exc_class = confuse.ConfigTypeError if type_error else confuse.ConfigValueError
-        raise exc_class(
-            u'{0}: {1}'.format(view.name, message)
-        )
+        exc_class = (
+            confuse.ConfigTypeError if type_error
+            else confuse.ConfigValueError)
+        raise exc_class(u'{0}: {1}'.format(view.name, message))
 
     def __repr__(self):
         return '{0}({1})'.format(

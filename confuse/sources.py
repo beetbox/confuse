@@ -4,13 +4,15 @@ import confuse
 
 __all__ = ['ConfigSource']
 
+
 class ConfigSource(dict):
     """A dictionary augmented with metadata about the source of the
     configuration.
     """
     def __init__(self, value, filename=None, default=False):
         super(ConfigSource, self).__init__(value)
-        if filename is not None and not isinstance(filename, confuse.BASESTRING):
+        if (filename is not None
+                and not isinstance(filename, confuse.BASESTRING)):
             raise TypeError(u'filename must be a string or None')
         self.filename = filename
         self.default = default

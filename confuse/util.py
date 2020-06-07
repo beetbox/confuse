@@ -45,15 +45,16 @@ def namespace_to_dict(obj):
         return vars(obj)
     return obj
 
+
 # Config file paths, including platform-specific paths and in-package
 # defaults.
 
-# Based on get_root_path from Flask by Armin Ronacher.
 def find_package_path(name):
     """Returns the path to the package containing the named module or
     None if the path could not be identified (e.g., if
     ``name == "__main__"``).
     """
+    # Based on get_root_path from Flask by Armin Ronacher.
     loader = pkgutil.get_loader(name)
     if loader is None or name == '__main__':
         return None
