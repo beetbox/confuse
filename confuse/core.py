@@ -432,11 +432,15 @@ class RootView(ConfigView):
         self.name = ROOT_NAME
         self.redactions = set()
 
-    def add(self, obj):
-        self.sources.append(confuse.ConfigSource.of(obj))
+    def add(self, obj, skip_missing=False, **kw):
+        src = confuse.ConfigSource.of(obj, **kw)
+        if skip_missing or src.exists:
+            self.sources.append(src)
 
-    def set(self, value):
-        self.sources.insert(0, confuse.ConfigSource.of(value))
+    def set(self, value, skip_missing=False, **kw):
+        src = confuse.ConfigSource.of(value, **kw)
+        if skip_missing or src.exists:
+            self.sources.insert(0, src)
 
     def resolve(self):
         return ((dict(s), s) for s in self.sources)
@@ -566,9 +570,8 @@ class Configuration(RootView):
         user's configuration directory (given by `config_dir`) if it
         exists.
         """
-        filename = self.user_config_path()
-        if os.path.isfile(filename):
-            self.add(confuse.ConfigSource.of(filename, loader=self.loader))
+        self.add(
+            self.user_config_path(), loader=self.loader, skip_missing=False)
 
     def _add_default_source(self):
         """Add the package's default configuration settings. This looks
@@ -576,10 +579,9 @@ class Configuration(RootView):
         `modname` if it was given.
         """
         if self._package_path:
-            filename = os.path.join(self._package_path, DEFAULT_FILENAME)
-            if os.path.isfile(filename):
-                self.add(confuse.ConfigSource.of(
-                    filename, loader=self.loader, default=True))
+            self.add(
+                os.path.join(self._package_path, DEFAULT_FILENAME),
+                loader=self.loader, default=True, skip_missing=False)
 
     def read(self, user=True, defaults=True):
         """Find and read the files for this configuration and set them
@@ -591,6 +593,8 @@ class Configuration(RootView):
             self._add_user_source()
         if defaults:
             self._add_default_source()
+        for s in self.sources:
+            s.load()
 
     def config_dir(self):
         """Get the path to the user configuration directory. The
@@ -632,8 +636,7 @@ class Configuration(RootView):
         """Parses the file as YAML and inserts it into the configuration
         sources with highest priority.
         """
-        self.set(confuse.ConfigSource.of(
-            os.path.abspath(filename), loader=self.loader))
+        self.set(os.path.abspath(filename), loader=self.loader)
 
     def dump(self, full=True, redact=False):
         """Dump the Configuration object to a YAML file.
