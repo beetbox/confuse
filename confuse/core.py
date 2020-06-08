@@ -434,12 +434,12 @@ class RootView(ConfigView):
 
     def add(self, obj, skip_missing=False, **kw):
         src = confuse.ConfigSource.of(obj, **kw)
-        if skip_missing or src.exists:
+        if not skip_missing or src.exists:
             self.sources.append(src)
 
     def set(self, value, skip_missing=False, **kw):
         src = confuse.ConfigSource.of(value, **kw)
-        if skip_missing or src.exists:
+        if not skip_missing or src.exists:
             self.sources.insert(0, src)
 
     def resolve(self):
