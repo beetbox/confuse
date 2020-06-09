@@ -625,6 +625,8 @@ def as_template(value):
     elif isinstance(value, float):
         return Number(value)
     elif value is None:
+        return Template(None)
+    elif value is confuse.REQUIRED:
         return Template()
     elif value is dict:
         return TypeTemplate(abc.Mapping)

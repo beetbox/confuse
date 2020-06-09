@@ -171,7 +171,7 @@ class AsTemplateTest(unittest.TestCase):
     def test_none_as_template(self):
         typ = confuse.as_template(None)
         self.assertIs(type(typ), confuse.Template)
-        self.assertEqual(typ.default, confuse.REQUIRED)
+        self.assertEqual(typ.default, None)
 
     def test_dict_type_as_template(self):
         typ = confuse.as_template(dict)
