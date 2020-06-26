@@ -1,6 +1,6 @@
 from __future__ import division, absolute_import, print_function
 
-import confuse
+from .util import BASESTRING
 
 __all__ = ['ConfigSource']
 
@@ -12,7 +12,7 @@ class ConfigSource(dict):
     def __init__(self, value, filename=None, default=False):
         super(ConfigSource, self).__init__(value)
         if (filename is not None
-                and not isinstance(filename, confuse.BASESTRING)):
+                and not isinstance(filename, BASESTRING)):
             raise TypeError(u'filename must be a string or None')
         self.filename = filename
         self.default = default
