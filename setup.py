@@ -71,7 +71,7 @@ def _read(fn):
 
 setup(
     name='confuse',
-    version='1.1.0',
+    version='1.3.0',
     description='painless YAML configuration',
     author='Adrian Sampson',
     author_email='adrian@radbox.org',
