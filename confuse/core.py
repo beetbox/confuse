@@ -335,7 +335,7 @@ class ConfigView(object):
                     od[key] = view.get()
         return od
 
-    def get(self, template=None):
+    def get(self, template=templates.REQUIRED):
         """Retrieve the value for this view according to the template.
 
         The `template` against which the values are checked can be
