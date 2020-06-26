@@ -388,6 +388,10 @@ The resulting YAML will contain "key: REDACTED" instead of the original data.
 Changelog
 ---------
 
+v1.3.0
+''''''
+
+
 v1.2.0
 ''''''
 
