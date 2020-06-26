@@ -1,6 +1,7 @@
 from __future__ import division, absolute_import, print_function
 
 import confuse
+import confuse.yaml_util
 import unittest
 
 
@@ -9,11 +10,11 @@ class ConfigSourceTest(unittest.TestCase):
         return {'a': 5, 'file': file}
 
     def setUp(self):
-        self._orig_load_yaml = confuse.load_yaml
-        confuse.load_yaml = self._load_yaml
+        self._orig_load_yaml = confuse.yaml_util.load_yaml
+        confuse.yaml_util.load_yaml = self._load_yaml
 
     def tearDown(self):
-        confuse.load_yaml = self._orig_load_yaml
+        confuse.yaml_util.load_yaml = self._orig_load_yaml
 
     def test_source_conversion(self):
         # test pure dict source
