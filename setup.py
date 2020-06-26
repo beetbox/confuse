@@ -82,7 +82,7 @@ setup(
     long_description_content_type='text/x-rst',
     install_requires=['pyyaml'],
     tests_require=['tox', 'pathlib'],
-    py_modules=['confuse'],
+    packages=['confuse'],
     cmdclass={'test': test},
     classifiers=[
         'Intended Audience :: Developers',
