@@ -2,7 +2,8 @@ from __future__ import division, absolute_import, print_function
 
 import os
 import functools
-import confuse
+from .util import BASESTRING
+from . import yaml_util
 
 __all__ = ['ConfigSource', 'YamlSource']
 
@@ -48,7 +49,7 @@ class ConfigSource(dict):
         self.retry = retry
         super(ConfigSource, self).__init__(value if self.loaded else {})
         if (filename is not None
-                and not isinstance(filename, confuse.BASESTRING)):
+                and not isinstance(filename, BASESTRING)):
             raise TypeError(u'filename must be a string or None')
         self.filename = filename
         self.default = default
@@ -128,18 +129,18 @@ class YamlSource(ConfigSource):
     EXTENSIONS = '.yaml', '.yml'
 
     def __init__(self, filename=None, value=UNSET, optional=False,
-                 loader=confuse.Loader, **kw):
+                 loader=yaml_util.Loader, **kw):
         self.optional = optional
         self.loader = loader
         super(YamlSource, self).__init__(value, filename, **kw)
 
     @classmethod
     def isoftype(cls, value, **kw):
-        return (isinstance(value, confuse.BASESTRING)
+        return (isinstance(value, BASESTRING)
                 and os.path.splitext(value)[1] in YamlSource.EXTENSIONS)
 
     def _load(self):
         '''Load the file if it exists.'''
         if self.optional and not os.path.isfile(self.filename):
             return False
-        self.update(confuse.load_yaml(self.filename, loader=self.loader))
+        self.update(yaml_util.load_yaml(self.filename, loader=self.loader))

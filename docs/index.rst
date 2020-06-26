@@ -388,6 +388,16 @@ The resulting YAML will contain "key: REDACTED" instead of the original data.
 Changelog
 ---------
 
+v1.3.0
+''''''
+
+- Break up the `confuse` module into a package. (All names should still be
+  importable from `confuse`.)
+- When using `None` as a template, the result is a value whose default is
+  `None`. Previously, this was equivalent to leaving the key off entirely,
+  i.e., a template with no default. To get the same effect now, use
+  `confuse.REQUIRED` in the template.
+
 v1.2.0
 ''''''
 

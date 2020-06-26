@@ -4,7 +4,8 @@ import os
 import re
 import sys
 
-import confuse
+from . import util
+from . import exceptions
 
 try:
     import enum
@@ -56,7 +57,7 @@ class Template(object):
         try:
             value, _ = view.first()
             return self.convert(value, view)
-        except confuse.NotFoundError:
+        except exceptions.NotFoundError:
             pass
 
         # Get default value, or raise if required.
@@ -65,7 +66,7 @@ class Template(object):
     def get_default_value(self, key_name='default'):
         if self.default is REQUIRED:
             # Missing required value. This is an error.
-            raise confuse.NotFoundError(u"{} not found".format(key_name))
+            raise exceptions.NotFoundError(u"{} not found".format(key_name))
         # Missing value, but not required.
         return self.default
 
@@ -88,8 +89,8 @@ class Template(object):
         specific exception is raised.
         """
         exc_class = (
-            confuse.ConfigTypeError if type_error
-            else confuse.ConfigValueError)
+            exceptions.ConfigTypeError if type_error
+            else exceptions.ConfigValueError)
         raise exc_class(u'{0}: {1}'.format(view.name, message))
 
     def __repr__(self):
@@ -119,7 +120,7 @@ class Number(Template):
     def convert(self, value, view):
         """Check that the value is an int or a float.
         """
-        if isinstance(value, confuse.NUMERIC_TYPES):
+        if isinstance(value, util.NUMERIC_TYPES):
             return value
         else:
             self.fail(
@@ -205,7 +206,7 @@ class String(Template):
     def convert(self, value, view):
         """Check that the value is a string and matches the pattern.
         """
-        if not isinstance(value, confuse.BASESTRING):
+        if not isinstance(value, util.BASESTRING):
             self.fail(u'must be a string', view, True)
 
         if self.pattern and not self.regex.match(value):
@@ -315,12 +316,12 @@ class OneOf(Template):
                     return view.parent.get(next_template)[view.key]
                 else:
                     return view.get(candidate)
-            except confuse.ConfigTemplateError:
+            except exceptions.ConfigTemplateError:
                 raise
-            except confuse.ConfigError:
+            except exceptions.ConfigError:
                 pass
             except ValueError as exc:
-                raise confuse.ConfigTemplateError(exc)
+                raise exceptions.ConfigTemplateError(exc)
 
         self.fail(
             u'must be one of {0}, not {1}'.format(
@@ -347,7 +348,7 @@ class StrSeq(Template):
         self.split = split
 
     def _convert_value(self, x, view):
-        if isinstance(x, confuse.STRING):
+        if isinstance(x, util.STRING):
             return x
         elif isinstance(x, bytes):
             return x.decode('utf-8', 'ignore')
@@ -358,7 +359,7 @@ class StrSeq(Template):
         if isinstance(value, bytes):
             value = value.decode('utf-8', 'ignore')
 
-        if isinstance(value, confuse.STRING):
+        if isinstance(value, util.STRING):
             if self.split:
                 value = value.split()
             else:
@@ -399,11 +400,11 @@ class Pairs(StrSeq):
         try:
             return (super(Pairs, self)._convert_value(x, view),
                     self.default_value)
-        except confuse.ConfigTypeError:
+        except exceptions.ConfigTypeError:
             if isinstance(x, abc.Mapping):
                 if len(x) != 1:
                     self.fail(u'must be a single-element mapping', view, True)
-                k, v = confuse.iter_first(x.items())
+                k, v = util.iter_first(x.items())
             elif isinstance(x, abc.Sequence):
                 if len(x) != 2:
                     self.fail(u'must be a two-element list', view, True)
@@ -463,12 +464,12 @@ class Filename(Template):
     def resolve_relative_to(self, view, template):
         if not isinstance(template, (abc.Mapping, MappingTemplate)):
             # disallow config.get(Filename(relative_to='foo'))
-            raise confuse.ConfigTemplateError(
+            raise exceptions.ConfigTemplateError(
                 u'relative_to may only be used when getting multiple values.'
             )
 
         elif self.relative_to == view.key:
-            raise confuse.ConfigTemplateError(
+            raise exceptions.ConfigTemplateError(
                 u'{0} is relative to itself'.format(view.name)
             )
 
@@ -497,11 +498,11 @@ class Filename(Template):
             except KeyError:
                 if next_relative in template.subtemplates:
                     # we encountered this config key previously
-                    raise confuse.ConfigTemplateError((
+                    raise exceptions.ConfigTemplateError((
                         u'{0} and {1} are recursively relative'
                     ).format(view.name, self.relative_to))
                 else:
-                    raise confuse.ConfigTemplateError((
+                    raise exceptions.ConfigTemplateError((
                         u'missing template for {0}, needed to expand {1}\'s'
                         u'relative path'
                     ).format(self.relative_to, view.name))
@@ -514,16 +515,16 @@ class Filename(Template):
     def value(self, view, template=None):
         try:
             path, source = view.first()
-        except confuse.NotFoundError:
+        except exceptions.NotFoundError:
             return self.get_default_value(view.name)
 
-        if not isinstance(path, confuse.BASESTRING):
+        if not isinstance(path, util.BASESTRING):
             self.fail(
                 u'must be a filename, not {0}'.format(type(path).__name__),
                 view,
                 True
             )
-        path = os.path.expanduser(confuse.STRING(path))
+        path = os.path.expanduser(util.STRING(path))
 
         if not os.path.isabs(path):
             if self.cwd is not None:
@@ -608,9 +609,9 @@ def as_template(value):
         return Integer()
     elif isinstance(value, int):
         return Integer(value)
-    elif isinstance(value, type) and issubclass(value, confuse.BASESTRING):
+    elif isinstance(value, type) and issubclass(value, util.BASESTRING):
         return String()
-    elif isinstance(value, confuse.BASESTRING):
+    elif isinstance(value, util.BASESTRING):
         return String(value)
     elif isinstance(value, set):
         # convert to list to avoid hash related problems
@@ -625,6 +626,8 @@ def as_template(value):
     elif isinstance(value, float):
         return Number(value)
     elif value is None:
+        return Template(None)
+    elif value is REQUIRED:
         return Template()
     elif value is dict:
         return TypeTemplate(abc.Mapping)

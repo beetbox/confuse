@@ -21,7 +21,11 @@ import os
 import yaml
 from collections import OrderedDict
 
-import confuse
+from . import util
+from . import templates
+from . import yaml_util
+from .sources import ConfigSource
+from .exceptions import ConfigTypeError, NotFoundError, ConfigError
 
 CONFIG_FILENAME = 'config.yaml'
 DEFAULT_FILENAME = 'config_default.yaml'
@@ -50,7 +54,7 @@ class ConfigView(object):
     def resolve(self):
         """The core (internal) data retrieval method. Generates (value,
         source) pairs for each source that contains a value for this
-        view. May raise confuse.ConfigTypeError if a type error occurs while
+        view. May raise `ConfigTypeError` if a type error occurs while
         traversing a source.
         """
         raise NotImplementedError
@@ -58,21 +62,21 @@ class ConfigView(object):
     def first(self):
         """Return a (value, source) pair for the first object found for
         this view. This amounts to the first element returned by
-        `resolve`. If no values are available, a confuse.NotFoundError is
+        `resolve`. If no values are available, a `NotFoundError` is
         raised.
         """
         pairs = self.resolve()
         try:
-            return confuse.iter_first(pairs)
+            return util.iter_first(pairs)
         except ValueError:
-            raise confuse.NotFoundError(u"{0} not found".format(self.name))
+            raise NotFoundError(u"{0} not found".format(self.name))
 
     def exists(self):
         """Determine whether the view has a setting in any source.
         """
         try:
             self.first()
-        except confuse.NotFoundError:
+        except NotFoundError:
             return False
         return True
 
@@ -108,11 +112,11 @@ class ConfigView(object):
             for key in keys:
                 yield key
 
-        except confuse.ConfigTypeError:
+        except ConfigTypeError:
             # Otherwise, try iterating over a list.
             collection = self.get()
             if not isinstance(collection, (list, tuple)):
-                raise confuse.ConfigTypeError(
+                raise ConfigTypeError(
                     u'{0} must be a dictionary or a list, not {1}'.format(
                         self.name, type(collection).__name__
                     )
@@ -154,13 +158,13 @@ class ConfigView(object):
         """
         # We expect our root object to be a dict, but it may come in as
         # a namespace
-        obj = confuse.namespace_to_dict(obj)
+        obj = util.namespace_to_dict(obj)
         # We only deal with dictionaries
         if not isinstance(obj, dict):
             return obj
 
         # Get keys iterator
-        keys = obj.keys() if confuse.PY3 else obj.iterkeys()
+        keys = obj.keys() if util.PY3 else obj.iterkeys()
         if dots:
             # Dots needs sorted keys to prevent parents from
             # clobbering children
@@ -224,7 +228,7 @@ class ConfigView(object):
     def __str__(self):
         """Get the value for this view as a bytestring.
         """
-        if confuse.PY3:
+        if util.PY3:
             return self.__unicode__()
         else:
             return bytes(self.get())
@@ -232,7 +236,7 @@ class ConfigView(object):
     def __unicode__(self):
         """Get the value for this view as a Unicode string.
         """
-        return confuse.STRING(self.get())
+        return util.STRING(self.get())
 
     def __nonzero__(self):
         """Gets the value for this view as a boolean. (Python 2 only.)
@@ -252,7 +256,7 @@ class ConfigView(object):
         dictionaries matching the current view, in contrast to
         ``view.get(dict).keys()``, which gets all the keys for the
         *first* dict matching the view. If the object for this view in
-        any source is not a dict, then a confuse.ConfigTypeError is raised. The
+        any source is not a dict, then a `ConfigTypeError` is raised. The
         keys are ordered according to how they appear in each source.
         """
         keys = []
@@ -261,7 +265,7 @@ class ConfigView(object):
             try:
                 cur_keys = dic.keys()
             except AttributeError:
-                raise confuse.ConfigTypeError(
+                raise ConfigTypeError(
                     u'{0} must be a dict, not {1}'.format(
                         self.name, type(dic).__name__
                     )
@@ -276,7 +280,7 @@ class ConfigView(object):
     def items(self):
         """Iterates over (key, subview) pairs contained in dictionaries
         from *all* sources at this view. If the object for this view in
-        any source is not a dict, then a confuse.ConfigTypeError is raised.
+        any source is not a dict, then a `ConfigTypeError` is raised.
         """
         for key in self.keys():
             yield key, self[key]
@@ -284,7 +288,7 @@ class ConfigView(object):
     def values(self):
         """Iterates over all the subviews contained in dictionaries from
         *all* sources at this view. If the object for this view in any
-        source is not a dict, then a confuse.ConfigTypeError is raised.
+        source is not a dict, then a `ConfigTypeError` is raised.
         """
         for key in self.keys():
             yield self[key]
@@ -294,7 +298,7 @@ class ConfigView(object):
     def all_contents(self):
         """Iterates over all subviews from collections at this view from
         *all* sources. If the object for this view in any source is not
-        iterable, then a confuse.ConfigTypeError is raised. This method is
+        iterable, then a `ConfigTypeError` is raised. This method is
         intended to be used when the view indicates a list; this method
         will concatenate the contents of the list from all sources.
         """
@@ -302,7 +306,7 @@ class ConfigView(object):
             try:
                 it = iter(collection)
             except TypeError:
-                raise confuse.ConfigTypeError(
+                raise ConfigTypeError(
                     u'{0} must be an iterable, not {1}'.format(
                         self.name, type(collection).__name__
                     )
@@ -327,11 +331,11 @@ class ConfigView(object):
             else:
                 try:
                     od[key] = view.flatten(redact=redact)
-                except confuse.ConfigTypeError:
+                except ConfigTypeError:
                     od[key] = view.get()
         return od
 
-    def get(self, template=None):
+    def get(self, template=templates.REQUIRED):
         """Retrieve the value for this view according to the template.
 
         The `template` against which the values are checked can be
@@ -344,55 +348,55 @@ class ConfigView(object):
         `ConfigTypeError`) or a `NotFoundError` when the configuration
         doesn't satisfy the template.
         """
-        return confuse.as_template(template).value(self, template)
+        return templates.as_template(template).value(self, template)
 
     # Shortcuts for common templates.
 
     def as_filename(self):
         """Get the value as a path. Equivalent to `get(Filename())`.
         """
-        return self.get(confuse.Filename())
+        return self.get(templates.Filename())
 
     def as_path(self):
         """Get the value as a `pathlib.Path` object. Equivalent to `get(Path())`.
         """
-        return self.get(confuse.Path())
+        return self.get(templates.Path())
 
     def as_choice(self, choices):
         """Get the value from a list of choices. Equivalent to
         `get(Choice(choices))`.
         """
-        return self.get(confuse.Choice(choices))
+        return self.get(templates.Choice(choices))
 
     def as_number(self):
         """Get the value as any number type: int or float. Equivalent to
         `get(Number())`.
         """
-        return self.get(confuse.Number())
+        return self.get(templates.Number())
 
     def as_str_seq(self, split=True):
         """Get the value as a sequence of strings. Equivalent to
         `get(StrSeq(split=split))`.
         """
-        return self.get(confuse.StrSeq(split=split))
+        return self.get(templates.StrSeq(split=split))
 
     def as_pairs(self, default_value=None):
         """Get the value as a sequence of pairs of two strings. Equivalent to
         `get(Pairs(default_value=default_value))`.
         """
-        return self.get(confuse.Pairs(default_value=default_value))
+        return self.get(templates.Pairs(default_value=default_value))
 
     def as_str(self):
         """Get the value as a (Unicode) string. Equivalent to
         `get(unicode)` on Python 2 and `get(str)` on Python 3.
         """
-        return self.get(confuse.String())
+        return self.get(templates.String())
 
     def as_str_expanded(self):
         """Get the value as a (Unicode) string, with env vars
         expanded by `os.path.expandvars()`.
         """
-        return self.get(confuse.String(expand_vars=True))
+        return self.get(templates.String(expand_vars=True))
 
     # Redaction.
 
@@ -433,12 +437,12 @@ class RootView(ConfigView):
         self.redactions = set()
 
     def add(self, obj, skip_missing=False, **kw):
-        src = confuse.ConfigSource.of(obj, **kw)
+        src = ConfigSource.of(obj, **kw)
         if not skip_missing or src.exists:
             self.sources.append(src)
 
     def set(self, value, skip_missing=False, **kw):
-        src = confuse.ConfigSource.of(value, **kw)
+        src = ConfigSource.of(value, **kw)
         if not skip_missing or src.exists:
             self.sources.insert(0, src)
 
@@ -484,7 +488,7 @@ class Subview(ConfigView):
             self.name += u'#{0}'.format(self.key)
         elif isinstance(self.key, bytes):
             self.name += self.key.decode('utf-8')
-        elif isinstance(self.key, confuse.STRING):
+        elif isinstance(self.key, util.STRING):
             self.name += self.key
         else:
             self.name += repr(self.key)
@@ -501,7 +505,7 @@ class Subview(ConfigView):
                 continue
             except TypeError:
                 # Not subscriptable.
-                raise confuse.ConfigTypeError(
+                raise ConfigTypeError(
                     u"{0} must be a collection, not {1}".format(
                         self.parent.name, type(collection).__name__
                     )
@@ -529,7 +533,7 @@ class Subview(ConfigView):
 
 class Configuration(RootView):
     def __init__(self, appname, modname=None, read=True,
-                 loader=confuse.Loader):
+                 loader=yaml_util.Loader):
         """Create a configuration object by reading the
         automatically-discovered config files for the application for a
         given name. If `modname` is specified, it should be the import
@@ -538,8 +542,7 @@ class Configuration(RootView):
         `read` to disable automatic reading of all discovered
         configuration files. Use this when creating a configuration
         object at module load time and then call the `read` method
-        later.
-        Specify the Loader class with 'loader' kw arg.
+        later. Specify the Loader class as `loader`.
         """
         super(Configuration, self).__init__([])
         self.appname = appname
@@ -549,7 +552,7 @@ class Configuration(RootView):
         # Resolve default source location. We do this ahead of time to
         # avoid unexpected problems if the working directory changes.
         if self.modname:
-            self._package_path = confuse.find_package_path(self.modname)
+            self._package_path = util.find_package_path(self.modname)
         else:
             self._package_path = None
 
@@ -612,14 +615,14 @@ class Configuration(RootView):
             appdir = os.environ[self._env_var]
             appdir = os.path.abspath(os.path.expanduser(appdir))
             if os.path.isfile(appdir):
-                raise confuse.ConfigError(u'{0} must be a directory'.format(
+                raise ConfigError(u'{0} must be a directory'.format(
                     self._env_var
                 ))
 
         else:
             # Search platform-specific locations. If no config file is
             # found, fall back to the first directory in the list.
-            configdirs = confuse.config_dirs()
+            configdirs = util.config_dirs()
             for confdir in configdirs:
                 appdir = os.path.join(confdir, self.appname)
                 if os.path.isfile(os.path.join(appdir, CONFIG_FILENAME)):
@@ -659,7 +662,7 @@ class Configuration(RootView):
             temp_root.redactions = self.redactions
             out_dict = temp_root.flatten(redact=redact)
 
-        yaml_out = yaml.dump(out_dict, Dumper=confuse.Dumper,
+        yaml_out = yaml.dump(out_dict, Dumper=yaml_util.Dumper,
                              default_flow_style=None, indent=4,
                              width=1000)
 
@@ -672,7 +675,7 @@ class Configuration(RootView):
         if default_source and default_source.filename:
             with open(default_source.filename, 'rb') as fp:
                 default_data = fp.read()
-            yaml_out = confuse.restore_yaml_comments(
+            yaml_out = yaml_util.restore_yaml_comments(
                 yaml_out, default_data.decode('utf-8'))
 
         return yaml_out

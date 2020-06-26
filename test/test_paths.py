@@ -1,6 +1,7 @@
 from __future__ import division, absolute_import, print_function
 
 import confuse
+import confuse.yaml_util
 import ntpath
 import os
 import platform
@@ -107,12 +108,12 @@ class WindowsTestCases(FakeSystem):
 
 class ConfigFilenamesTest(unittest.TestCase):
     def setUp(self):
-        self._old = os.path.isfile, confuse.load_yaml
+        self._old = os.path.isfile, confuse.yaml_util.load_yaml
         os.path.isfile = lambda x: True
-        confuse.load_yaml = lambda *args, **kwargs: {}
+        confuse.yaml_util.load_yaml = lambda *args, **kwargs: {}
 
     def tearDown(self):
-        confuse.load_yaml, os.path.isfile = self._old
+        confuse.yaml_util.load_yaml, os.path.isfile = self._old
 
     def test_no_sources_when_files_missing(self):
         config = confuse.Configuration('myapp', read=False)
