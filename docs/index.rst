@@ -391,6 +391,8 @@ Changelog
 v1.3.0
 ''''''
 
+- Break up the `confuse` module into a package. (All names should still be
+  importable from `confuse`.)
 
 v1.2.0
 ''''''
