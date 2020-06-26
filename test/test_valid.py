@@ -173,6 +173,11 @@ class AsTemplateTest(unittest.TestCase):
         self.assertIs(type(typ), confuse.Template)
         self.assertEqual(typ.default, None)
 
+    def test_required_as_template(self):
+        typ = confuse.as_template(confuse.REQUIRED)
+        self.assertIs(type(typ), confuse.Template)
+        self.assertEqual(typ.default, confuse.REQUIRED)
+
     def test_dict_type_as_template(self):
         typ = confuse.as_template(dict)
         self.assertIsInstance(typ, confuse.TypeTemplate)
