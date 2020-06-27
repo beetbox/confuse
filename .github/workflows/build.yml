@@ -14,14 +14,12 @@ jobs:
         runs-on: ${{ matrix.os }}
         strategy:
             matrix:
-                tox-env: [py27-test, py34-test, py35-test, py36-test,
+                tox-env: [py27-test, py35-test, py36-test,
                           py37-test, py38-test, pypy-test]
                 os: [ubuntu-latest, windows-latest]
 
                 # Only test on a couple of versions on Windows.
                 exclude:
-                    - os: windows-latest
-                      tox-env: py34-test
                     - os: windows-latest
                       tox-env: py35-test
                     - os: windows-latest
@@ -35,8 +33,6 @@ jobs:
                 include:
                     - tox-env: py27-test
                       python: 2.7
-                    - tox-env: py34-test
-                      python: 3.4
                     - tox-env: py35-test
                       python: 3.5
                     - tox-env: py36-test
