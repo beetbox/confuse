@@ -17,7 +17,11 @@ SYSTEMS = {
     'Linux': [{'HOME': '/home/test', 'XDG_CONFIG_HOME': '~/xdgconfig'},
               posixpath],
     'Darwin': [{'HOME': '/Users/test'}, posixpath],
-    'Windows': [{'APPDATA': '~\\winconfig', 'HOME': 'C:\\Users\\test'}, ntpath]
+    'Windows': [{
+        'APPDATA': '~\\winconfig',
+        'HOME': 'C:\\Users\\test',
+        'USERPROFILE': 'C:\\Users\\test',
+    }, ntpath]
 }
 
 
@@ -41,6 +45,7 @@ class FakeSystem(unittest.TestCase):
         if self.TMP_HOME:
             self.home = tempfile.mkdtemp()
             os.environ['HOME'] = self.home
+            os.environ['USERPROFILE'] = self.home
 
     def tearDown(self):
         platform.system, os.environ, os.path = DEFAULT
