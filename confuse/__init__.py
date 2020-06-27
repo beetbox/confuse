@@ -1,4 +1,9 @@
+"""Painless YAML configuration.
+"""
+
 from __future__ import division, absolute_import, print_function
+
+__version__ = '1.3.0'
 
 from .exceptions import * # NOQA
 from .util import * # NOQA

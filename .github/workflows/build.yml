@@ -1,0 +1,63 @@
+name: Build
+
+on:
+    push:
+        branches:
+           - master
+    pull_request:
+        branches:
+            - master
+
+jobs:
+    test:
+        name: '${{ matrix.os }}: ${{ matrix.tox-env }}'
+        runs-on: ${{ matrix.os }}
+        strategy:
+            matrix:
+                tox-env: [py27-test, py35-test, py36-test,
+                          py37-test, py38-test, pypy-test]
+                os: [ubuntu-latest, windows-latest]
+
+                # Only test on a couple of versions on Windows.
+                exclude:
+                    - os: windows-latest
+                      tox-env: py35-test
+                    - os: windows-latest
+                      tox-env: py36-test
+                    - os: windows-latest
+                      tox-env: py37-test
+                    - os: windows-latest
+                      tox-env: pypy-test
+
+                # Python interpreter versions. :/
+                include:
+                    - tox-env: py27-test
+                      python: 2.7
+                    - tox-env: py35-test
+                      python: 3.5
+                    - tox-env: py36-test
+                      python: 3.6
+                    - tox-env: py37-test
+                      python: 3.7
+                    - tox-env: py38-test
+                      python: 3.8
+                    - tox-env: pypy-test
+                      python: pypy3
+
+        steps:
+            - uses: actions/checkout@v2
+            - name: Set up Python ${{ matrix.python }}
+              uses: actions/setup-python@v2
+              with:
+                  python-version: ${{ matrix.python }}
+            - name: Install Tox
+              run: pip install tox
+            - name: Tox
+              run: tox -e ${{ matrix.tox-env }}
+
+    style:
+        name: Style
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - uses: TrueBrain/actions-flake8@master
