@@ -599,6 +599,7 @@ class AttrDict(dict):
 def as_template(value):
     """Convert a simple "shorthand" Python value to a `Template`.
     """
+    import pathlib
     if isinstance(value, Template):
         # If it's already a Template, pass it through.
         return value
@@ -625,6 +626,8 @@ def as_template(value):
         return Number()
     elif isinstance(value, float):
         return Number(value)
+    elif isinstance(value, pathlib.PurePath):
+        return Path(value)
     elif value is None:
         return Template(None)
     elif value is REQUIRED:
