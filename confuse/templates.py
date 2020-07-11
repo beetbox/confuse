@@ -12,6 +12,12 @@ try:
     SUPPORTS_ENUM = True
 except ImportError:
     SUPPORTS_ENUM = False
+    
+try:
+    import pathlib
+    SUPPORTS_PATHLIB = True
+except ImportError:
+    SUPPORTS_PATHLIB = False
 
 if sys.version_info >= (3, 3):
     from collections import abc
@@ -599,7 +605,6 @@ class AttrDict(dict):
 def as_template(value):
     """Convert a simple "shorthand" Python value to a `Template`.
     """
-    import pathlib
     if isinstance(value, Template):
         # If it's already a Template, pass it through.
         return value
@@ -626,7 +631,7 @@ def as_template(value):
         return Number()
     elif isinstance(value, float):
         return Number(value)
-    elif isinstance(value, pathlib.PurePath):
+    elif SUPPORTS_PATHLIB and isinstance(value, pathlib.PurePath):
         return Path(value)
     elif value is None:
         return Template(None)
