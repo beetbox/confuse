@@ -12,7 +12,7 @@ try:
     SUPPORTS_ENUM = True
 except ImportError:
     SUPPORTS_ENUM = False
-    
+
 try:
     import pathlib
     SUPPORTS_PATHLIB = True
