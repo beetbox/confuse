@@ -388,6 +388,11 @@ The resulting YAML will contain "key: REDACTED" instead of the original data.
 Changelog
 ---------
 
+v1.4.0
+''''''
+
+- `pathlib.PurePath` objects can now be converted to `Path` templates.
+
 v1.3.0
 ''''''
 
