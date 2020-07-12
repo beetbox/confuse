@@ -13,6 +13,12 @@ try:
 except ImportError:
     SUPPORTS_ENUM = False
 
+try:
+    import pathlib
+    SUPPORTS_PATHLIB = True
+except ImportError:
+    SUPPORTS_PATHLIB = False
+
 if sys.version_info >= (3, 3):
     from collections import abc
 else:
@@ -625,6 +631,8 @@ def as_template(value):
         return Number()
     elif isinstance(value, float):
         return Number(value)
+    elif SUPPORTS_PATHLIB and isinstance(value, pathlib.PurePath):
+        return Path(value)
     elif value is None:
         return Template(None)
     elif value is REQUIRED:
