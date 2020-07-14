@@ -436,11 +436,15 @@ class RootView(ConfigView):
         self.name = ROOT_NAME
         self.redactions = set()
 
-    def add(self, obj):
-        self.sources.append(ConfigSource.of(obj))
+    def add(self, obj, skip_missing=False, **kw):
+        src = ConfigSource.of(obj, **kw)
+        if not skip_missing or src.exists:
+            self.sources.append(src)
 
-    def set(self, value):
-        self.sources.insert(0, ConfigSource.of(value))
+    def set(self, value, skip_missing=False, **kw):
+        src = ConfigSource.of(value, **kw)
+        if not skip_missing or src.exists:
+            self.sources.insert(0, src)
 
     def resolve(self):
         return ((dict(s), s) for s in self.sources)
@@ -569,26 +573,18 @@ class Configuration(RootView):
         user's configuration directory (given by `config_dir`) if it
         exists.
         """
-        filename = self.user_config_path()
-        if os.path.isfile(filename):
-            yaml_data = yaml_util.load_yaml(filename, loader=self.loader) \
-                or {}
-            self.add(ConfigSource(yaml_data, filename))
+        self.add(
+            self.user_config_path(), loader=self.loader, skip_missing=False)
 
     def _add_default_source(self):
         """Add the package's default configuration settings. This looks
         for a YAML file located inside the package for the module
         `modname` if it was given.
         """
-        if self.modname:
-            if self._package_path:
-                filename = os.path.join(self._package_path, DEFAULT_FILENAME)
-                if os.path.isfile(filename):
-                    yaml_data = yaml_util.load_yaml(
-                        filename,
-                        loader=self.loader,
-                    )
-                    self.add(ConfigSource(yaml_data, filename, True))
+        if self._package_path:
+            self.add(
+                os.path.join(self._package_path, DEFAULT_FILENAME),
+                loader=self.loader, default=True, skip_missing=False)
 
     def read(self, user=True, defaults=True):
         """Find and read the files for this configuration and set them
@@ -600,6 +596,8 @@ class Configuration(RootView):
             self._add_user_source()
         if defaults:
             self._add_default_source()
+        for s in self.sources:
+            s.load()
 
     def config_dir(self):
         """Get the path to the user configuration directory. The
@@ -641,9 +639,7 @@ class Configuration(RootView):
         """Parses the file as YAML and inserts it into the configuration
         sources with highest priority.
         """
-        filename = os.path.abspath(filename)
-        yaml_data = yaml_util.load_yaml(filename, loader=self.loader)
-        self.set(ConfigSource(yaml_data, filename))
+        self.set(os.path.abspath(filename), loader=self.loader)
 
     def dump(self, full=True, redact=False):
         """Dump the Configuration object to a YAML file.
@@ -691,42 +687,4 @@ class LazyConfig(Configuration):
     the module level.
     """
     def __init__(self, appname, modname=None):
-        super(LazyConfig, self).__init__(appname, modname, False)
-        self._materialized = False  # Have we read the files yet?
-        self._lazy_prefix = []  # Pre-materialization calls to set().
-        self._lazy_suffix = []  # Calls to add().
-
-    def read(self, user=True, defaults=True):
-        self._materialized = True
-        super(LazyConfig, self).read(user, defaults)
-
-    def resolve(self):
-        if not self._materialized:
-            # Read files and unspool buffers.
-            self.read()
-            self.sources += self._lazy_suffix
-            self.sources[:0] = self._lazy_prefix
-        return super(LazyConfig, self).resolve()
-
-    def add(self, value):
-        super(LazyConfig, self).add(value)
-        if not self._materialized:
-            # Buffer additions to end.
-            self._lazy_suffix += self.sources
-            del self.sources[:]
-
-    def set(self, value):
-        super(LazyConfig, self).set(value)
-        if not self._materialized:
-            # Buffer additions to beginning.
-            self._lazy_prefix[:0] = self.sources
-            del self.sources[:]
-
-    def clear(self):
-        """Remove all sources from this configuration."""
-        super(LazyConfig, self).clear()
-        self._lazy_suffix = []
-        self._lazy_prefix = []
-
-
-# "Validated" configuration views: experimental!
+        super(LazyConfig, self).__init__(appname, modname, read=False)
