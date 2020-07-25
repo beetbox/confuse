@@ -1,6 +1,7 @@
 from __future__ import division, absolute_import, print_function
 
 from .util import BASESTRING
+from . import yaml_util
 
 __all__ = ['ConfigSource']
 
@@ -36,3 +37,13 @@ class ConfigSource(dict):
             return ConfigSource(value)
         else:
             raise TypeError(u'source value must be a dict')
+
+
+class YamlSource(ConfigSource):
+    """A configuration data source that reads from a YAML file.
+    """
+
+    def __init__(self, filename=None, default=False,
+                 optional=False, loader=yaml_util.Loader):
+        value = yaml_util.load_yaml(filename, loader=loader) or {}
+        super(YamlSource, self).__init__(value, filename, default)
