@@ -4,8 +4,6 @@ from .util import BASESTRING
 from . import yaml_util
 import os
 
-__all__ = ['ConfigSource']
-
 
 class ConfigSource(dict):
     """A dictionary augmented with metadata about the source of the
