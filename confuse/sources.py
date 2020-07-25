@@ -51,6 +51,7 @@ class YamlSource(ConfigSource):
         file does not exist---instead, the source will be silently
         empty.
         """
+        filename = os.path.abspath(filename)
         if optional and not os.path.isfile(filename):
             value = {}
         else:

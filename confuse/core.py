@@ -634,7 +634,6 @@ class Configuration(RootView):
         """Parses the file as YAML and inserts it into the configuration
         sources with highest priority.
         """
-        filename = os.path.abspath(filename)
         self.set(YamlSource(filename, loader=self.loader))
 
     def dump(self, full=True, redact=False):
