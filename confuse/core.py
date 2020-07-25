@@ -570,8 +570,7 @@ class Configuration(RootView):
         exists.
         """
         filename = self.user_config_path()
-        if os.path.isfile(filename):
-            self.add(YamlSource(filename, loader=self.loader))
+        self.add(YamlSource(filename, loader=self.loader, optional=True))
 
     def _add_default_source(self):
         """Add the package's default configuration settings. This looks
@@ -581,9 +580,8 @@ class Configuration(RootView):
         if self.modname:
             if self._package_path:
                 filename = os.path.join(self._package_path, DEFAULT_FILENAME)
-                if os.path.isfile(filename):
-                    self.add(YamlSource(filename, loader=self.loader,
-                                        default=True))
+                self.add(YamlSource(filename, loader=self.loader,
+                                    optional=True, default=True))
 
     def read(self, user=True, defaults=True):
         """Find and read the files for this configuration and set them

@@ -2,6 +2,7 @@ from __future__ import division, absolute_import, print_function
 
 from .util import BASESTRING
 from . import yaml_util
+import os
 
 __all__ = ['ConfigSource']
 
@@ -45,5 +46,15 @@ class YamlSource(ConfigSource):
 
     def __init__(self, filename=None, default=False,
                  optional=False, loader=yaml_util.Loader):
-        value = yaml_util.load_yaml(filename, loader=loader) or {}
+        """Create a YAML data source by reading data from a file.
+
+        May raise a `ConfigReadError`. However, if `optional` is
+        enabled, this exception will not be raised in the case when the
+        file does not exist---instead, the source will be silently
+        empty.
+        """
+        if optional and not os.path.isfile(filename):
+            value = {}
+        else:
+            value = yaml_util.load_yaml(filename, loader=loader) or {}
         super(YamlSource, self).__init__(value, filename, default)
