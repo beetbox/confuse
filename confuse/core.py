@@ -24,7 +24,7 @@ from collections import OrderedDict
 from . import util
 from . import templates
 from . import yaml_util
-from .sources import ConfigSource
+from .sources import ConfigSource, YamlSource
 from .exceptions import ConfigTypeError, NotFoundError, ConfigError
 
 CONFIG_FILENAME = 'config.yaml'
@@ -570,10 +570,7 @@ class Configuration(RootView):
         exists.
         """
         filename = self.user_config_path()
-        if os.path.isfile(filename):
-            yaml_data = yaml_util.load_yaml(filename, loader=self.loader) \
-                or {}
-            self.add(ConfigSource(yaml_data, filename))
+        self.add(YamlSource(filename, loader=self.loader, optional=True))
 
     def _add_default_source(self):
         """Add the package's default configuration settings. This looks
@@ -583,12 +580,8 @@ class Configuration(RootView):
         if self.modname:
             if self._package_path:
                 filename = os.path.join(self._package_path, DEFAULT_FILENAME)
-                if os.path.isfile(filename):
-                    yaml_data = yaml_util.load_yaml(
-                        filename,
-                        loader=self.loader,
-                    )
-                    self.add(ConfigSource(yaml_data, filename, True))
+                self.add(YamlSource(filename, loader=self.loader,
+                                    optional=True, default=True))
 
     def read(self, user=True, defaults=True):
         """Find and read the files for this configuration and set them
@@ -641,9 +634,7 @@ class Configuration(RootView):
         """Parses the file as YAML and inserts it into the configuration
         sources with highest priority.
         """
-        filename = os.path.abspath(filename)
-        yaml_data = yaml_util.load_yaml(filename, loader=self.loader)
-        self.set(ConfigSource(yaml_data, filename))
+        self.set(YamlSource(filename, loader=self.loader))
 
     def dump(self, full=True, redact=False):
         """Dump the Configuration object to a YAML file.
