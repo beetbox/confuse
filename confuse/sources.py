@@ -52,8 +52,17 @@ class YamlSource(ConfigSource):
         empty.
         """
         filename = os.path.abspath(filename)
-        if optional and not os.path.isfile(filename):
+        super(YamlSource, self).__init__({}, filename, default)
+        self.loader = loader
+        self.optional = optional
+        self.load()
+
+    def load(self):
+        """Load YAML data from the source's filename.
+        """
+        if self.optional and not os.path.isfile(self.filename):
             value = {}
         else:
-            value = yaml_util.load_yaml(filename, loader=loader) or {}
-        super(YamlSource, self).__init__(value, filename, default)
+            value = yaml_util.load_yaml(self.filename,
+                                        loader=self.loader) or {}
+        self.update(value)
