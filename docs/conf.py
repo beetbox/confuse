@@ -1,7 +1,9 @@
 from __future__ import division, absolute_import, print_function
 
-
 extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.viewcode',
     'sphinx.ext.autosectionlabel',
 ]
 source_suffix = '.rst'
@@ -21,3 +23,5 @@ pygments_style = 'sphinx'
 
 html_theme = 'default'
 htmlhelp_basename = 'Confusedoc'
+
+intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}

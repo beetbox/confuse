@@ -385,6 +385,17 @@ Then flatten or dump the configuration like so::
 The resulting YAML will contain "key: REDACTED" instead of the original data.
 
 
+Dive Deeper
+-----------
+
+For more advanced usage, dive deeper in to the API documentation.
+
+.. toctree::
+   :maxdepth: 2
+
+   api
+
+
 Changelog
 ---------
 
