@@ -42,6 +42,16 @@ Here’s what Confuse brings to the table:
    from the standard library. Use argparse's declarative API to allow
    command-line options to override configured defaults.
 
+Installation
+------------
+
+Confuse is available on [PyPI](https://pypi.org/project/confuse/) and can be installed
+using :code:`pip`:
+
+.. code-block:: sh
+
+    pip install confuse
+
 Using Confuse
 -------------
 
@@ -58,6 +68,6 @@ Like beets, it is available under the `MIT license`_.
 .. _optparse: http://docs.python.org/dev/library/optparse.html
 .. _argparse: http://docs.python.org/dev/library/argparse.html
 .. _logging: http://docs.python.org/library/logging.html
-.. _Confuse's documentation: http://confuse.readthedocs.org/
+.. _Confuse's documentation: http://confuse.readthedocs.org/usage.html
 .. _MIT license: http://www.opensource.org/licenses/mit-license.php
 .. _beets: https://github.com/beetbox/beets
