@@ -7,8 +7,8 @@ for Python.
 .. _Confuse: https://github.com/beetbox/confuse
 
 
-Using Confuse
--------------
+Basic Usage
+-----------
 
 Set up your Configuration object, which provides unified access to
 all of your application’s config settings:
