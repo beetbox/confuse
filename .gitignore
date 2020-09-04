@@ -5,6 +5,7 @@
 
 __pycache__/
 *.py[cod]
+_build/
 build/
 dist/
 docs/_build/

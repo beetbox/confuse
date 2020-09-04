@@ -11,7 +11,9 @@ Using Confuse
 -------------
 
 Set up your Configuration object, which provides unified access to
-all of your application’s config settings::
+all of your application’s config settings:
+
+.. code-block:: python
 
     config = confuse.Configuration('MyGreatApp', __name__)
 
@@ -27,7 +29,9 @@ guide the search for a *defaults* file. Use this if you want to include a
 Now, you can access your configuration data as if it were a simple
 structure consisting of nested dicts and lists—except that you need to
 call the method ``.get()`` on the leaf of this tree to get the result as
-a value::
+a value:
+
+.. code-block:: python
 
     value = config['foo'][2]['bar'].get()
 
@@ -37,7 +41,9 @@ into a value, performing a search through each configuration data source
 to find an answer. (More on views later.)
 
 If you know that a configuration value should have a specific type, just
-pass that type to ``get()``::
+pass that type to ``get()``:
+
+.. code-block:: python
 
     int_value = config['number_of_goats'].get(int)
 
@@ -148,12 +154,16 @@ library with Confuse to accomplish this. Just call the ``set_args``
 method on any view and pass in the object returned by the command-line
 parsing library. Values from the command-line option namespace object
 will be added to the overlay for the view in question. For example, with
-argparse::
+argparse:
+
+.. code-block:: python
 
     args = parser.parse_args()
     config.set_args(args)
 
-Correspondingly, with optparse::
+Correspondingly, with optparse:
+
+.. code-block:: python
 
     options, args = parser.parse_args()
     config.set_args(options)
@@ -161,7 +171,9 @@ Correspondingly, with optparse::
 This call will turn all of the command-line options into a top-level
 source in your configuration. The key associated with each option in the
 parser will become a key available in your configuration. For example,
-consider this argparse script::
+consider this argparse script:
+
+.. code-block:: python
 
     config = confuse.Configuration('myapp')
     parser = argparse.ArgumentParser()
@@ -174,14 +186,18 @@ This will allow the user to override the configured value for key
 ``foo`` by passing ``--foo <something>`` on the command line.
 
 Overriding nested values can be accomplished by passing `dots=True` and
-have dot-delimited properties on the incoming object.::
+have dot-delimited properties on the incoming object.
+
+.. code-block:: python
 
     parser.add_argument('--bar', help='nested parameter', dest='foo.bar')
     args = parser.parse_args()  # args looks like: {'foo.bar': 'value'}
     config.set_args(args, dots=True)
     print(config['foo']['bar'].get())
 
-`set_args` works with generic dictionaries too.::
+`set_args` works with generic dictionaries too.
+
+.. code-block:: python
 
     args = {
       'foo': {
@@ -243,7 +259,9 @@ this method to give you a directory that actually exists.
 
 As an example, you may want to migrate a user's settings to Confuse from
 an older configuration system such as `ConfigParser`_. Just do something
-like this::
+like this:
+
+.. code-block:: python
 
     config_filename = os.path.join(config.config_dir(),
                                    confuse.CONFIG_FILENAME)
@@ -266,7 +284,9 @@ To facilitate this, Confuse lets you *assign* to view objects using
 ordinary Python assignment. Assignment will add an overlay source that
 precedes all other configuration sources in priority. Here's an example
 of programmatically setting a configuration value based on a ``DEBUG``
-constant::
+constant:
+
+.. code-block:: python
 
     if DEBUG:
         config['verbosity'] = 100
@@ -312,12 +332,16 @@ Custom YAML Loaders
 
 You can also specify your own `PyYAML`_ `Loader` object to parse YAML
 files. Supply the `loader` parameter to a `Configuration` constructor,
-like this::
+like this:
+
+.. code-block:: python
 
     config = confuse.Configuration("name", loader=yaml.Loaded)
 
 To imbue a loader with Confuse's special parser overrides, use its
-`add_constructors` method::
+`add_constructors` method:
+
+.. code-block:: python
 
     class MyLoader(yaml.Loader):
         ...
@@ -355,7 +379,9 @@ module load time is generally considered a Bad Idea.)
 Global state can cause problems for unit testing. To alleviate this,
 consider adding code to your test fixtures (e.g., `setUp`_ in the
 `unittest`_ module) that clears out the global configuration before each
-test is run. Something like this::
+test is run. Something like this:
+
+.. code-block:: python
 
     config.clear()
     config.read(user=False)
@@ -374,26 +400,19 @@ Redaction
 ---------
 
 You can also mark certain configuration values as "sensitive" and avoid
-including them in output. Just set the `redact` flag::
+including them in output. Just set the `redact` flag:
+
+.. code-block:: python
 
     config['key'].redact = True
 
-Then flatten or dump the configuration like so::
+Then flatten or dump the configuration like so:
+
+.. code-block:: python
 
     config.dump(redact=True)
 
 The resulting YAML will contain "key: REDACTED" instead of the original data.
-
-
-Dive Deeper
------------
-
-For more advanced usage, dive deeper in to the API documentation.
-
-.. toctree::
-   :maxdepth: 2
-
-   api
 
 
 Changelog
