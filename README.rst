@@ -68,6 +68,6 @@ Like beets, it is available under the `MIT license`_.
 .. _optparse: http://docs.python.org/dev/library/optparse.html
 .. _argparse: http://docs.python.org/dev/library/argparse.html
 .. _logging: http://docs.python.org/library/logging.html
-.. _Confuse's documentation: http://confuse.readthedocs.org/usage.html
+.. _Confuse's documentation: http://confuse.readthedocs.org/en/latest/usage.html
 .. _MIT license: http://www.opensource.org/licenses/mit-license.php
 .. _beets: https://github.com/beetbox/beets
