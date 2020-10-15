@@ -45,7 +45,7 @@ Here’s what Confuse brings to the table:
 Installation
 ------------
 
-Confuse is available on [PyPI](https://pypi.org/project/confuse/) and can be installed
+Confuse is available on `PyPI <https://pypi.org/project/confuse/>`_ and can be installed
 using :code:`pip`:
 
 .. code-block:: sh
