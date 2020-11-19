@@ -601,6 +601,9 @@ class AttrDict(dict):
         else:
             raise AttributeError(key)
 
+    def __setattr__(self, key, value):
+        self[key] = value
+
 
 def as_template(value):
     """Convert a simple "shorthand" Python value to a `Template`.
