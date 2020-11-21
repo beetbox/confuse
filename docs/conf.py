@@ -16,8 +16,8 @@ master_doc = 'index'
 project = u'Confuse'
 copyright = u'2012, Adrian Sampson'
 
-version = '1.5'
-release = '1.5.0'
+version = '1.4'
+release = '1.4.0'
 
 exclude_patterns = ['_build']
 

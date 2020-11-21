@@ -418,15 +418,11 @@ The resulting YAML will contain "key: REDACTED" instead of the original data.
 Changelog
 ---------
 
-v1.5.0
-''''''
-
-- `AttrDict` now properly supports (over)writing attributes via dot notation.
-
 v1.4.0
 ''''''
 
 - `pathlib.PurePath` objects can now be converted to `Path` templates.
+- `AttrDict` now properly supports (over)writing attributes via dot notation.
 
 v1.3.0
 ''''''
