@@ -264,10 +264,7 @@ This can be done by manually specifying the YAML files you want to include:
     # they will be overwritten (new file precedes the previous ones)
     config.set_file('subdirectory/local_config.yaml')
 
-    # Fetch the value
-    foo_bar_value = config['foo']['bar'].get()
-    # Fetch the value of specific type, exception will be raised if type doesn't match
-    foo_bar_int_value = config['foo']['bar'].get(int)
+    val = config['foo']['bar'].get(int)
 
 
 Your Application Directory
