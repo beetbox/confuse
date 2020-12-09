@@ -56,29 +56,6 @@ of ``confuse.ConfigError``) lets you painlessly validate the user’s
 configuration as you go.
 
 
-Using Multiple Config Files Manually
-------------------------------------
-
-You may want to leverage Confuse's features without :ref:`Search Paths`.
-This can be done by manually specifying the YAML files you want to include:
-
-.. code-block:: python
-
-    import confuse
-    # Instantiates config. Confuse searches for a config_default.yaml
-    config = confuse.Configuration('MyGreatApp', __name__)
-    # Add config items from specified file
-    config.set_file('subdirectory/default_config.yaml')
-    # Add config items from a second file. If some items were already defined,
-    # they will be overwritten (new file precedes the previous ones)
-    config.set_file('subdirectory/local_config.yaml')
-
-    # Fetch the value
-    foo_bar_value = config['foo']['bar'].get()
-    # Fetch the value of specific type, exception will be raised if type doesn't match
-    foo_bar_int_value = config['foo']['bar'].get(int)
-
-
 View Theory
 -----------
 
@@ -268,6 +245,29 @@ Users can also add an override configuration directory with an
 environment variable. The variable name is the application name in
 capitals with "DIR" appended: for an application named ``AppName``, the
 environment variable is ``APPNAMEDIR``.
+
+
+Manually Specifying Config Files
+--------------------------------
+
+You may want to leverage Confuse's features without :ref:`Search Paths`.
+This can be done by manually specifying the YAML files you want to include:
+
+.. code-block:: python
+
+    import confuse
+    # Instantiates config. Confuse searches for a config_default.yaml
+    config = confuse.Configuration('MyGreatApp', __name__)
+    # Add config items from specified file
+    config.set_file('subdirectory/default_config.yaml')
+    # Add config items from a second file. If some items were already defined,
+    # they will be overwritten (new file precedes the previous ones)
+    config.set_file('subdirectory/local_config.yaml')
+
+    # Fetch the value
+    foo_bar_value = config['foo']['bar'].get()
+    # Fetch the value of specific type, exception will be raised if type doesn't match
+    foo_bar_int_value = config['foo']['bar'].get(int)
 
 
 Your Application Directory
