@@ -1,5 +1,7 @@
 import os
 import sys
+import datetime as dt
+
 
 sys.path.insert(0, os.path.abspath(".."))
 
@@ -14,7 +16,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 project = u'Confuse'
-copyright = u'2012, Adrian Sampson'
+copyright = '2012-{}, Adrian Sampson & contributors'.format(
+    dt.date.today().year
+)
 
 version = '1.4'
 release = '1.4.0'

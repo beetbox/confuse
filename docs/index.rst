@@ -5,4 +5,5 @@
    :hidden:
 
    usage
+   changelog
    api
