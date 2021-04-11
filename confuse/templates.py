@@ -434,24 +434,29 @@ class Filename(Template):
     when it is specified. Otherwise, if the paths come from a file,
     they will be relative to the configuration directory (see the
     `config_dir` method) by default or to the base directory of the
-    config file if the source has `base_for_paths` set to True.
-    Paths from sources without a file are relative to the current
-    working directory. This helps attain the expected behavior when
-    using command-line options.
+    config file if either the source has `base_for_paths` set to True
+    or the template has `in_source_dir` set to True. Paths from sources
+    without a file are relative to the current working directory. This
+    helps attain the expected behavior when using command-line options.
     """
     def __init__(self, default=REQUIRED, cwd=None, relative_to=None,
-                 in_app_dir=False):
+                 in_app_dir=False, in_source_dir=False):
         """`relative_to` is the name of a sibling value that is
         being validated at the same time.
 
         `in_app_dir` indicates whether the path should be resolved
         inside the application's config directory (even when the setting
         does not come from a file).
+
+        `in_source_dir` indicates whether the path should be resolved
+        relative to the directory containing the source file, if there is
+        one, taking precedence over the application's config directory.
         """
         super(Filename, self).__init__(default)
         self.cwd = cwd
         self.relative_to = relative_to
         self.in_app_dir = in_app_dir
+        self.in_source_dir = in_source_dir
 
     def __repr__(self):
         args = []
@@ -546,7 +551,8 @@ class Filename(Template):
                     path,
                 )
 
-            elif source.base_for_paths and source.filename:
+            elif source.filename and (source.base_for_paths
+                                      or self.in_source_dir):
                 # relative to the directory the source file is in.
                 path = os.path.join(os.path.dirname(source.filename), path)
 
