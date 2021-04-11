@@ -431,10 +431,13 @@ class Filename(Template):
     Filenames are returned as absolute, tilde-free paths.
 
     Relative paths are relative to the template's `cwd` argument
-    when it is specified, then the configuration directory (see
-    the `config_dir` method) if they come from a file. Otherwise,
-    they are relative to the current working directory. This helps
-    attain the expected behavior when using command-line options.
+    when it is specified. Otherwise, if the paths come from a file,
+    they will be relative to the configuration directory (see the
+    `config_dir` method) by default or to the base directory of the
+    config file if the source has `base_for_paths` set to True.
+    Paths from sources without a file are relative to the current
+    working directory. This helps attain the expected behavior when
+    using command-line options.
     """
     def __init__(self, default=REQUIRED, cwd=None, relative_to=None,
                  in_app_dir=False):
@@ -542,6 +545,10 @@ class Filename(Template):
                     self.resolve_relative_to(view, template),
                     path,
                 )
+
+            elif source.base_for_paths and source.filename:
+                # relative to the directory the source file is in.
+                path = os.path.join(os.path.dirname(source.filename), path)
 
             elif source.filename or self.in_app_dir:
                 # From defaults: relative to the app's directory.

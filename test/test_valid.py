@@ -433,6 +433,15 @@ class FilenameTest(unittest.TestCase):
         valid = config['foo'].get(confuse.Filename())
         self.assertEqual(valid, os.path.realpath('/config/path/foo/bar'))
 
+    def test_filename_use_config_source_dir(self):
+        source = confuse.ConfigSource({'foo': 'foo/bar'},
+                                      filename='/baz/config.yaml',
+                                      base_for_paths=True)
+        config = _root(source)
+        config.config_dir = lambda: '/config/path'
+        valid = config['foo'].get(confuse.Filename())
+        self.assertEqual(valid, os.path.realpath('/baz/foo/bar'))
+
     def test_filename_wrong_type(self):
         config = _root({'foo': 8})
         with self.assertRaises(confuse.ConfigTypeError):

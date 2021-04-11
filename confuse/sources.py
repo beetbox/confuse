@@ -9,19 +9,22 @@ class ConfigSource(dict):
     """A dictionary augmented with metadata about the source of the
     configuration.
     """
-    def __init__(self, value, filename=None, default=False):
+    def __init__(self, value, filename=None, default=False,
+                 base_for_paths=False):
         super(ConfigSource, self).__init__(value)
         if (filename is not None
                 and not isinstance(filename, BASESTRING)):
             raise TypeError(u'filename must be a string or None')
         self.filename = filename
         self.default = default
+        self.base_for_paths = base_for_paths
 
     def __repr__(self):
-        return 'ConfigSource({0!r}, {1!r}, {2!r})'.format(
+        return 'ConfigSource({0!r}, {1!r}, {2!r}, {3!r})'.format(
             super(ConfigSource, self),
             self.filename,
             self.default,
+            self.base_for_paths,
         )
 
     @classmethod
@@ -42,7 +45,7 @@ class YamlSource(ConfigSource):
     """A configuration data source that reads from a YAML file.
     """
 
-    def __init__(self, filename=None, default=False,
+    def __init__(self, filename=None, default=False, base_for_paths=False,
                  optional=False, loader=yaml_util.Loader):
         """Create a YAML data source by reading data from a file.
 
@@ -52,7 +55,7 @@ class YamlSource(ConfigSource):
         empty.
         """
         filename = os.path.abspath(filename)
-        super(YamlSource, self).__init__({}, filename, default)
+        super(YamlSource, self).__init__({}, filename, default, base_for_paths)
         self.loader = loader
         self.optional = optional
         self.load()
