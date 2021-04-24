@@ -523,3 +523,111 @@ class SequenceTest(unittest.TestCase):
             config['foo'].get(confuse.Sequence(
                 {'bar': int, 'baz': int}
             ))
+
+
+class OptionalTest(unittest.TestCase):
+    def test_optional_string_valid_type(self):
+        config = _root({'foo': 'bar'})
+        valid = config['foo'].get(confuse.Optional(confuse.String()))
+        self.assertEqual(valid, 'bar')
+
+    def test_optional_string_invalid_type(self):
+        config = _root({'foo': 5})
+        with self.assertRaises(confuse.ConfigTypeError):
+            config['foo'].get(confuse.Optional(confuse.String()))
+
+    def test_optional_string_null(self):
+        config = _root({'foo': None})
+        valid = config['foo'].get(confuse.Optional(confuse.String()))
+        self.assertIsNone(valid)
+
+    def test_optional_string_null_default_value(self):
+        config = _root({'foo': None})
+        valid = config['foo'].get(confuse.Optional(confuse.String(), 'baz'))
+        self.assertEqual(valid, 'baz')
+
+    def test_optional_string_null_string_provides_default(self):
+        config = _root({'foo': None})
+        valid = config['foo'].get(confuse.Optional(confuse.String('baz')))
+        self.assertEqual(valid, 'baz')
+
+    def test_optional_string_null_string_default_override(self):
+        config = _root({'foo': None})
+        valid = config['foo'].get(confuse.Optional(confuse.String('baz'),
+                                                   default='bar'))
+        self.assertEqual(valid, 'bar')
+
+    def test_optional_string_allow_missing_no_explicit_default(self):
+        config = _root({})
+        valid = config['foo'].get(confuse.Optional(confuse.String()))
+        self.assertIsNone(valid)
+
+    def test_optional_string_allow_missing_default_value(self):
+        config = _root({})
+        valid = config['foo'].get(confuse.Optional(confuse.String(), 'baz'))
+        self.assertEqual(valid, 'baz')
+
+    def test_optional_string_missing_not_allowed(self):
+        config = _root({})
+        with self.assertRaises(confuse.NotFoundError):
+            config['foo'].get(
+                confuse.Optional(confuse.String(), allow_missing=False)
+            )
+
+    def test_optional_string_null_missing_not_allowed(self):
+        config = _root({'foo': None})
+        valid = config['foo'].get(
+            confuse.Optional(confuse.String(), allow_missing=False)
+        )
+        self.assertIsNone(valid)
+
+    def test_optional_mapping_template_valid(self):
+        config = _root({'foo': {'bar': 5, 'baz': 'bak'}})
+        template = {'bar': confuse.Integer(), 'baz': confuse.String()}
+        valid = config.get({'foo': confuse.Optional(template)})
+        self.assertEqual(valid['foo']['bar'], 5)
+        self.assertEqual(valid['foo']['baz'], 'bak')
+
+    def test_optional_mapping_template_invalid(self):
+        config = _root({'foo': {'bar': 5, 'baz': 10}})
+        template = {'bar': confuse.Integer(), 'baz': confuse.String()}
+        with self.assertRaises(confuse.ConfigTypeError):
+            config.get({'foo': confuse.Optional(template)})
+
+    def test_optional_mapping_template_null(self):
+        config = _root({'foo': None})
+        template = {'bar': confuse.Integer(), 'baz': confuse.String()}
+        valid = config.get({'foo': confuse.Optional(template)})
+        self.assertIsNone(valid['foo'])
+
+    def test_optional_mapping_template_null_default_value(self):
+        config = _root({'foo': None})
+        template = {'bar': confuse.Integer(), 'baz': confuse.String()}
+        valid = config.get({'foo': confuse.Optional(template, {})})
+        self.assertIsInstance(valid['foo'], dict)
+
+    def test_optional_mapping_template_allow_missing_no_explicit_default(self):
+        config = _root({})
+        template = {'bar': confuse.Integer(), 'baz': confuse.String()}
+        valid = config.get({'foo': confuse.Optional(template)})
+        self.assertIsNone(valid['foo'])
+
+    def test_optional_mapping_template_allow_missing_default_value(self):
+        config = _root({})
+        template = {'bar': confuse.Integer(), 'baz': confuse.String()}
+        valid = config.get({'foo': confuse.Optional(template, {})})
+        self.assertIsInstance(valid['foo'], dict)
+
+    def test_optional_mapping_template_missing_not_allowed(self):
+        config = _root({})
+        template = {'bar': confuse.Integer(), 'baz': confuse.String()}
+        with self.assertRaises(confuse.NotFoundError):
+            config.get({'foo': confuse.Optional(template,
+                                                allow_missing=False)})
+
+    def test_optional_mapping_template_null_missing_not_allowed(self):
+        config = _root({'foo': None})
+        template = {'bar': confuse.Integer(), 'baz': confuse.String()}
+        valid = config.get({'foo': confuse.Optional(template,
+                                                    allow_missing=False)})
+        self.assertIsNone(valid['foo'])

@@ -567,6 +567,49 @@ class Path(Filename):
         return pathlib.Path(value)
 
 
+class Optional(Template):
+    """A template that makes a subtemplate optional.
+
+    If the value is present and not null, it must validate against the
+    subtemplate. However, if the value is null or missing, the template will
+    still validate, returning a default value. If `allow_missing` is False,
+    the template will not allow missing values while still permitting null.
+    """
+
+    def __init__(self, subtemplate, default=None, allow_missing=True):
+        self.subtemplate = as_template(subtemplate)
+        if (getattr(self.subtemplate, 'default', REQUIRED) is not REQUIRED
+                and default is None):
+            # Subtemplate's default value will be used if present and
+            # no default was passed to Optional
+            self.default = self.subtemplate.default
+        else:
+            self.default = default
+        self.allow_missing = allow_missing
+
+    def value(self, view, template=None):
+        try:
+            value, _ = view.first()
+        except exceptions.NotFoundError:
+            if self.allow_missing:
+                # Value is missing but not required
+                return self.default
+            # Value must be present even though it can be null. Raise an error.
+            raise exceptions.NotFoundError(u'{} not found'.format(view.name))
+
+        if value is None:
+            # None (ie, null) is always a valid value
+            return self.default
+        return self.subtemplate.value(view, self)
+
+    def __repr__(self):
+        return 'Optional({0}, {1}, allow_missing={2})'.format(
+            repr(self.subtemplate),
+            repr(self.default),
+            self.allow_missing,
+        )
+
+
 class TypeTemplate(Template):
     """A simple template that checks that a value is an instance of a
     desired Python type.
