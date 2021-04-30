@@ -185,6 +185,33 @@ class Sequence(Template):
         return 'Sequence({0})'.format(repr(self.subtemplate))
 
 
+class MappingValues(Template):
+    """A template used to validate mappings of similar items,
+    based on a given subtemplate applied to the values.
+
+    All keys in the mapping are considered valid, but values
+    must pass validation by the subtemplate. Similar to the
+    Sequence template but for mappings.
+    """
+    def __init__(self, subtemplate):
+        """Create a template for a mapping with variable keys
+        and item values validated on a given subtemplate.
+        """
+        self.subtemplate = as_template(subtemplate)
+
+    def value(self, view, template=None):
+        """Get a dict with the same keys as the view and the
+        value of each item validated against the subtemplate.
+        """
+        out = {}
+        for key, item in view.items():
+            out[key] = self.subtemplate.value(item, self)
+        return out
+
+    def __repr__(self):
+        return 'MappingValues({0})'.format(repr(self.subtemplate))
+
+
 class String(Template):
     """A string configuration value template.
     """
