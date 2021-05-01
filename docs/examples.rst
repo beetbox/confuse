@@ -118,3 +118,174 @@ provided to ``MappingValues``, then an error will be raised:
 ...     print(err)
 ...
 categories.no_description.description not found
+
+
+Optional
+--------
+
+While many templates like ``Integer`` and ``String`` can be configured to
+return a default value if the requested view is missing, validation with these
+templates will fail if the value is left blank in the YAML file or explicitly
+set to ``null`` in YAML (ie, ``None`` in python). The ``Optional`` template
+can be used with other templates to allow its subtemplate to accept ``null``
+as valid and return a default value. The default behavior of ``Optional``
+allows the requested view to be missing, but this behavior can be changed by
+passing ``allow_missing=False``, in which case the view must be present but its
+value can still be ``null``. In all cases, any value other than ``null`` will
+be passed to the subtemplate for validation, and an appropriate ``ConfigError``
+will be raised if validation fails. ``Optional`` can also be used with more
+complex templates like ``MappingTemplate`` to make entire sections of the
+configuration optional.
+
+Consider a configuration where ``log`` can be set to a filename to enable
+logging to that file or set to ``null`` or not included in the configuration to
+indicate logging to the console. All of the following are valid configurations
+using the ``Optional`` template with ``Filename`` as the subtemplate:
+
+>>> import sys
+>>> import confuse
+>>> def get_log_output(config):
+...     output = config['log'].get(confuse.Optional(confuse.Filename()))
+...     if output is None:
+...         return sys.stderr
+...     return output
+...
+>>> config = confuse.RootView([])
+>>> config.set({'log': '/tmp/log.txt'})  # `log` set to a filename
+>>> get_log_output(config)
+'/tmp/log.txt'
+>>> config.set({'log': None})  # `log` set to None (ie, null in YAML)
+>>> get_log_output(config)
+<_io.TextIOWrapper name='<stderr>' mode='w' encoding='UTF-8'>
+>>> config.clear()  # Clear config so that `log` is missing
+>>> get_log_output(config)
+<_io.TextIOWrapper name='<stderr>' mode='w' encoding='UTF-8'>
+
+However, validation will still fail with ``Optional`` if a value is given that
+is invalid for the subtemplate:
+
+>>> config.set({'log': True})
+>>> try:
+...     get_log_output(config)
+... except confuse.ConfigError as err:
+...     print(err)
+...
+log: must be a filename, not bool
+
+And without wrapping the ``Filename`` subtemplate in ``Optional``, ``null``
+values are not valid:
+
+>>> config.set({'log': None})
+>>> try:
+...     config['log'].get(confuse.Filename())
+... except confuse.ConfigError as err:
+...     print(err)
+...
+log: must be a filename, not NoneType
+
+If a program wants to require an item to be present in the configuration, while
+still allowing ``null`` to be valid, pass ``allow_missing=False`` when
+creating the ``Optional`` template:
+
+>>> def get_log_output_no_missing(config):
+...     output = config['log'].get(confuse.Optional(confuse.Filename(),
+...                                                 allow_missing=False))
+...     if output is None:
+...         return sys.stderr
+...     return output
+...
+>>> config.set({'log': None})  # `log` set to None is still OK...
+>>> get_log_output_no_missing(config)
+<_io.TextIOWrapper name='<stderr>' mode='w' encoding='UTF-8'>
+>>> config.clear()  # but `log` missing now raises an error
+>>> try:
+...     get_log_output_no_missing(config)
+... except confuse.ConfigError as err:
+...     print(err)
+...
+log not found
+
+The default value returned by ``Optional`` can be set explicitly by passing a
+value to its ``default`` parameter. However, if no explicit default is passed
+to ``Optional`` and the subtemplate has a default value defined, then
+``Optional`` will return the subtemplate's default value. For subtemplates that
+do not define default values, like ``MappingTemplate``, ``None`` will be
+returned as the default unless an explicit default is provided.
+
+In the following example, ``Optional`` is used to make an ``Integer`` template
+more lenient, allowing blank values to validate. In addition, the entire
+``extra_config`` block can be left out without causing validation errors. If
+we have a file named ``optional.yaml`` with the following contents:
+
+.. code-block:: yaml
+
+    favorite_number: # No favorite number provided, but that's OK
+    # This part of the configuration is optional. Uncomment to include.
+    # extra_config:
+    #   fruit: apple
+    #   number: 10
+
+Then the configuration can be validated as follows:
+
+>>> import confuse
+>>> source = confuse.YamlSource('optional.yaml')
+>>> config = confuse.RootView([source])
+>>> # The following `Optional` templates are all equivalent
+... config['favorite_number'].get(confuse.Optional(5))
+5
+>>> config['favorite_number'].get(confuse.Optional(confuse.Integer(5)))
+5
+>>> config['favorite_number'].get(confuse.Optional(int, default=5))
+5
+>>> # But a default passed to `Optional` takes precedence and can be any type
+... config['favorite_number'].get(confuse.Optional(5, default='five'))
+'five'
+>>> # `Optional` with `MappingTemplate` returns `None` by default
+... extra_config = config['extra_config'].get(confuse.Optional(
+...     {'fruit': str, 'number': int},
+... ))
+>>> print(extra_config is None)
+True
+>>> # But any default value can be provided, like an empty dict...
+... config['extra_config'].get(confuse.Optional(
+...     {'fruit': str, 'number': int},
+...     default={},
+... ))
+{}
+>>> # or a dict with default values
+... config['extra_config'].get(confuse.Optional(
+...     {'fruit': str, 'number': int},
+...     default={'fruit': 'orange', 'number': 3},
+... ))
+{'fruit': 'orange', 'number': 3}
+
+Without the ``Optional`` template wrapping the ``Integer``, the blank value
+in the YAML file will cause an error:
+
+>>> try:
+...     config['favorite_number'].get(5)
+... except confuse.ConfigError as err:
+...     print(err)
+...
+favorite_number: must be a number
+
+If the ``extra_config`` for this example configuration is supplied, it must
+still match the subtemplate. Therefore, this will fail:
+
+>>> config.set({'extra_config': {}})
+>>> try:
+...     config['extra_config'].get(confuse.Optional(
+...         {'fruit': str, 'number': int},
+...     ))
+... except confuse.ConfigError as err:
+...     print(err)
+...
+extra_config.fruit not found
+
+But this override of the example configuration will validate:
+
+>>> config.set({'extra_config': {'fruit': 'banana', 'number': 1}})
+>>> config['extra_config'].get(confuse.Optional(
+...     {'fruit': str, 'number': int},
+... ))
+{'fruit': 'banana', 'number': 1}
