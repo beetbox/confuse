@@ -525,6 +525,42 @@ class SequenceTest(unittest.TestCase):
             ))
 
 
+class MappingValuesTest(unittest.TestCase):
+    def test_int_dict(self):
+        config = _root({'foo': {'one': 1, 'two': 2, 'three': 3}})
+        valid = config['foo'].get(confuse.MappingValues(int))
+        self.assertEqual(valid, {'one': 1, 'two': 2, 'three': 3})
+
+    def test_dict_dict(self):
+        config = _root({'foo': {'first': {'bar': 1, 'baz': 2},
+                                'second': {'bar': 3, 'baz': 4}}})
+        valid = config['foo'].get(confuse.MappingValues(
+            {'bar': int, 'baz': int}
+        ))
+        self.assertEqual(valid, {
+            'first': {'bar': 1, 'baz': 2},
+            'second': {'bar': 3, 'baz': 4},
+        })
+
+    def test_invalid_item(self):
+        config = _root({'foo': {'first': {'bar': 1, 'baz': 2},
+                                'second': {'bar': 3, 'bak': 4}}})
+        with self.assertRaises(confuse.NotFoundError):
+            config['foo'].get(confuse.MappingValues(
+                {'bar': int, 'baz': int}
+            ))
+
+    def test_wrong_type(self):
+        config = _root({'foo': [1, 2, 3]})
+        with self.assertRaises(confuse.ConfigTypeError):
+            config['foo'].get(confuse.MappingValues(int))
+
+    def test_missing(self):
+        config = _root({'foo': {'one': 1, 'two': 2, 'three': 3}})
+        valid = config['bar'].get(confuse.MappingValues(int))
+        self.assertEqual(valid, {})
+
+
 class OptionalTest(unittest.TestCase):
     def test_optional_string_valid_type(self):
         config = _root({'foo': 'bar'})
