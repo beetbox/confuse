@@ -609,13 +609,14 @@ class Optional(Template):
 
     def __init__(self, subtemplate, default=None, allow_missing=True):
         self.subtemplate = as_template(subtemplate)
-        if (getattr(self.subtemplate, 'default', REQUIRED) is not REQUIRED
-                and default is None):
-            # Subtemplate's default value will be used if present and
-            # no default was passed to Optional
-            self.default = self.subtemplate.default
-        else:
-            self.default = default
+        if default is None:
+            # When no default is passed, try to use the subtemplate's
+            # default value as the default for this template
+            try:
+                default = self.subtemplate.get_default_value()
+            except exceptions.NotFoundError:
+                pass
+        self.default = default
         self.allow_missing = allow_missing
 
     def value(self, view, template=None):
