@@ -70,10 +70,14 @@ class Template(object):
         return self.get_default_value(view.name)
 
     def get_default_value(self, key_name='default'):
-        if self.default is REQUIRED:
-            # Missing required value. This is an error.
+        """Get the default value to return when the value is missing.
+
+        May raise a `NotFoundError` if the value is required.
+        """
+        if not hasattr(self, 'default') or self.default is REQUIRED:
+            # The value is required. A missing value is an error.
             raise exceptions.NotFoundError(u"{} not found".format(key_name))
-        # Missing value, but not required.
+        # The value is not required.
         return self.default
 
     def convert(self, value, view):
