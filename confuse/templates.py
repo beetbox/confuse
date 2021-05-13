@@ -180,6 +180,14 @@ class Sequence(Template):
     def value(self, view, template=None):
         """Get a list of items validated against the template.
         """
+        try:
+            collection, _ = view.first()
+        except exceptions.NotFoundError:
+            pass
+        else:
+            if not isinstance(collection, (list, tuple)):
+                self.fail(u'must be a list', view, True)
+
         out = []
         for item in view:
             out.append(self.subtemplate.value(item, self))

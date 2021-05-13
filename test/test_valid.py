@@ -524,6 +524,16 @@ class SequenceTest(unittest.TestCase):
                 {'bar': int, 'baz': int}
             ))
 
+    def test_wrong_type(self):
+        config = _root({'foo': {'one': 1, 'two': 2, 'three': 3}})
+        with self.assertRaises(confuse.ConfigTypeError):
+            config['foo'].get(confuse.Sequence(int))
+
+    def test_missing(self):
+        config = _root({'foo': [1, 2, 3]})
+        valid = config['bar'].get(confuse.Sequence(int))
+        self.assertEqual(valid, [])
+
 
 class MappingValuesTest(unittest.TestCase):
     def test_int_dict(self):
