@@ -5,6 +5,91 @@ These examples demonstrate how the confuse templates work to validate
 configuration values.
 
 
+Sequence
+--------
+
+A ``Sequence`` template allows validation of a sequence of configuration items
+that all must match a subtemplate. The items in the sequence can be simple
+values or more complex objects, as defined by the subtemplate. When the view
+is defined in multiple sources, the highest priority source will override the
+entire list of items, rather than appending new items to the list from lower
+sources. If the view is not defined in any source of the configuration, an
+empty list will be returned.
+
+As an example of using the ``Sequence`` template, consider a configuration that
+includes a list of servers, where each server is required to have a host string
+and an optional port number that defaults to 80. For this example, an initial
+configuration file named ``servers_example.yaml`` has the following contents:
+
+.. code-block:: yaml
+
+    servers:
+      - host: one.example.com
+      - host: two.example.com
+        port: 8000
+      - host: three.example.com
+        port: 8080
+
+Validation of this configuration could be performed like this:
+
+>>> import confuse
+>>> import pprint
+>>> source = confuse.YamlSource('servers_example.yaml')
+>>> config = confuse.RootView([source])
+>>> template = {
+...     'servers': confuse.Sequence({
+...         'host': str,
+...         'port': 80,
+...     }),
+... }
+>>> valid_config = config.get(template)
+>>> pprint.pprint(valid_config)
+{'servers': [{'host': 'one.example.com', 'port': 80},
+             {'host': 'two.example.com', 'port': 8000},
+             {'host': 'three.example.com', 'port': 8080}]}
+
+The list of items in the initial configuration can be overridden by setting a
+higher priority source. Continuing the previous example:
+
+>>> config.set({
+...     'servers': [
+...         {'host': 'four.example.org'},
+...         {'host': 'five.example.org', 'port': 9000},
+...     ],
+... })
+>>> updated_config = config.get(template)
+>>> pprint.pprint(updated_config)
+{'servers': [{'host': 'four.example.org', 'port': 80},
+             {'host': 'five.example.org', 'port': 9000}]}
+
+If the requested view is missing, ``Sequence`` returns an empty list:
+
+>>> config.clear()
+>>> config.get(template)
+{'servers': []}
+
+However, if an item within the sequence does not match the subtemplate
+provided to ``Sequence``, then an error will be raised:
+
+>>> config.set({
+...     'servers': [
+...         {'host': 'bad_port.example.net', 'port': 'default'}
+...     ]
+... })
+>>> try:
+...     config.get(template)
+... except confuse.ConfigError as err:
+...     print(err)
+...
+servers#0.port: must be a number
+
+.. note::
+    A python list is not the shortcut for defining a ``Sequence`` template but
+    will instead produce a ``OneOf`` template. For example,
+    ``config.get([str])`` is equivalent to ``config.get(confuse.OneOf([str]))``
+    and *not* ``config.get(confuse.Sequence(str))``.
+
+
 MappingValues
 -------------
 

@@ -181,7 +181,7 @@ class Sequence(Template):
         """Get a list of items validated against the template.
         """
         out = []
-        for item in view:
+        for item in view.sequence():
             out.append(self.subtemplate.value(item, self))
         return out
 

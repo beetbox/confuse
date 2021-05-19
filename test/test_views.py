@@ -31,6 +31,21 @@ class SingleSourceTest(unittest.TestCase):
         with self.assertRaises(confuse.NotFoundError):
             config['l'][5].get()
 
+    def test_dict_iter(self):
+        config = _root({'foo': 'bar', 'baz': 'qux'})
+        keys = [key for key in config]
+        self.assertEqual(set(keys), set(['foo', 'baz']))
+
+    def test_list_iter(self):
+        config = _root({'l': ['foo', 'bar']})
+        items = [subview.get() for subview in config['l']]
+        self.assertEqual(items, ['foo', 'bar'])
+
+    def test_int_iter(self):
+        config = _root({'n': 2})
+        with self.assertRaises(confuse.ConfigTypeError):
+            [item for item in config['n']]
+
     def test_dict_keys(self):
         config = _root({'foo': 'bar', 'baz': 'qux'})
         keys = config.keys()
@@ -50,6 +65,16 @@ class SingleSourceTest(unittest.TestCase):
         config = _root({'l': ['foo', 'bar']})
         with self.assertRaises(confuse.ConfigTypeError):
             config['l'].keys()
+
+    def test_list_sequence(self):
+        config = _root({'l': ['foo', 'bar']})
+        items = [item.get() for item in config['l'].sequence()]
+        self.assertEqual(items, ['foo', 'bar'])
+
+    def test_dict_sequence_error(self):
+        config = _root({'foo': 'bar', 'baz': 'qux'})
+        with self.assertRaises(confuse.ConfigTypeError):
+            list(config.sequence())
 
     def test_dict_contents(self):
         config = _root({'foo': 'bar', 'baz': 'qux'})
@@ -181,6 +206,16 @@ class MultipleSourceTest(unittest.TestCase):
         config = _root({'foo': {'bar': 'baz'}}, {'foo': {'bar': 'fred'}})
         items = [(key, value.get()) for (key, value) in config['foo'].items()]
         self.assertEqual(list(items), [('bar', 'baz')])
+
+    def test_list_sequence_shadowed(self):
+        config = _root({'l': ['a', 'b']}, {'l': ['c', 'd', 'e']})
+        items = [item.get() for item in config['l'].sequence()]
+        self.assertEqual(items, ['a', 'b'])
+
+    def test_list_sequence_shadowed_by_dict(self):
+        config = _root({'foo': {'bar': 'baz'}}, {'foo': ['qux', 'fred']})
+        with self.assertRaises(confuse.ConfigTypeError):
+            list(config['foo'].sequence())
 
     def test_dict_contents_concatenated(self):
         config = _root({'foo': {'bar': 'baz'}}, {'foo': {'qux': 'fred'}})
