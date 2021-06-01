@@ -75,7 +75,7 @@ Using views, you can write ``config['animal_counts'][8]`` and know that
 no exceptions will be raised until you call ``get()``, even if the
 ``animal_counts`` key does not exist. More importantly, it lets you
 write a single expression to search many different data sources without
-preemtively merging all sources together into a single data structure.
+preemptively merging all sources together into a single data structure.
 
 Views also solve an important problem with overriding collections.
 Imagine, for example, that you have a dictionary called
@@ -109,13 +109,15 @@ few methods on views that perform fancier validation or even
 conversion:
 
 * ``as_filename()``: Normalize a filename, substituting tildes and
-  absolute-ifying relative paths. The filename is relative to the source
-  that provided it. That is, a relative path in a config file refers to
-  the directory containing the config file. A relative path in the
-  defaults refers to the application's config directory
-  (``config.config_dir()``, as described below). A relative path from
-  any other source (e.g., command-line options) is relative to the
-  working directory.
+  absolute-ifying relative paths. For filenames defined in a config file,
+  by default the filename is relative to the application's config directory
+  (``Configuration.config_dir()``, as described below). However, if the config
+  file was loaded with the ``base_for_paths`` parameter set to ``True``
+  (see :ref:`Manually Specifying Config Files`), then a relative path refers
+  to the directory containing the config file. A relative path from any other
+  source (e.g., command-line options) is relative to the working directory. For
+  full control over relative path resolution, use the ``Filename`` template
+  directly.
 * ``as_choice(choices)``: Check that a value is one of the provided
   choices. The argument should be a sequence of possible values. If the
   sequence is a ``dict``, then this method returns the associated value
@@ -251,18 +253,22 @@ Manually Specifying Config Files
 --------------------------------
 
 You may want to leverage Confuse's features without :ref:`Search Paths`.
-This can be done by manually specifying the YAML files you want to include:
+This can be done by manually specifying the YAML files you want to include,
+which also allows changing how relative paths in the file will be resolved:
 
 .. code-block:: python
 
     import confuse
     # Instantiates config. Confuse searches for a config_default.yaml
     config = confuse.Configuration('MyGreatApp', __name__)
-    # Add config items from specified file
+    # Add config items from specified file. Relative path values within the
+    # file are resolved relative to the application's configuration directory.
     config.set_file('subdirectory/default_config.yaml')
     # Add config items from a second file. If some items were already defined,
-    # they will be overwritten (new file precedes the previous ones)
-    config.set_file('subdirectory/local_config.yaml')
+    # they will be overwritten (new file precedes the previous ones). With
+    # `base_for_paths` set to True, relative path values in this file will be
+    # resolved relative to the config file's directory (i.e., 'subdirectory').
+    config.set_file('subdirectory/local_config.yaml', base_for_paths=True)
 
     val = config['foo']['bar'].get(int)
 
