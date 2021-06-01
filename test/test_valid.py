@@ -450,6 +450,31 @@ class FilenameTest(unittest.TestCase):
         valid = config['foo'].get(confuse.Filename(in_source_dir=True))
         self.assertEqual(valid, os.path.realpath('/baz/foo/bar'))
 
+    def test_filename_in_source_dir_overrides_in_app_dir(self):
+        source = confuse.ConfigSource({'foo': 'foo/bar'},
+                                      filename='/baz/config.yaml')
+        config = _root(source)
+        config.config_dir = lambda: '/config/path'
+        valid = config['foo'].get(confuse.Filename(in_source_dir=True,
+                                                   in_app_dir=True))
+        self.assertEqual(valid, os.path.realpath('/baz/foo/bar'))
+
+    def test_filename_in_app_dir_non_file_source(self):
+        source = confuse.ConfigSource({'foo': 'foo/bar'})
+        config = _root(source)
+        config.config_dir = lambda: '/config/path'
+        valid = config['foo'].get(confuse.Filename(in_app_dir=True))
+        self.assertEqual(valid, os.path.realpath('/config/path/foo/bar'))
+
+    def test_filename_in_app_dir_overrides_config_source_dir(self):
+        source = confuse.ConfigSource({'foo': 'foo/bar'},
+                                      filename='/baz/config.yaml',
+                                      base_for_paths=True)
+        config = _root(source)
+        config.config_dir = lambda: '/config/path'
+        valid = config['foo'].get(confuse.Filename(in_app_dir=True))
+        self.assertEqual(valid, os.path.realpath('/config/path/foo/bar'))
+
     def test_filename_wrong_type(self):
         config = _root({'foo': 8})
         with self.assertRaises(confuse.ConfigTypeError):

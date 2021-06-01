@@ -17,7 +17,7 @@ class ConfigSource(dict):
             raise TypeError(u'filename must be a string or None')
         self.filename = filename
         self.default = default
-        self.base_for_paths = base_for_paths
+        self.base_for_paths = base_for_paths if filename is not None else False
 
     def __repr__(self):
         return 'ConfigSource({0!r}, {1!r}, {2!r}, {3!r})'.format(

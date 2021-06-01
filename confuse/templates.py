@@ -504,6 +504,9 @@ class Filename(Template):
         if self.in_app_dir:
             args.append('in_app_dir=True')
 
+        if self.in_source_dir:
+            args.append('in_source_dir=True')
+
         return 'Filename({0})'.format(', '.join(args))
 
     def resolve_relative_to(self, view, template):
@@ -582,8 +585,8 @@ class Filename(Template):
                     path,
                 )
 
-            elif source.filename and (source.base_for_paths
-                                      or self.in_source_dir):
+            elif ((source.filename and self.in_source_dir)
+                  or (source.base_for_paths and not self.in_app_dir)):
                 # relative to the directory the source file is in.
                 path = os.path.join(os.path.dirname(source.filename), path)
 
