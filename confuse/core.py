@@ -106,25 +106,24 @@ class ConfigView(object):
         """Iterate over the keys of a dictionary view or the *subviews*
         of a list view.
         """
-        # Try getting the keys, if this is a dictionary view.
+        # Try iterating over the keys, if this is a dictionary view.
         try:
-            keys = self.keys()
-            for key in keys:
+            for key in self.keys():
                 yield key
 
         except ConfigTypeError:
-            # Otherwise, try iterating over a list.
-            collection = self.get()
-            if not isinstance(collection, (list, tuple)):
+            # Otherwise, try iterating over a list view.
+            try:
+                for subview in self.sequence():
+                    yield subview
+
+            except ConfigTypeError:
+                item, _ = self.first()
                 raise ConfigTypeError(
                     u'{0} must be a dictionary or a list, not {1}'.format(
-                        self.name, type(collection).__name__
+                        self.name, type(item).__name__
                     )
                 )
-
-            # Yield all the indices in the list.
-            for index in range(len(collection)):
-                yield self[index]
 
     def __getitem__(self, key):
         """Get a subview of this view."""
@@ -294,6 +293,26 @@ class ConfigView(object):
             yield self[key]
 
     # List/sequence emulation.
+
+    def sequence(self):
+        """Iterates over the subviews contained in lists from the *first*
+        source at this view. If the object for this view in the first source
+        is not a list or tuple, then a `ConfigTypeError` is raised.
+        """
+        try:
+            collection, _ = self.first()
+        except NotFoundError:
+            return
+        if not isinstance(collection, (list, tuple)):
+            raise ConfigTypeError(
+                u'{0} must be a list, not {1}'.format(
+                    self.name, type(collection).__name__
+                )
+            )
+
+        # Yield all the indices in the sequence.
+        for index in range(len(collection)):
+            yield self[index]
 
     def all_contents(self):
         """Iterates over all subviews from collections at this view from

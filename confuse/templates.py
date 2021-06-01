@@ -70,10 +70,14 @@ class Template(object):
         return self.get_default_value(view.name)
 
     def get_default_value(self, key_name='default'):
-        if self.default is REQUIRED:
-            # Missing required value. This is an error.
+        """Get the default value to return when the value is missing.
+
+        May raise a `NotFoundError` if the value is required.
+        """
+        if not hasattr(self, 'default') or self.default is REQUIRED:
+            # The value is required. A missing value is an error.
             raise exceptions.NotFoundError(u"{} not found".format(key_name))
-        # Missing value, but not required.
+        # The value is not required.
         return self.default
 
     def convert(self, value, view):
@@ -177,12 +181,39 @@ class Sequence(Template):
         """Get a list of items validated against the template.
         """
         out = []
-        for item in view:
+        for item in view.sequence():
             out.append(self.subtemplate.value(item, self))
         return out
 
     def __repr__(self):
         return 'Sequence({0})'.format(repr(self.subtemplate))
+
+
+class MappingValues(Template):
+    """A template used to validate mappings of similar items,
+    based on a given subtemplate applied to the values.
+
+    All keys in the mapping are considered valid, but values
+    must pass validation by the subtemplate. Similar to the
+    Sequence template but for mappings.
+    """
+    def __init__(self, subtemplate):
+        """Create a template for a mapping with variable keys
+        and item values validated on a given subtemplate.
+        """
+        self.subtemplate = as_template(subtemplate)
+
+    def value(self, view, template=None):
+        """Get a dict with the same keys as the view and the
+        value of each item validated against the subtemplate.
+        """
+        out = {}
+        for key, item in view.items():
+            out[key] = self.subtemplate.value(item, self)
+        return out
+
+    def __repr__(self):
+        return 'MappingValues({0})'.format(repr(self.subtemplate))
 
 
 class String(Template):
@@ -578,6 +609,50 @@ class Path(Filename):
             return
         import pathlib
         return pathlib.Path(value)
+
+
+class Optional(Template):
+    """A template that makes a subtemplate optional.
+
+    If the value is present and not null, it must validate against the
+    subtemplate. However, if the value is null or missing, the template will
+    still validate, returning a default value. If `allow_missing` is False,
+    the template will not allow missing values while still permitting null.
+    """
+
+    def __init__(self, subtemplate, default=None, allow_missing=True):
+        self.subtemplate = as_template(subtemplate)
+        if default is None:
+            # When no default is passed, try to use the subtemplate's
+            # default value as the default for this template
+            try:
+                default = self.subtemplate.get_default_value()
+            except exceptions.NotFoundError:
+                pass
+        self.default = default
+        self.allow_missing = allow_missing
+
+    def value(self, view, template=None):
+        try:
+            value, _ = view.first()
+        except exceptions.NotFoundError:
+            if self.allow_missing:
+                # Value is missing but not required
+                return self.default
+            # Value must be present even though it can be null. Raise an error.
+            raise exceptions.NotFoundError(u'{} not found'.format(view.name))
+
+        if value is None:
+            # None (ie, null) is always a valid value
+            return self.default
+        return self.subtemplate.value(view, self)
+
+    def __repr__(self):
+        return 'Optional({0}, {1}, allow_missing={2})'.format(
+            repr(self.subtemplate),
+            repr(self.default),
+            self.allow_missing,
+        )
 
 
 class TypeTemplate(Template):
