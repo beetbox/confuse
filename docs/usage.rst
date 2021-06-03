@@ -117,7 +117,7 @@ conversion:
   to the directory containing the config file. A relative path from any other
   source (e.g., command-line options) is relative to the working directory. For
   full control over relative path resolution, use the ``Filename`` template
-  directly.
+  directly (see :ref:`Filename`).
 * ``as_choice(choices)``: Check that a value is one of the provided
   choices. The argument should be a sequence of possible values. If the
   sequence is a ``dict``, then this method returns the associated value
