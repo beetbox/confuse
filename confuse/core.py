@@ -649,11 +649,18 @@ class Configuration(RootView):
             os.makedirs(appdir)
         return appdir
 
-    def set_file(self, filename):
+    def set_file(self, filename, base_for_paths=False):
         """Parses the file as YAML and inserts it into the configuration
         sources with highest priority.
+
+        :param filename: Filename of the YAML file to load.
+        :param base_for_paths: Indicates whether the directory containing the
+            YAML file will be used as the base directory for resolving relative
+            path values stored in the YAML file. Otherwise, by default, the
+            directory returned by `config_dir()` will be used as the base.
         """
-        self.set(YamlSource(filename, loader=self.loader))
+        self.set(YamlSource(filename, base_for_paths=base_for_paths,
+                            loader=self.loader))
 
     def dump(self, full=True, redact=False):
         """Dump the Configuration object to a YAML file.

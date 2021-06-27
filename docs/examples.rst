@@ -205,6 +205,233 @@ provided to ``MappingValues``, then an error will be raised:
 categories.no_description.description not found
 
 
+Filename
+--------
+
+A ``Filename`` template validates a string as a filename, which is normalized
+and returned as an absolute, tilde-free path. By default, relative path values
+that are provided in config files are resolved relative to the application's
+configuration directory, as returned by ``Configuration.config_dir()``, while
+relative paths from command-line options are resolved from the current working
+directory. However, these default relative path behaviors can be changed using
+the ``cwd``, ``relative_to``, ``in_app_dir``, or ``in_source_dir`` parameters
+to the ``Filename`` template. In addition, relative path resolution for an
+entire source file can be changed by creating a ``ConfigSource`` with the
+``base_for_paths`` parameter set to True. Setting the behavior at the
+source-level can be useful when all ``Filename`` templates should be relative
+to the source. The template-level parameters provide more fine-grained control.
+
+While the directory used for resolving relative paths can be controlled, the
+``Filename`` template should not be used to guarantee that a file is contained
+within a given directory, because an absolute path may be provided and will not
+be subject to resolution. In addition, ``Filename`` validation only ensures
+that the filename is a valid path on the platform where the application is
+running, not that the file or any parent directories exist or could be created.
+
+.. note::
+    Running the example below will create the application config directory
+    ``~/.config/ExampleApp/`` on MacOS and Unix machines or
+    ``%APPDATA%\ExampleApp\`` on Windows machines. The filenames in the sample
+    output will also be different on your own machine because the paths to
+    the config files and the current working directory will be different.
+
+For this example, we will validate a configuration with filenames that should
+be resolved as follows:
+
+* ``library``: a filename that should always be resolved relative to the
+  application's config directory
+* ``media_dir``: a directory that should always be resolved relative to the
+  source config file that provides that value
+* ``photo_dir`` and ``video_dir``: subdirectories that should be resolved
+  relative of the value of ``media_dir``
+* ``temp_dir``: a directory that should be resolved relative to ``/tmp/``
+* ``log``: a filename that follows the default ``Filename`` template behavior
+
+The initial user config file will be at ``~/.config/ExampleApp/config.yaml``,
+where it will be discovered automatically using the :ref:`Search Paths`, and
+has the following contents:
+
+.. code-block:: yaml
+
+    library: library.db
+    media_dir: media
+    photo_dir: my_photos
+    video_dir: my_videos
+    temp_dir: example_tmp
+    log: example.log
+
+Validation of this initial user configuration could be performed as follows:
+
+>>> import confuse
+>>> import pprint
+>>> config = confuse.Configuration('ExampleApp', __name__)  # Loads user config
+>>> print(config.config_dir())  # Application config directory
+/home/user/.config/ExampleApp
+>>> template = {
+...     'library': confuse.Filename(in_app_dir=True),
+...     'media_dir': confuse.Filename(in_source_dir=True),
+...     'photo_dir': confuse.Filename(relative_to='media_dir'),
+...     'video_dir': confuse.Filename(relative_to='media_dir'),
+...     'temp_dir': confuse.Filename(cwd='/tmp'),
+...     'log': confuse.Filename(),
+... }
+>>> valid_config = config.get(template)
+>>> pprint.pprint(valid_config)
+{'library': '/home/user/.config/ExampleApp/library.db',
+ 'log': '/home/user/.config/ExampleApp/example.log',
+ 'media_dir': '/home/user/.config/ExampleApp/media',
+ 'photo_dir': '/home/user/.config/ExampleApp/media/my_photos',
+ 'temp_dir': '/tmp/example_tmp',
+ 'video_dir': '/home/user/.config/ExampleApp/media/my_videos'}
+
+Because the user configuration file ``config.yaml`` was in the application's
+configuration directory of ``/home/user/.config/ExampleApp/``, all of the
+filenames are below ``/home/user/.config/ExampleApp/`` except for ``temp_dir``,
+whose template used the ``cwd`` parameter. However, if the following YAML file
+is then loaded from ``/var/tmp/example/config.yaml`` as a higher-level source,
+some of the paths will no longer be relative to the application config
+directory:
+
+.. code-block:: yaml
+
+    library: new_library.db
+    media_dir: new_media
+    photo_dir: new_photos
+    # video_dir: my_videos  # Not overridden
+    temp_dir: ./new_example_tmp
+    log: new_example.log
+
+Continuing the example code from above:
+
+>>> config.set_file('/var/tmp/example/config.yaml')
+>>> updated_config = config.get(template)
+>>> pprint.pprint(updated_config)
+{'library': '/home/user/.config/ExampleApp/new_library.db',
+ 'log': '/home/user/.config/ExampleApp/new_example.log',
+ 'media_dir': '/var/tmp/example/new_media',
+ 'photo_dir': '/var/tmp/example/new_media/new_photos',
+ 'temp_dir': '/tmp/new_example_tmp',
+ 'video_dir': '/var/tmp/example/new_media/my_videos'}
+
+Now, the ``media_dir`` and its subdirectories are relative to the directory
+containing the new source file, because the ``media_dir`` template used the
+``in_source_dir`` parameter. However, ``log`` remains in the application config
+directory because it uses the default ``Filename`` template behavior. The base
+directories for the ``library`` and ``temp_dir`` items are also not affected.
+
+If the previous YAML file is instead loaded with the ``base_for_paths``
+parameter set to True, then a default ``Filename`` template will use that
+config file's directory as the base for resolving relative paths:
+
+>>> config.set_file('/var/tmp/example/config.yaml', base_for_paths=True)
+>>> updated_config = config.get(template)
+>>> pprint.pprint(updated_config)
+{'library': '/home/user/.config/ExampleApp/new_library.db',
+ 'log': '/var/tmp/example/new_example.log',
+ 'media_dir': '/var/tmp/example/new_media',
+ 'photo_dir': '/var/tmp/example/new_media/new_photos',
+ 'temp_dir': '/tmp/new_example_tmp',
+ 'video_dir': '/var/tmp/example/new_media/my_videos'}
+
+The filename for ``log`` is now within the directory containing the new source
+file. However, the directory for the ``library`` file has not changed since its
+template uses the ``in_app_dir`` parameter, which takes precedence over the
+source's ``base_for_paths`` setting. The template-level ``cwd`` parameter, used
+with ``temp_dir``, also takes precedence over the source setting.
+
+For configuration values set from command-line options, relative paths will be
+resolved from the current working directory by default, but the ``cwd``,
+``relative_to``, and ``in_app_dir`` template parameters alter that behavior.
+Continuing the example code from above, command-line options are mimicked here
+by splitting a mock command line string and parsing it with ``argparse``:
+
+>>> import os
+>>> print(os.getcwd())  # Current working directory
+/home/user
+>>> import argparse
+>>> parser = argparse.ArgumentParser()
+>>> parser.add_argument('--library')
+>>> parser.add_argument('--media_dir')
+>>> parser.add_argument('--photo_dir')
+>>> parser.add_argument('--temp_dir')
+>>> parser.add_argument('--log')
+>>> cmd_line=('--library cmd_line_library --media_dir cmd_line_media '
+...           '--photo_dir cmd_line_photo --temp_dir cmd_line_tmp '
+...           '--log cmd_line_log')
+>>> args = parser.parse_args(cmd_line.split())
+>>> config.set_args(args)
+>>> config_with_cmdline = config.get(template)
+>>> pprint.pprint(config_with_cmdline)
+{'library': '/home/user/.config/ExampleApp/cmd_line_library',
+ 'log': '/home/user/cmd_line_log',
+ 'media_dir': '/home/user/cmd_line_media',
+ 'photo_dir': '/home/user/cmd_line_media/cmd_line_photo',
+ 'temp_dir': '/tmp/cmd_line_tmp',
+ 'video_dir': '/home/user/cmd_line_media/my_videos'}
+
+Now the ``log`` and ``media_dir`` paths are relative to the current working
+directory of ``/home/user``, while the ``photo_dir`` and ``video_dir`` paths
+remain relative to the updated ``media_dir`` path. The ``library`` and
+``temp_dir`` paths are still resolved as before, because those templates used
+``in_app_dir`` and ``cwd``, respectively.
+
+If a configuration value is provided as an absolute path, the path will be
+normalized but otherwise unchanged. Here is an example of overridding earlier
+values with absolute paths:
+
+>>> config.set({
+...     'library': '~/home_library.db',
+...     'media_dir': '/media',
+...     'video_dir': '/video_not_under_media',
+...     'temp_dir': '/var/./remove_me/..//tmp',
+...     'log': '/var/log/example.log',
+... })
+>>> absolute_config = config.get(template)
+>>> pprint.pprint(absolute_config)
+{'library': '/home/user/home_library.db',
+ 'log': '/var/log/example.log',
+ 'media_dir': '/media',
+ 'photo_dir': '/media/cmd_line_photo',
+ 'temp_dir': '/var/tmp',
+ 'video_dir': '/video_not_under_media'}
+
+The paths for ``library`` and ``temp_dir`` have been normalized, but are not
+impacted by their template parameters. Since ``photo_dir`` was not overridden,
+the previous relative path value is now being resolved from the new
+``media_dir`` absolute path. However, the ``video_dir`` was set to an absolute
+path and is no longer a subdirectory of ``media_dir``.
+
+
+Path
+----
+
+A ``Path`` template works the same as a ``Filename`` template, but returns
+a ``pathlib.Path`` object instead of a string. Using the same initial example
+as above for ``Filename`` but with ``Path`` templates gives the following:
+
+>>> import confuse
+>>> import pprint
+>>> config = confuse.Configuration('ExampleApp', __name__)
+>>> print(config.config_dir())  # Application config directory
+/home/user/.config/ExampleApp
+>>> template = {
+...     'library': confuse.Path(in_app_dir=True),
+...     'media_dir': confuse.Path(in_source_dir=True),
+...     'photo_dir': confuse.Path(relative_to='media_dir'),
+...     'video_dir': confuse.Path(relative_to='media_dir'),
+...     'temp_dir': confuse.Path(cwd='/tmp'),
+...     'log': confuse.Path(),
+... }
+>>> valid_config = config.get(template)
+>>> pprint.pprint(valid_config)
+{'library': PosixPath('/home/user/.config/ExampleApp/library.db'),
+ 'log': PosixPath('/home/user/.config/ExampleApp/example.log'),
+ 'media_dir': PosixPath('/home/user/.config/ExampleApp/media'),
+ 'photo_dir': PosixPath('/home/user/.config/ExampleApp/media/my_photos'),
+ 'temp_dir': PosixPath('/tmp/example_tmp'),
+ 'video_dir': PosixPath('/home/user/.config/ExampleApp/media/my_videos')}
+
+
 Optional
 --------
 

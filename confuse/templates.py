@@ -462,24 +462,32 @@ class Filename(Template):
     Filenames are returned as absolute, tilde-free paths.
 
     Relative paths are relative to the template's `cwd` argument
-    when it is specified, then the configuration directory (see
-    the `config_dir` method) if they come from a file. Otherwise,
-    they are relative to the current working directory. This helps
-    attain the expected behavior when using command-line options.
+    when it is specified. Otherwise, if the paths come from a file,
+    they will be relative to the configuration directory (see the
+    `config_dir` method) by default or to the base directory of the
+    config file if either the source has `base_for_paths` set to True
+    or the template has `in_source_dir` set to True. Paths from sources
+    without a file are relative to the current working directory. This
+    helps attain the expected behavior when using command-line options.
     """
     def __init__(self, default=REQUIRED, cwd=None, relative_to=None,
-                 in_app_dir=False):
+                 in_app_dir=False, in_source_dir=False):
         """`relative_to` is the name of a sibling value that is
         being validated at the same time.
 
         `in_app_dir` indicates whether the path should be resolved
         inside the application's config directory (even when the setting
         does not come from a file).
+
+        `in_source_dir` indicates whether the path should be resolved
+        relative to the directory containing the source file, if there is
+        one, taking precedence over the application's config directory.
         """
         super(Filename, self).__init__(default)
         self.cwd = cwd
         self.relative_to = relative_to
         self.in_app_dir = in_app_dir
+        self.in_source_dir = in_source_dir
 
     def __repr__(self):
         args = []
@@ -495,6 +503,9 @@ class Filename(Template):
 
         if self.in_app_dir:
             args.append('in_app_dir=True')
+
+        if self.in_source_dir:
+            args.append('in_source_dir=True')
 
         return 'Filename({0})'.format(', '.join(args))
 
@@ -573,6 +584,11 @@ class Filename(Template):
                     self.resolve_relative_to(view, template),
                     path,
                 )
+
+            elif ((source.filename and self.in_source_dir)
+                  or (source.base_for_paths and not self.in_app_dir)):
+                # relative to the directory the source file is in.
+                path = os.path.join(os.path.dirname(source.filename), path)
 
             elif source.filename or self.in_app_dir:
                 # From defaults: relative to the app's directory.
