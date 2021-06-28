@@ -1,6 +1,18 @@
 Changelog
 ---------
 
+v1.5.0
+''''''
+
+- A new `MappingValues` template behaves like `Sequence` but for mappings with
+  arbitrary keys.
+- A new `Optional` template allows other templates to be null.
+- `Filename` templates now have an option to resolve relative to a specific
+  directory. Also, configuration sources now have a corresponding global
+  option to resolve relative to the base configuration directory instead of
+  the location of the specific configuration file.
+- There is a better error message for `Sequence` templates when the data from
+  the configuration is not a sequence.
 
 v1.4.0
 ''''''
