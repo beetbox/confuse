@@ -701,6 +701,12 @@ class Configuration(RootView):
 
         return yaml_out
 
+    def reload(self):
+        """Reload all the sources of the Configuration"""
+        for source in self.sources:
+            if isinstance(source, YamlSource):
+                source.load()
+
 
 class LazyConfig(Configuration):
     """A Configuration at reads files on demand when it is first
