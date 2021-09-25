@@ -39,6 +39,17 @@ class FileParseTest(unittest.TestCase):
         else:
             self.fail('ConfigError not raised')
 
+    def test_reload_conf(self):
+        with TempDir() as temp:
+            path = temp.sub('test_config.yaml', b'foo: bar')
+            config = confuse.Configuration('test', __name__)
+            config.set_file(filename=path)
+            self.assertEqual(config['foo'].get(), 'bar')
+            temp.sub('test_config.yaml', b'foo: bar2\ntest: hello world')
+            config.reload()
+            self.assertEqual(config['foo'].get(), 'bar2')
+            self.assertEqual(config['test'].get(), 'hello world')
+
     def test_tab_indentation_error(self):
         try:
             self._parse_contents(b"foo:\n\tbar: baz")
