@@ -702,7 +702,12 @@ class Configuration(RootView):
         return yaml_out
 
     def reload(self):
-        """Reload all the sources of the Configuration"""
+        """Reload all sources from the file system.
+
+        This only affects sources that come from files (i.e.,
+        `YamlSource` objects); other sources, such as dictionaries
+        inserted with `add` or `set`, will remain unchanged.
+        """
         for source in self.sources:
             if isinstance(source, YamlSource):
                 source.load()
