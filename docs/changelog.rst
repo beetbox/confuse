@@ -1,6 +1,12 @@
 Changelog
 ---------
 
+v1.6.0
+''''''
+
+- A new `Configuration.reload` method makes it convenient to reload and
+  re-parse all YAML files from the file system.
+
 v1.5.0
 ''''''
 
