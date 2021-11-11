@@ -645,8 +645,8 @@ class Configuration(RootView):
                 appdir = os.path.join(configdirs[0], self.appname)
 
         # Ensure that the directory exists.
-        if not os.path.isdir(appdir):
-            os.makedirs(appdir)
+        os.makedirs(appdir, exist_ok=True)
+        
         return appdir
 
     def set_file(self, filename, base_for_paths=False):
