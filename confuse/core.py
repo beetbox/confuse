@@ -646,7 +646,7 @@ class Configuration(RootView):
 
         # Ensure that the directory exists.
         os.makedirs(appdir, exist_ok=True)
-        
+
         return appdir
 
     def set_file(self, filename, base_for_paths=False):
