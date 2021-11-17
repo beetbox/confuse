@@ -1,6 +1,11 @@
 Changelog
 ---------
 
+v1.6.1
+''''''
+
+- Resolve a possible race condition when creating configuration directories.
+
 v1.6.0
 ''''''
 
