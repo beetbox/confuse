@@ -17,6 +17,7 @@
 """
 from __future__ import division, absolute_import, print_function
 
+import errno
 import os
 import yaml
 from collections import OrderedDict
@@ -645,8 +646,12 @@ class Configuration(RootView):
                 appdir = os.path.join(configdirs[0], self.appname)
 
         # Ensure that the directory exists.
-        if not os.path.isdir(appdir):
+        try:
             os.makedirs(appdir)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+
         return appdir
 
     def set_file(self, filename, base_for_paths=False):
