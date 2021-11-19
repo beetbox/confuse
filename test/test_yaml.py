@@ -57,3 +57,51 @@ class FileParseTest(unittest.TestCase):
             self.assertTrue('found tab' in exc.args[0])
         else:
             self.fail('ConfigError not raised')
+
+
+class ParseAsScalarTest(unittest.TestCase):
+    def test_text_string(self):
+        v = confuse.yaml_util.parse_as_scalar('foo', confuse.Loader)
+        self.assertEqual(v, 'foo')
+
+    def test_number_string_to_int(self):
+        v = confuse.yaml_util.parse_as_scalar('1', confuse.Loader)
+        self.assertIsInstance(v, int)
+        self.assertEqual(v, 1)
+
+    def test_number_string_to_float(self):
+        v = confuse.yaml_util.parse_as_scalar('1.0', confuse.Loader)
+        self.assertIsInstance(v, float)
+        self.assertEqual(v, 1.0)
+
+    def test_bool_string_to_bool(self):
+        v = confuse.yaml_util.parse_as_scalar('true', confuse.Loader)
+        self.assertIs(v, True)
+
+    def test_empty_string_to_none(self):
+        v = confuse.yaml_util.parse_as_scalar('', confuse.Loader)
+        self.assertIs(v, None)
+
+    def test_null_string_to_none(self):
+        v = confuse.yaml_util.parse_as_scalar('null', confuse.Loader)
+        self.assertIs(v, None)
+
+    def test_dict_string_unchanged(self):
+        v = confuse.yaml_util.parse_as_scalar('{"foo": "bar"}', confuse.Loader)
+        self.assertEqual(v, '{"foo": "bar"}')
+
+    def test_dict_unchanged(self):
+        v = confuse.yaml_util.parse_as_scalar({'foo': 'bar'}, confuse.Loader)
+        self.assertEqual(v, {'foo': 'bar'})
+
+    def test_list_string_unchanged(self):
+        v = confuse.yaml_util.parse_as_scalar('["foo", "bar"]', confuse.Loader)
+        self.assertEqual(v, '["foo", "bar"]')
+
+    def test_list_unchanged(self):
+        v = confuse.yaml_util.parse_as_scalar(['foo', 'bar'], confuse.Loader)
+        self.assertEqual(v, ['foo', 'bar'])
+
+    def test_invalid_yaml_string_unchanged(self):
+        v = confuse.yaml_util.parse_as_scalar('!', confuse.Loader)
+        self.assertEqual(v, '!')
