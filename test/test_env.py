@@ -175,3 +175,62 @@ class EnvSourceTest(unittest.TestCase):
         os.environ['TEST_FOO__BAZ'] = 'b'
         config = _root(confuse.EnvSource('TEST_', handle_lists=True))
         self.assertEqual(config['foo'].get(), {'bar': 'a', 'baz': 'b'})
+
+    def test_parse_yaml_docs_scalar(self):
+        os.environ['TEST_FOO'] = 'a'
+        config = _root(confuse.EnvSource('TEST_', parse_yaml_docs=True))
+        self.assertEqual(config['foo'].get(), 'a')
+
+    def test_parse_yaml_docs_list(self):
+        os.environ['TEST_FOO'] = '[a, b]'
+        config = _root(confuse.EnvSource('TEST_', parse_yaml_docs=True))
+        self.assertEqual(config['foo'].get(), ['a', 'b'])
+
+    def test_parse_yaml_docs_dict(self):
+        os.environ['TEST_FOO'] = '{bar: a, baz: b}'
+        config = _root(confuse.EnvSource('TEST_', parse_yaml_docs=True))
+        self.assertEqual(config['foo'].get(), {'bar': 'a', 'baz': 'b'})
+
+    def test_parse_yaml_docs_nested(self):
+        os.environ['TEST_FOO'] = '{bar: [a, b], baz: {qux: c}}'
+        config = _root(confuse.EnvSource('TEST_', parse_yaml_docs=True))
+        self.assertEqual(config['foo']['bar'].get(), ['a', 'b'])
+        self.assertEqual(config['foo']['baz'].get(), {'qux': 'c'})
+
+    def test_parse_yaml_docs_number_conversion(self):
+        os.environ['TEST_FOO'] = '{bar: 1, baz: 2.0}'
+        config = _root(confuse.EnvSource('TEST_', parse_yaml_docs=True))
+        bar = config['foo']['bar'].get()
+        baz = config['foo']['baz'].get()
+        self.assertIsInstance(bar, int)
+        self.assertEqual(bar, 1)
+        self.assertIsInstance(baz, float)
+        self.assertEqual(baz, 2.0)
+
+    def test_parse_yaml_docs_bool_conversion(self):
+        os.environ['TEST_FOO'] = '{bar: true, baz: FALSE}'
+        config = _root(confuse.EnvSource('TEST_', parse_yaml_docs=True))
+        self.assertIs(config['foo']['bar'].get(), True)
+        self.assertIs(config['foo']['baz'].get(), False)
+
+    def test_parse_yaml_docs_null_conversion(self):
+        os.environ['TEST_FOO'] = '{bar: null, baz: }'
+        config = _root(confuse.EnvSource('TEST_', parse_yaml_docs=True))
+        self.assertIs(config['foo']['bar'].get(), None)
+        self.assertIs(config['foo']['baz'].get(), None)
+
+    def test_parse_yaml_docs_syntax_error(self):
+        os.environ['TEST_FOO'] = '{:}'
+        try:
+            _root(confuse.EnvSource('TEST_', parse_yaml_docs=True))
+        except confuse.ConfigError as exc:
+            self.assertTrue('TEST_FOO' in exc.name)
+        else:
+            self.fail('ConfigError not raised')
+
+    def test_parse_yaml_docs_false(self):
+        os.environ['TEST_FOO'] = '{bar: a, baz: b}'
+        config = _root(confuse.EnvSource('TEST_', parse_yaml_docs=False))
+        self.assertEqual(config['foo'].get(), '{bar: a, baz: b}')
+        with self.assertRaises(confuse.ConfigError):
+            config['foo']['bar'].get()

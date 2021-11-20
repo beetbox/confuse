@@ -90,7 +90,7 @@ class EnvSource(ConfigSource):
     """A configuration data source loaded from environment variables.
     """
     def __init__(self, prefix, sep='__', lower=True, handle_lists=True,
-                 loader=yaml_util.Loader):
+                 parse_yaml_docs=False, loader=yaml_util.Loader):
         """Create a configuration source from the environment.
 
         :param prefix: The prefix used to identify the environment variables
@@ -105,6 +105,10 @@ class EnvSource(ConfigSource):
             whether to search for sub-dicts with keys that are sequential
             integers starting from 0 and convert those dicts to lists.
 
+        :param parse_yaml_docs: Enable parsing the values of environment
+            variables as full YAML documents. By default, when False, values
+            are parsed only as YAML scalars.
+
         :param loader: PyYAML Loader class to use to parse YAML values.
         """
         super(EnvSource, self).__init__({}, filename=None, default=False,
@@ -113,6 +117,7 @@ class EnvSource(ConfigSource):
         self.sep = sep
         self.lower = lower
         self.handle_lists = handle_lists
+        self.parse_yaml_docs = parse_yaml_docs
         self.loader = loader
         self.load()
 
@@ -126,10 +131,21 @@ class EnvSource(ConfigSource):
                 key = var[len(self.prefix):]
                 if self.lower:
                     key = key.lower()
-                # Parse the value as a YAML scalar so that values are type
-                # converted using the same rules as the YAML Loader (ie,
-                # numeric string to int/float, 'true' to True, etc.)
-                value = yaml_util.parse_as_scalar(value, loader=self.loader)
+                if self.parse_yaml_docs:
+                    # Parse the value as a YAML document, which will convert
+                    # string representations of dicts and lists into the
+                    # appropriate object (ie, '{foo: bar}' to {'foo': 'bar'}).
+                    # Will raise a ConfigReadError if YAML parsing fails.
+                    value = yaml_util.load_yaml_string(value,
+                                                       'env variable ' + var,
+                                                       loader=self.loader)
+                else:
+                    # Parse the value as a YAML scalar so that values are type
+                    # converted using the same rules as the YAML Loader (ie,
+                    # numeric string to int/float, 'true' to True, etc.). Will
+                    # not raise a ConfigReadError.
+                    value = yaml_util.parse_as_scalar(value,
+                                                      loader=self.loader)
                 config_vars[key] = value
         if self.sep:
             # Build a nested dict, keeping keys with `None` values to allow

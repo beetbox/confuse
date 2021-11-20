@@ -35,7 +35,7 @@ class FileParseTest(unittest.TestCase):
         try:
             self._parse_contents(b':')
         except confuse.ConfigError as exc:
-            self.assertTrue('test_config.yaml' in exc.filename)
+            self.assertTrue('test_config.yaml' in exc.name)
         else:
             self.fail('ConfigError not raised')
 
@@ -53,6 +53,28 @@ class FileParseTest(unittest.TestCase):
     def test_tab_indentation_error(self):
         try:
             self._parse_contents(b"foo:\n\tbar: baz")
+        except confuse.ConfigError as exc:
+            self.assertTrue('found tab' in exc.args[0])
+        else:
+            self.fail('ConfigError not raised')
+
+
+class StringParseTest(unittest.TestCase):
+    def test_load_string(self):
+        v = confuse.load_yaml_string('foo: bar', 'test')
+        self.assertEqual(v['foo'], 'bar')
+
+    def test_string_syntax_error(self):
+        try:
+            confuse.load_yaml_string(':', 'test')
+        except confuse.ConfigError as exc:
+            self.assertTrue('test' in exc.name)
+        else:
+            self.fail('ConfigError not raised')
+
+    def test_string_tab_indentation_error(self):
+        try:
+            confuse.load_yaml_string('foo:\n\tbar: baz', 'test')
         except confuse.ConfigError as exc:
             self.assertTrue('found tab' in exc.args[0])
         else:

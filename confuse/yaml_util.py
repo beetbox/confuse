@@ -89,6 +89,21 @@ def load_yaml(filename, loader=Loader):
         raise ConfigReadError(filename, exc)
 
 
+def load_yaml_string(yaml_string, name, loader=Loader):
+    """Read a YAML document from a string. If the string cannot be parsed,
+    a ConfigReadError is raised.
+    `yaml_string` is a string to be parsed as a YAML document.
+    `name` is the name to use in error messages.
+    `loader` is the PyYAML Loader class to use to parse the YAML. By default,
+    this is Confuse's own Loader class, which is like SafeLoader with
+    extra constructors.
+    """
+    try:
+        return yaml.load(yaml_string, Loader=loader)
+    except yaml.error.YAMLError as exc:
+        raise ConfigReadError(name, exc)
+
+
 def parse_as_scalar(value, loader=Loader):
     """Parse a value as if it were a YAML scalar to perform type conversion
     that is consistent with YAML documents.
