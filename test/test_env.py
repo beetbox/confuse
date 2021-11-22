@@ -234,3 +234,37 @@ class EnvSourceTest(unittest.TestCase):
         self.assertEqual(config['foo'].get(), '{bar: a, baz: b}')
         with self.assertRaises(confuse.ConfigError):
             config['foo']['bar'].get()
+
+
+class ConfigEnvTest(unittest.TestCase):
+    def setUp(self):
+        self.config = confuse.Configuration('TestApp', read=False)
+        os.environ = {
+            'TESTAPP_FOO': 'a',
+            'TESTAPP_BAR__NESTED': 'b',
+            'TESTAPP_BAZ_SEP_NESTED': 'c',
+            'MYAPP_QUX_SEP_NESTED': 'd'
+        }
+
+    def tearDown(self):
+        os.environ = ENVIRON
+
+    def test_defaults(self):
+        self.config.set_env()
+        self.assertEqual(self.config.get(), {'foo': 'a',
+                                             'bar': {'nested': 'b'},
+                                             'baz_sep_nested': 'c'})
+
+    def test_with_prefix(self):
+        self.config.set_env(prefix='MYAPP_')
+        self.assertEqual(self.config.get(), {'qux_sep_nested': 'd'})
+
+    def test_with_sep(self):
+        self.config.set_env(sep='_sep_')
+        self.assertEqual(self.config.get(), {'foo': 'a',
+                                             'bar__nested': 'b',
+                                             'baz': {'nested': 'c'}})
+
+    def test_with_prefix_and_sep(self):
+        self.config.set_env(prefix='MYAPP_', sep='_sep_')
+        self.assertEqual(self.config.get(), {'qux': {'nested': 'd'}})

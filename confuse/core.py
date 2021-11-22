@@ -25,7 +25,7 @@ from collections import OrderedDict
 from . import util
 from . import templates
 from . import yaml_util
-from .sources import ConfigSource, YamlSource
+from .sources import ConfigSource, EnvSource, YamlSource
 from .exceptions import ConfigTypeError, NotFoundError, ConfigError
 
 CONFIG_FILENAME = 'config.yaml'
@@ -603,6 +603,28 @@ class Configuration(RootView):
         """
         self.set(YamlSource(filename, base_for_paths=base_for_paths,
                             loader=self.loader))
+
+    def set_env(self, prefix=None, sep='__'):
+        """Create a configuration overlay at the highest priority from
+        environment variables.
+
+        After prefix matching and removal, environment variable names will be
+        converted to lowercase for use as keys within the configuration. If
+        there are nested keys, list-like dicts (ie, `{0: 'a', 1: 'b'}`) will
+        be converted into corresponding lists (ie, `['a', 'b']`). The values
+        of all environment variables will be parsed as YAML scalars using the
+        `self.loader` Loader class to ensure type conversion is consistent
+        with YAML file sources. Use the `EnvSource` class directly to load
+        environment variables using non-default behavior and to enable full
+        YAML parsing of values.
+
+        :param prefix: The prefix to identify the environment variables to use.
+            Defaults to uppercased `self.appname` followed by an underscore.
+        :param sep: Separator within variable names to define nested keys.
+        """
+        if prefix is None:
+            prefix = '{0}_'.format(self.appname.upper())
+        self.set(EnvSource(prefix, sep=sep, loader=self.loader))
 
     def dump(self, full=True, redact=False):
         """Dump the Configuration object to a YAML file.
