@@ -222,6 +222,97 @@ command-line switches. Otherwise, the argparse/optparse default value
 will hide options configured elsewhere.
 
 
+Environment Variables
+---------------------
+
+Confuse supports using environment variables as another source to provide an
+additional layer of configuration. The environment variables to include are
+identified by a prefix, which defaults to the uppercased name of your
+application followed by an underscore. Matching environment variable names
+are first stripped of this prefix and then lowercased to determine the
+corresponding configuration option. To load the environment variables for
+your application using the default prefix, just call ``set_env`` on your
+``Configuration`` object. Config values from the environment will then be
+added as an overlay at the highest precedence. For example:
+
+.. code-block:: sh
+
+    export MYAPP_FOO=something
+
+.. code-block:: python
+
+    import confuse
+    config = confuse.Configuration('myapp', __name__)
+    config.set_env()
+    print(config['foo'].get())
+
+Nested config values can be overridden by using a separator string in the
+environment variable name. By default, double underscores are used as the
+separator for nesting, to avoid clashes with config options that contain
+single underscores. Note that most shells restrict environment variable names
+to alphanumeric and underscore characters, so dots are not a valid separator.
+
+.. code-block:: sh
+
+    export MYAPP_FOO__BAR=something
+
+.. code-block:: python
+
+    import confuse
+    config = confuse.Configuration('myapp', __name__)
+    config.set_env()
+    print(config['foo']['bar'].get())
+
+Both the prefix and the separator can be customized when using ``set_env``.
+Note that prefix matching is done to the environment variables *prior* to
+lowercasing, while the separator is matched *after* lowercasing.
+
+.. code-block:: sh
+
+    export APPFOO_NESTED_BAR=something
+
+.. code-block:: python
+
+    import confuse
+    config = confuse.Configuration('myapp', __name__)
+    config.set_env(prefix='APP', sep='_nested_')
+    print(config['foo']['bar'].get())
+
+For configurations that include lists, use integers starting from 0 as nested
+keys to invoke "list conversion." If any of the sibling nested keys are not
+integers or the integers are not sequential starting from 0, then conversion
+will not be performed. Nested lists and combinations of nested dicts and lists
+are supported.
+
+.. code-block:: sh
+
+    export MYAPP_FOO__0=first
+    export MYAPP_FOO__1=second
+    export MYAPP_FOO__2__BAR__0=nested
+    
+.. code-block:: python
+
+    import confuse
+    config = confuse.Configuration('myapp', __name__)
+    config.set_env()
+    print(config['foo'].get())  # ['first', 'second', {'bar': ['nested']}]
+
+For consistency with YAML config files, the values of environment variables
+are type converted using the same YAML parser used for file-based configs.
+This means that numeric strings will be converted to integers or floats, "true"
+and "false" will be converted to booleans, and the empty string or "null" will
+be converted to ``None``. Setting an environment variable to the empty string
+or "null" allows unsetting a config value from a lower-precedence source.
+
+To change the lowercasing and list handling behaviors when loading environment
+variables or to enable full YAML parsing of environment variables, you can
+initialize an ``EnvSource`` configuration source directly.
+
+If you use config overlays from both command-line args and environment
+variables, the order of calls to ``set_args`` and ``set_env`` will
+determine the precedence, with the last call having the highest precedence.
+
+
 Search Paths
 ------------
 
