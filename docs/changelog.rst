@@ -1,9 +1,11 @@
 Changelog
 ---------
 
-v1.6.1
+v1.7.0
 ''''''
 
+- Add support for reading configuration values from environment variables
+  (see `EnvSource`).
 - Resolve a possible race condition when creating configuration directories.
 
 v1.6.0

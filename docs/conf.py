@@ -20,8 +20,8 @@ copyright = '2012-{}, Adrian Sampson & contributors'.format(
     dt.date.today().year
 )
 
-version = '1.5'
-release = '1.5.0'
+version = '1.7'
+release = '1.7.0'
 
 exclude_patterns = ['_build']
 
