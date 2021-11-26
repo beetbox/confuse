@@ -3,6 +3,7 @@ from __future__ import division, absolute_import, print_function
 from collections import OrderedDict
 import yaml
 from .exceptions import ConfigReadError
+from .util import BASESTRING
 
 # YAML loading.
 
@@ -86,6 +87,48 @@ def load_yaml(filename, loader=Loader):
             return yaml.load(f, Loader=loader)
     except (IOError, yaml.error.YAMLError) as exc:
         raise ConfigReadError(filename, exc)
+
+
+def load_yaml_string(yaml_string, name, loader=Loader):
+    """Read a YAML document from a string. If the string cannot be parsed,
+    a ConfigReadError is raised.
+    `yaml_string` is a string to be parsed as a YAML document.
+    `name` is the name to use in error messages.
+    `loader` is the PyYAML Loader class to use to parse the YAML. By default,
+    this is Confuse's own Loader class, which is like SafeLoader with
+    extra constructors.
+    """
+    try:
+        return yaml.load(yaml_string, Loader=loader)
+    except yaml.error.YAMLError as exc:
+        raise ConfigReadError(name, exc)
+
+
+def parse_as_scalar(value, loader=Loader):
+    """Parse a value as if it were a YAML scalar to perform type conversion
+    that is consistent with YAML documents.
+    `value` should be a string. Non-string inputs or strings that raise YAML
+    errors will be returned unchanged.
+    `Loader` is the PyYAML Loader class to use for parsing, defaulting to
+    Confuse's own Loader class.
+
+    Examples with the default Loader:
+      - '1' will return 1 as an integer
+      - '1.0' will return 1 as a float
+      - 'true' will return True
+      - The empty string '' will return None
+    """
+    # We only deal with strings
+    if not isinstance(value, BASESTRING):
+        return value
+    try:
+        loader = loader('')
+        tag = loader.resolve(yaml.ScalarNode, value, (True, False))
+        node = yaml.ScalarNode(tag, value)
+        return loader.construct_object(node)
+    except yaml.error.YAMLError:
+        # Fallback to returning the value unchanged
+        return value
 
 
 # YAML dumping.

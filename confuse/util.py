@@ -46,6 +46,74 @@ def namespace_to_dict(obj):
     return obj
 
 
+def build_dict(obj, sep='', keep_none=False):
+    """Recursively builds a dictionary from an argparse.Namespace,
+    optparse.Values, or dict object.
+
+    Additionally, if `sep` is a non-empty string, the keys will be split
+    by `sep` and expanded into a nested dict. Keys with a `None` value
+    are dropped by default to avoid unsetting options but can be kept
+    by setting `keep_none` to `True`.
+
+    :param obj: Namespace, Values, or dict to iterate over. Other
+        values will simply be returned.
+    :type obj: argparse.Namespace or optparse.Values or dict or *
+    :param sep: Separator to use for splitting properties/keys of `obj`
+        for expansion into nested dictionaries.
+    :type sep: str
+    :param keep_none: Whether to keep keys whose value is `None`.
+    :type keep_none: bool
+    :return: A new dictionary or the value passed if obj was not a
+        dict, Namespace, or Values.
+    :rtype: dict or *
+    """
+    # We expect our root object to be a dict, but it may come in as
+    # a namespace
+    obj = namespace_to_dict(obj)
+    # We only deal with dictionaries
+    if not isinstance(obj, dict):
+        return obj
+
+    # Get keys iterator
+    keys = obj.keys() if PY3 else obj.iterkeys()
+    if sep:
+        # Splitting keys by `sep` needs sorted keys to prevent parents
+        # from clobbering children
+        keys = sorted(list(keys))
+
+    output = {}
+    for key in keys:
+        value = obj[key]
+        if value is None and not keep_none:  # Avoid unset options.
+            continue
+
+        save_to = output
+        result = build_dict(value, sep, keep_none)
+        if sep:
+            # Split keys by `sep` as this signifies nesting
+            split = key.split(sep)
+            if len(split) > 1:
+                # The last index will be the key we assign result to
+                key = split.pop()
+                # Build the dict tree if needed and change where
+                # we're saving to
+                for child_key in split:
+                    if child_key in save_to and \
+                            isinstance(save_to[child_key], dict):
+                        save_to = save_to[child_key]
+                    else:
+                        # Clobber or create
+                        save_to[child_key] = {}
+                        save_to = save_to[child_key]
+
+        # Save
+        if key in save_to:
+            save_to[key].update(result)
+        else:
+            save_to[key] = result
+    return output
+
+
 # Config file paths, including platform-specific paths and in-package
 # defaults.
 

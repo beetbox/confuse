@@ -1,6 +1,6 @@
 from __future__ import division, absolute_import, print_function
 
-from .util import BASESTRING
+from .util import BASESTRING, build_dict
 from . import yaml_util
 import os
 
@@ -84,3 +84,101 @@ class YamlSource(ConfigSource):
             value = yaml_util.load_yaml(self.filename,
                                         loader=self.loader) or {}
         self.update(value)
+
+
+class EnvSource(ConfigSource):
+    """A configuration data source loaded from environment variables.
+    """
+    def __init__(self, prefix, sep='__', lower=True, handle_lists=True,
+                 parse_yaml_docs=False, loader=yaml_util.Loader):
+        """Create a configuration source from the environment.
+
+        :param prefix: The prefix used to identify the environment variables
+            to be loaded into this configuration source.
+
+        :param sep: Separator within variable names to define nested keys.
+
+        :param lower: Indicates whether to convert variable names to lowercase
+            after prefix matching.
+
+        :param handle_lists: If variables are split into nested keys, indicates
+            whether to search for sub-dicts with keys that are sequential
+            integers starting from 0 and convert those dicts to lists.
+
+        :param parse_yaml_docs: Enable parsing the values of environment
+            variables as full YAML documents. By default, when False, values
+            are parsed only as YAML scalars.
+
+        :param loader: PyYAML Loader class to use to parse YAML values.
+        """
+        super(EnvSource, self).__init__({}, filename=None, default=False,
+                                        base_for_paths=False)
+        self.prefix = prefix
+        self.sep = sep
+        self.lower = lower
+        self.handle_lists = handle_lists
+        self.parse_yaml_docs = parse_yaml_docs
+        self.loader = loader
+        self.load()
+
+    def load(self):
+        """Load configuration data from the environment.
+        """
+        # Read config variables with prefix from the environment.
+        config_vars = {}
+        for var, value in os.environ.items():
+            if var.startswith(self.prefix):
+                key = var[len(self.prefix):]
+                if self.lower:
+                    key = key.lower()
+                if self.parse_yaml_docs:
+                    # Parse the value as a YAML document, which will convert
+                    # string representations of dicts and lists into the
+                    # appropriate object (ie, '{foo: bar}' to {'foo': 'bar'}).
+                    # Will raise a ConfigReadError if YAML parsing fails.
+                    value = yaml_util.load_yaml_string(value,
+                                                       'env variable ' + var,
+                                                       loader=self.loader)
+                else:
+                    # Parse the value as a YAML scalar so that values are type
+                    # converted using the same rules as the YAML Loader (ie,
+                    # numeric string to int/float, 'true' to True, etc.). Will
+                    # not raise a ConfigReadError.
+                    value = yaml_util.parse_as_scalar(value,
+                                                      loader=self.loader)
+                config_vars[key] = value
+        if self.sep:
+            # Build a nested dict, keeping keys with `None` values to allow
+            # environment variables to unset values from lower priority sources
+            config_vars = build_dict(config_vars, self.sep, keep_none=True)
+        if self.handle_lists:
+            for k, v in config_vars.items():
+                config_vars[k] = self._convert_dict_lists(v)
+        self.update(config_vars)
+
+    @classmethod
+    def _convert_dict_lists(cls, obj):
+        """Recursively search for dicts where all of the keys are integers
+        from 0 to the length of the dict, and convert them to lists.
+        """
+        # We only deal with dictionaries
+        if not isinstance(obj, dict):
+            return obj
+
+        # Recursively search values for additional dicts to convert to lists
+        for k, v in obj.items():
+            obj[k] = cls._convert_dict_lists(v)
+
+        try:
+            # Convert the keys to integers, mapping the ints back to the keys
+            int_to_key = {int(k): k for k in obj.keys()}
+        except (ValueError):
+            # Not all of the keys represent integers
+            return obj
+        try:
+            # For the integers from 0 to the length of the dict, try to create
+            # a list from the dict values using the integer to key mapping
+            return [obj[int_to_key[i]] for i in range(len(obj))]
+        except (KeyError):
+            # At least one integer within the range is not a key of the dict
+            return obj

@@ -1,7 +1,5 @@
 from __future__ import division, absolute_import, print_function
 
-from argparse import Namespace
-from collections import OrderedDict
 import confuse
 import sys
 import unittest
@@ -274,50 +272,3 @@ class SetTest(unittest.TestCase):
         config = _root({'foo': ['a', 'b', 'c']})
         config['foo'][1] = 'bar'
         self.assertEqual(config['foo'][1].get(), 'bar')
-
-
-class BuildNamespaceDictTests(unittest.TestCase):
-    def test_pure_dicts(self):
-        config = {'foo': {'bar': 1}}
-        result = confuse.ConfigView._build_namespace_dict(config)
-        self.assertEqual(1, result['foo']['bar'])
-
-    def test_namespaces(self):
-        config = Namespace(foo=Namespace(bar=2), another=1)
-        result = confuse.ConfigView._build_namespace_dict(config)
-        self.assertEqual(2, result['foo']['bar'])
-        self.assertEqual(1, result['another'])
-
-    def test_dots_keys(self):
-        config = {'foo.bar': 1}
-        result = confuse.ConfigView._build_namespace_dict(config.copy())
-        self.assertEqual(1, result['foo.bar'])
-
-        result = confuse.ConfigView._build_namespace_dict(config.copy(),
-                                                          dots=True)
-        self.assertEqual(1, result['foo']['bar'])
-
-    def test_dots_keys_clobber(self):
-        args = [('foo.bar', 1), ('foo.bar.zar', 2)]
-        config = OrderedDict(args)
-        result = confuse.ConfigView._build_namespace_dict(config.copy(),
-                                                          dots=True)
-        self.assertEqual({'zar': 2}, result['foo']['bar'])
-        self.assertEqual(2, result['foo']['bar']['zar'])
-
-        # Reverse and do it again! (should be stable)
-        args.reverse()
-        config = OrderedDict(args)
-        result = confuse.ConfigView._build_namespace_dict(config.copy(),
-                                                          dots=True)
-        self.assertEqual({'zar': 2}, result['foo']['bar'])
-        self.assertEqual(2, result['foo']['bar']['zar'])
-
-    def test_dots_keys_no_clobber(self):
-        args = [('foo.bar', 1), ('foo.far', 2), ('foo.zar.dar', 4)]
-        config = OrderedDict(args)
-        result = confuse.ConfigView._build_namespace_dict(config.copy(),
-                                                          dots=True)
-        self.assertEqual(1, result['foo']['bar'])
-        self.assertEqual(2, result['foo']['far'])
-        self.assertEqual(4, result['foo']['zar']['dar'])
