@@ -647,23 +647,10 @@ class Configuration(RootView):
             temp_root.redactions = self.redactions
             out_dict = temp_root.flatten(redact=redact)
 
-        yaml_out = yaml.dump(out_dict, Dumper=yaml_util.Dumper,
+        return yaml.dump(out_dict, Dumper=yaml_util.Dumper,
                              default_flow_style=None, indent=4,
                              width=1000)
 
-        # Restore comments to the YAML text.
-        default_source = None
-        for source in self.sources:
-            if source.default:
-                default_source = source
-                break
-        if default_source and default_source.filename:
-            with open(default_source.filename, 'rb') as fp:
-                default_data = fp.read()
-            yaml_out = yaml_util.restore_yaml_comments(
-                yaml_out, default_data.decode('utf-8'))
-
-        return yaml_out
 
     def reload(self):
         """Reload all sources from the file system.

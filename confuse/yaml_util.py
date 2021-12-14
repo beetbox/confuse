@@ -194,35 +194,3 @@ Dumper.add_representer(OrderedDict, Dumper.represent_dict)
 Dumper.add_representer(bool, Dumper.represent_bool)
 Dumper.add_representer(type(None), Dumper.represent_none)
 Dumper.add_representer(list, Dumper.represent_list)
-
-
-def restore_yaml_comments(data, default_data):
-    """Scan default_data for comments (we include empty lines in our
-    definition of comments) and place them before the same keys in data.
-    Only works with comments that are on one or more own lines, i.e.
-    not next to a yaml mapping.
-    """
-    comment_map = dict()
-    default_lines = iter(default_data.splitlines())
-    for line in default_lines:
-        if not line:
-            comment = "\n"
-        elif line.startswith("#"):
-            comment = "{0}\n".format(line)
-        else:
-            continue
-        while True:
-            line = next(default_lines)
-            if line and not line.startswith("#"):
-                break
-            comment += "{0}\n".format(line)
-        key = line.split(':')[0].strip()
-        comment_map[key] = comment
-    out_lines = iter(data.splitlines())
-    out_data = ""
-    for line in out_lines:
-        key = line.split(':')[0].strip()
-        if key in comment_map:
-            out_data += comment_map[key]
-        out_data += "{0}\n".format(line)
-    return out_data
