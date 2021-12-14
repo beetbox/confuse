@@ -1,7 +1,7 @@
 from __future__ import division, absolute_import, print_function
 
 from collections import OrderedDict
-import yaml
+import ruamel.yaml as yaml
 from .exceptions import ConfigReadError
 from .util import BASESTRING
 

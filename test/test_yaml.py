@@ -1,7 +1,7 @@
 from __future__ import division, absolute_import, print_function
 
 import confuse
-import yaml
+import ruamel.yaml as yaml
 import unittest
 from . import TempDir
 
