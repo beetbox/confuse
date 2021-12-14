@@ -89,12 +89,22 @@ carrots have a default deliciousness value of 8 or should Confuse just
 throw an exception? With Confuse’s views, the application gets to decide.
 
 The above expression, ``config['deliciousness']['carrots'].get()``,
-returns 10 (falling back on the default). However, you can also write
+returns 8 (falling back on the default). However, you can also write
 ``config['deliciousness'].get()``. This expression will cause the
 *entire* user-specified mapping to override the default one, providing a
 dict object like ``{'broccoli': 7, 'zucchini': 9}``. As a rule, then,
 resolve a view at the same granularity you want config files to override
 each other.
+
+.. warning::
+    It may appear that calling ``config.get()`` would retrieve the entire
+    configuration at once. However, this will return only the
+    *highest-priority* configuration source, masking any lower-priority
+    values for keys that are not present in the top source. This pitfall is
+    especially likely when using :ref:`Command-Line Options` or
+    :ref:`Environment Variables`, which may place an empty configuration
+    at the top of the stack. A subsequent call to ``config.get()`` might
+    then return no configuration at all.
 
 .. _XPath: http://www.w3.org/TR/xpath/
 
