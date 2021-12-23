@@ -73,7 +73,6 @@ class YamlSource(ConfigSource):
         super(YamlSource, self).__init__({}, filename, default, base_for_paths)
         self.loader = loader
         self.optional = optional
-        self.load()
 
     def load(self):
         """Load YAML data from the source's filename.
@@ -84,6 +83,8 @@ class YamlSource(ConfigSource):
             value = yaml_util.load_yaml(self.filename,
                                         loader=self.loader) or {}
         self.update(value)
+        # Return value for round tripping
+        return value
 
 
 class EnvSource(ConfigSource):

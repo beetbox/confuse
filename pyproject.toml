@@ -8,7 +8,7 @@ author = "Adrian Sampson"
 author-email = "adrian@radbox.org"
 home-page = "https://github.com/beetbox/confuse"
 requires = [
-    "pyyaml"
+    "ruamel.yaml"
 ]
 description-file = "README.rst"
 requires-python = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4"

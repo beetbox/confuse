@@ -1,6 +1,6 @@
 from __future__ import division, absolute_import, print_function
 
-import yaml
+import ruamel.yaml as yaml
 
 __all__ = [
     'ConfigError', 'NotFoundError', 'ConfigValueError', 'ConfigTypeError',
