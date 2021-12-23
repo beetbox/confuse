@@ -527,7 +527,10 @@ class Configuration(RootView):
         exists.
         """
         filename = self.user_config_path()
-        self.add(YamlSource(filename, loader=self.loader, optional=True))
+        source = YamlSource(filename, loader=self.loader, optional=True)
+        # Save value to keep comments
+        self.value = source.load()
+        self.add(source)
 
     def _add_default_source(self):
         """Add the package's default configuration settings. This looks
@@ -537,8 +540,11 @@ class Configuration(RootView):
         if self.modname:
             if self._package_path:
                 filename = os.path.join(self._package_path, DEFAULT_FILENAME)
-                self.add(YamlSource(filename, loader=self.loader,
-                                    optional=True, default=True))
+                source = YamlSource(filename, loader=self.loader,
+                                    optional=True, default=True)
+                # Save value to keep comments
+                self.value = source.load()
+                self.add(source)
 
     def read(self, user=True, defaults=True):
         """Find and read the files for this configuration and set them
@@ -647,11 +653,13 @@ class Configuration(RootView):
             temp_root.redactions = self.redactions
             out_dict = temp_root.flatten(redact=redact)
 
-        return yaml.dump(out_dict, Dumper=yaml_util.Dumper,
+        # Update configuration value 
+        self.value.update(out_dict)
+
+        return yaml.dump(self.value, Dumper=yaml_util.Dumper,
                              default_flow_style=None, indent=4,
                              width=1000)
-
-
+               
     def reload(self):
         """Reload all sources from the file system.
 
