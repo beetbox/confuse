@@ -398,12 +398,9 @@ class RootView(ConfigView):
         self.sources.append(ConfigSource.of(obj))
 
     def set(self, value):
-        print(f"Rootview {self!r} set", value)
         self.sources.insert(0, ConfigSource.of(value))
 
     def resolve(self):
-        # print(f"Ress {self.sources}")
-        # print("Ress", *((dict(s), s) for s in self.sources))
         return ((dict(s), s) for s in self.sources)
 
     def clear(self):
@@ -470,7 +467,6 @@ class Subview(ConfigView):
             yield value, source
 
     def set(self, value):
-        print("Setting", self.key, value)
         self.parent.set({self.key: value})
 
     def add(self, value):
@@ -743,7 +739,6 @@ class CachedHandle(object):
         if self._value is _invalid:
             raise ConfigHandleInvalidatedError()
         if self._value is _undefined:
-            print(f"Getting from 0x{id(self.view):x}")
             self._value = self.view.get(self._template)
         return self._value
 
