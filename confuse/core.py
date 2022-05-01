@@ -26,7 +26,8 @@ from . import util
 from . import templates
 from . import yaml_util
 from .sources import ConfigSource, EnvSource, YamlSource
-from .exceptions import ConfigTypeError, NotFoundError, ConfigError
+from .exceptions import (ConfigTypeError, NotFoundError, ConfigError,
+                         ConfigHandleInvalidatedError)
 
 CONFIG_FILENAME = 'config.yaml'
 DEFAULT_FILENAME = 'config_default.yaml'
@@ -737,11 +738,10 @@ class CachedHandle(object):
         self._value = _undefined
         self.view = view
         self._template = template
-        print(f"Creating handle 0x{id(self):x} from {view=!r} 0x{id(view):x} {template=}")
 
     def get(self):
         if self._value is _invalid:
-            raise ConfigError("Cache has been invalidated")
+            raise ConfigHandleInvalidatedError()
         if self._value is _undefined:
             print(f"Getting from 0x{id(self.view):x}")
             self._value = self.view.get(self._template)
@@ -765,29 +765,19 @@ class CachedConfigView(Subview):
         return self.handles.setdefault(template_id, CachedHandle(self, template))
 
     def __getitem__(self, key):
-        if key not in self.subviews:
-            val = CachedConfigView(self, key)
-            self.subviews[key] = val
-            print(f"New {key=} {val=!r} 0x{id(val):x}")
-        else:
-            val = self.subviews[key]
-            print(f"cfg from cache {key=} {val=}")
-        return val
-        # return self.subviews.setdefault(key, )
+        return self.subviews.setdefault(key, CachedConfigView(self, key))
 
     def __setitem__(self, key, value):
-        print(f"clearing in {self!r} 0x{id(self):x}", self.handles, self.parent)
         subview: CachedConfigView = self[key]
-        print(f"{subview=} 0x{id(subview):x} {subview.handles}")
         for handle in subview.handles.values():
             handle.unset()
-        recursive_invalidate(subview, value)
+        _recursive_invalidate(subview, value)
         return super().__setitem__(key, value)
 
 
-def recursive_invalidate(view: CachedConfigView, val):
-    print(f"Rec {view=!r} {view.handles}")
+def _recursive_invalidate(view: CachedConfigView, val):
     for subview in view.subviews.values():
+        # TODO: Simplify this if else
         if isinstance(val, dict):
             if subview.key not in val:
                 for handle in subview.handles.values():
@@ -810,31 +800,30 @@ def recursive_invalidate(view: CachedConfigView, val):
             for handle in subview.handles.values():
                 handle.invalidate()
             subval = None
-        recursive_invalidate(subview, subval)
+        _recursive_invalidate(subview, subval)
 
 
-class CachedConfiguration(Configuration):
+class CachedRootView(RootView):
     def __init__(self, *args, **kwargs):
-        Configuration.__init__(self, *args, **kwargs)
+        RootView.__init__(self, *args, **kwargs)
         self.subviews = {}
 
     def __getitem__(self, key):
         """Get a subview of this view."""
-        if key not in self.subviews:
-            val = CachedConfigView(self, key)
-            self.subviews[key] = val
-            print(f"New config {key=} {val=!r} 0x{id(val):x}")
-        else:
-            val = self.subviews[key]
-            print(f"cfg from cache {key=} {val=}")
-        return val
+        return self.subviews.setdefault(key, CachedConfigView(self, key))
 
     def __setitem__(self, key, value):
-        print(f"clearing in {self!r} 0x{id(self):x}")
         subview: CachedConfigView = self[key]
-        print(f"{subview=} 0x{id(subview):x} {subview.handles}")
         for handle in subview.handles.values():
             handle.unset()
-        recursive_invalidate(subview, value)
-        return super().__setitem__(key, value)
+        _recursive_invalidate(subview, value)
+        return RootView.__setitem__(self, key, value)
 
+
+class CachedConfiguration(Configuration):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.subviews = {}
+
+    __getitem__ = CachedRootView.__getitem__
+    __setitem__ = CachedRootView.__setitem__
