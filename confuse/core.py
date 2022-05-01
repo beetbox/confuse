@@ -770,31 +770,20 @@ class CachedConfigView(Subview):
         return super().__setitem__(key, value)
 
 
-def _recursive_invalidate(view: CachedConfigView, val):
+def _recursive_invalidate(view: CachedConfigView, new_val):
+    """Invalidate the cached handles for (sub)keys that are not present in new_val"""
     for subview in view.subviews.values():
-        # TODO: Simplify this if else
-        if isinstance(val, dict):
-            if subview.key not in val:
-                for handle in subview.handles.values():
-                    handle.invalidate()
-                subval = None
-            else:
-                for handle in subview.handles.values():
-                    handle.unset()
-                subval = val[subview.key]
-        elif isinstance(val, list):
-            if not (isinstance(subview.key, int) and subview.key < len(val)):
-                for handle in subview.handles.values():
-                    handle.invalidate()
-                subval = None
-            else:
-                for handle in subview.handles.values():
-                    handle.unset()
-                subval = val[subview.key]
-        else:
+        try:
+            subval = new_val[subview.key]
+        except (KeyError, IndexError, TypeError):
+            # the old key doesn't exist in the new value anymore; invalidate.
             for handle in subview.handles.values():
                 handle.invalidate()
             subval = None
+        else:
+            # old key is present, possibly with a new value; unset.
+            for handle in subview.handles.values():
+                handle.unset()
         _recursive_invalidate(subview, subval)
 
 
