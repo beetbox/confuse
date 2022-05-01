@@ -752,7 +752,35 @@ class CachedHandle(object):
         self.value = self._INVALID
 
 
-class CachedConfigView(Subview):
+class CachedViewMixin:
+    def __getitem__(self, key):
+        return self.subviews.setdefault(key, CachedConfigView(self, key))
+
+    def __setitem__(self, key, value):
+        subview: CachedConfigView = self[key]
+        for handle in subview.handles:
+            handle.unset()
+        subview._recursive_invalidate(value)
+        return super().__setitem__(key, value)
+
+    def _recursive_invalidate(self, new_val):
+        """Invalidate the cached handles for (sub)keys that are not present in new_val"""
+        for subview in self.subviews.values():
+            try:
+                subval = new_val[subview.key]
+            except (KeyError, IndexError, TypeError):
+                # the old key doesn't exist in the new value anymore- invalidate.
+                for handle in subview.handles:
+                    handle.invalidate()
+                subval = None
+            else:
+                # old key is present, possibly with a new value- unset.
+                for handle in subview.handles:
+                    handle.unset()
+            subview._recursive_invalidate(subval)
+
+
+class CachedConfigView(CachedViewMixin, Subview):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.handles = []  # keep track of all the handles from this view
@@ -767,55 +795,14 @@ class CachedConfigView(Subview):
         """You probably want to use get_handle instead."""
         return super().get(template)
 
-    def __getitem__(self, key):
-        return self.subviews.setdefault(key, CachedConfigView(self, key))
 
-    def __setitem__(self, key, value):
-        subview: CachedConfigView = self[key]
-        for handle in subview.handles:
-            handle.unset()
-        _recursive_invalidate(subview, value)
-        return super().__setitem__(key, value)
-
-
-def _recursive_invalidate(view: CachedConfigView, new_val):
-    """Invalidate the cached handles for (sub)keys that are not present in new_val"""
-    for subview in view.subviews.values():
-        try:
-            subval = new_val[subview.key]
-        except (KeyError, IndexError, TypeError):
-            # the old key doesn't exist in the new value anymore- invalidate.
-            for handle in subview.handles:
-                handle.invalidate()
-            subval = None
-        else:
-            # old key is present, possibly with a new value- unset.
-            for handle in subview.handles:
-                handle.unset()
-        _recursive_invalidate(subview, subval)
-
-
-class CachedRootView(RootView):
+class CachedRootView(CachedViewMixin, RootView):
     def __init__(self, *args, **kwargs):
         RootView.__init__(self, *args, **kwargs)
         self.subviews = {}
 
-    def __getitem__(self, key):
-        """Get a subview of this view."""
-        return self.subviews.setdefault(key, CachedConfigView(self, key))
 
-    def __setitem__(self, key, value):
-        subview: CachedConfigView = self[key]
-        for handle in subview.handles:
-            handle.unset()
-        _recursive_invalidate(subview, value)
-        return RootView.__setitem__(self, key, value)
-
-
-class CachedConfiguration(Configuration):
+class CachedConfiguration(CachedViewMixin, Configuration):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.subviews = {}
-
-    __getitem__ = CachedRootView.__getitem__
-    __setitem__ = CachedRootView.__setitem__
