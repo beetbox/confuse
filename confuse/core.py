@@ -397,9 +397,12 @@ class RootView(ConfigView):
         self.sources.append(ConfigSource.of(obj))
 
     def set(self, value):
+        print(f"Rootview {self!r} set", value)
         self.sources.insert(0, ConfigSource.of(value))
 
     def resolve(self):
+        # print(f"Ress {self.sources}")
+        # print("Ress", *((dict(s), s) for s in self.sources))
         return ((dict(s), s) for s in self.sources)
 
     def clear(self):
@@ -424,7 +427,7 @@ class RootView(ConfigView):
 
 class Subview(ConfigView):
     """A subview accessed via a subscript of a parent view."""
-    def __init__(self, parent, key):
+    def __init__(self, parent: ConfigView, key):
         """Make a subview of a parent view for a given subscript key.
         """
         self.parent = parent
@@ -466,6 +469,7 @@ class Subview(ConfigView):
             yield value, source
 
     def set(self, value):
+        print("Setting", self.key, value)
         self.parent.set({self.key: value})
 
     def add(self, value):
@@ -722,3 +726,115 @@ class LazyConfig(Configuration):
 
 
 # "Validated" configuration views: experimental!
+
+
+_undefined = object()
+_invalid = object()
+
+
+class CachedHandle(object):
+    def __init__(self, view: ConfigView, template: templates.Template) -> None:
+        self._value = _undefined
+        self.view = view
+        self._template = template
+        print(f"Creating handle 0x{id(self):x} from {view=!r} 0x{id(view):x} {template=}")
+
+    def get(self):
+        if self._value is _invalid:
+            raise ConfigError("Cache has been invalidated")
+        if self._value is _undefined:
+            print(f"Getting from 0x{id(self.view):x}")
+            self._value = self.view.get(self._template)
+        return self._value
+
+    def unset(self):
+        self._value = _undefined
+
+    def invalidate(self):
+        self._value = _invalid
+
+
+class CachedConfigView(Subview):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.handles = {}
+        self.subviews = {}
+
+    def get_handle(self, template: templates.Template):
+        template_id = id(template)
+        return self.handles.setdefault(template_id, CachedHandle(self, template))
+
+    def __getitem__(self, key):
+        if key not in self.subviews:
+            val = CachedConfigView(self, key)
+            self.subviews[key] = val
+            print(f"New {key=} {val=!r} 0x{id(val):x}")
+        else:
+            val = self.subviews[key]
+            print(f"cfg from cache {key=} {val=}")
+        return val
+        # return self.subviews.setdefault(key, )
+
+    def __setitem__(self, key, value):
+        print(f"clearing in {self!r} 0x{id(self):x}", self.handles, self.parent)
+        subview: CachedConfigView = self[key]
+        print(f"{subview=} 0x{id(subview):x} {subview.handles}")
+        for handle in subview.handles.values():
+            handle.unset()
+        recursive_invalidate(subview, value)
+        return super().__setitem__(key, value)
+
+
+def recursive_invalidate(view: CachedConfigView, val):
+    print(f"Rec {view=!r} {view.handles}")
+    for subview in view.subviews.values():
+        if isinstance(val, dict):
+            if subview.key not in val:
+                for handle in subview.handles.values():
+                    handle.invalidate()
+                subval = None
+            else:
+                for handle in subview.handles.values():
+                    handle.unset()
+                subval = val[subview.key]
+        elif isinstance(val, list):
+            if not (isinstance(subview.key, int) and subview.key < len(val)):
+                for handle in subview.handles.values():
+                    handle.invalidate()
+                subval = None
+            else:
+                for handle in subview.handles.values():
+                    handle.unset()
+                subval = val[subview.key]
+        else:
+            for handle in subview.handles.values():
+                handle.invalidate()
+            subval = None
+        recursive_invalidate(subview, subval)
+
+
+class CachedConfiguration(Configuration):
+    def __init__(self, *args, **kwargs):
+        Configuration.__init__(self, *args, **kwargs)
+        self.subviews = {}
+
+    def __getitem__(self, key):
+        """Get a subview of this view."""
+        if key not in self.subviews:
+            val = CachedConfigView(self, key)
+            self.subviews[key] = val
+            print(f"New config {key=} {val=!r} 0x{id(val):x}")
+        else:
+            val = self.subviews[key]
+            print(f"cfg from cache {key=} {val=}")
+        return val
+
+    def __setitem__(self, key, value):
+        print(f"clearing in {self!r} 0x{id(self):x}")
+        subview: CachedConfigView = self[key]
+        print(f"{subview=} 0x{id(subview):x} {subview.handles}")
+        for handle in subview.handles.values():
+            handle.unset()
+        recursive_invalidate(subview, value)
+        return super().__setitem__(key, value)
+
