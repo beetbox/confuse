@@ -725,46 +725,54 @@ class LazyConfig(Configuration):
 # "Validated" configuration views: experimental!
 
 
-_undefined = object()
-_invalid = object()
-
-
 class CachedHandle(object):
+    """Handle for a cached value computed by applying a template on the view"""
+    # some sentinel objects
+    _UNDEFINED = object()
+    _INVALID = object()
+
     def __init__(self, view: ConfigView, template: templates.Template) -> None:
-        self._value = _undefined
+        self.value = self._UNDEFINED
         self.view = view
-        self._template = template
+        self.template = template
 
     def get(self):
-        if self._value is _invalid:
+        if self.value is self._INVALID:
             raise ConfigHandleInvalidatedError()
-        if self._value is _undefined:
-            self._value = self.view.get(self._template)
-        return self._value
+        if self.value is self._UNDEFINED:
+            self.value = self.view.get(self.template)
+        return self.value
 
     def unset(self):
-        self._value = _undefined
+        """Unset the cached value, will be repopulated on next get()"""
+        self.value = self._UNDEFINED
 
     def invalidate(self):
-        self._value = _invalid
+        """Invalidate the handle, will raise ConfigHandleInvalidatedError on get()"""
+        self.value = self._INVALID
 
 
 class CachedConfigView(Subview):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.handles = {}
+        self.handles = []  # keep track of all the handles from this view
         self.subviews = {}
 
     def get_handle(self, template: templates.Template):
-        template_id = id(template)
-        return self.handles.setdefault(template_id, CachedHandle(self, template))
+        handle = CachedHandle(self, template)
+        self.handles.append(handle)
+        return handle
+
+    def get(self, template=templates.REQUIRED):
+        """You probably want to use get_handle instead."""
+        return super().get(template)
 
     def __getitem__(self, key):
         return self.subviews.setdefault(key, CachedConfigView(self, key))
 
     def __setitem__(self, key, value):
         subview: CachedConfigView = self[key]
-        for handle in subview.handles.values():
+        for handle in subview.handles:
             handle.unset()
         _recursive_invalidate(subview, value)
         return super().__setitem__(key, value)
@@ -776,13 +784,13 @@ def _recursive_invalidate(view: CachedConfigView, new_val):
         try:
             subval = new_val[subview.key]
         except (KeyError, IndexError, TypeError):
-            # the old key doesn't exist in the new value anymore; invalidate.
-            for handle in subview.handles.values():
+            # the old key doesn't exist in the new value anymore- invalidate.
+            for handle in subview.handles:
                 handle.invalidate()
             subval = None
         else:
-            # old key is present, possibly with a new value; unset.
-            for handle in subview.handles.values():
+            # old key is present, possibly with a new value- unset.
+            for handle in subview.handles:
                 handle.unset()
         _recursive_invalidate(subview, subval)
 
@@ -798,7 +806,7 @@ class CachedRootView(RootView):
 
     def __setitem__(self, key, value):
         subview: CachedConfigView = self[key]
-        for handle in subview.handles.values():
+        for handle in subview.handles:
             handle.unset()
         _recursive_invalidate(subview, value)
         return RootView.__setitem__(self, key, value)
