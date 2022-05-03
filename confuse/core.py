@@ -753,8 +753,18 @@ class CachedHandle(object):
 
 
 class CachedViewMixin:
-    def __getitem__(self, key):
-        return self.subviews.setdefault(key, CachedConfigView(self, key))
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.handles = []  # keep track of all the handles from this view
+        self.subviews = {}
+
+    def __getitem__(self, key) -> "CachedConfigView":
+        try:
+            return self.subviews[key]
+        except KeyError:
+            val = CachedConfigView(self, key)
+            self.subviews[key] = val
+            return val
 
     def __setitem__(self, key, value):
         subview: CachedConfigView = self[key]
@@ -768,13 +778,15 @@ class CachedViewMixin:
     def _invalidate_ancestors(self):
         """Invalidate the cached handles for all the views up the chain"""
         parent = self
-        while parent.name != ROOT_NAME:
+        while True:
             for handle in parent.handles:
                 handle.unset()
+            if parent.name == ROOT_NAME:
+                break
             parent = parent.parent
 
     def _invalidate_descendants(self, new_val):
-        """Invalidate the cached handles for (sub)keys that are not present in new_val"""
+        """Invalidate the cached handles for (sub)keys that are absent in new_val"""
         for subview in self.subviews.values():
             try:
                 subval = new_val[subview.key]
@@ -789,13 +801,6 @@ class CachedViewMixin:
                     handle.unset()
             subview._invalidate_descendants(subval)
 
-
-class CachedConfigView(CachedViewMixin, Subview):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.handles = []  # keep track of all the handles from this view
-        self.subviews = {}
-
     def get_handle(self, template: templates.Template):
         handle = CachedHandle(self, template)
         self.handles.append(handle)
@@ -806,13 +811,13 @@ class CachedConfigView(CachedViewMixin, Subview):
         return super().get(template)
 
 
+class CachedConfigView(CachedViewMixin, Subview):
+    pass
+
+
 class CachedRootView(CachedViewMixin, RootView):
-    def __init__(self, *args, **kwargs):
-        RootView.__init__(self, *args, **kwargs)
-        self.subviews = {}
+    pass
 
 
 class CachedConfiguration(CachedViewMixin, Configuration):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.subviews = {}
+    pass

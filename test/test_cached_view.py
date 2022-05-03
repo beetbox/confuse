@@ -59,10 +59,11 @@ class CachedViewTest(unittest.TestCase):
         pass
 
     def test_root_update(self):
-        pass
-
-    def test_root_invalidated(self):
-        pass
+        root = self.config
+        handle = self.config.get_handle({'a': Sequence(str)})
+        self.assertDictEqual(handle.get(), {'a': ['b', 'c']})
+        root['a'] = ['c', 'd']
+        self.assertDictEqual(handle.get(), {'a': ['c', 'd']})
 
     def test_invalidate_then_set(self):
         pass
