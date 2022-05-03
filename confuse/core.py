@@ -760,10 +760,20 @@ class CachedViewMixin:
         subview: CachedConfigView = self[key]
         for handle in subview.handles:
             handle.unset()
-        subview._recursive_invalidate(value)
+        subview._invalidate_descendants(value)
+        self._invalidate_ancestors()
+
         return super().__setitem__(key, value)
 
-    def _recursive_invalidate(self, new_val):
+    def _invalidate_ancestors(self):
+        """Invalidate the cached handles for all the views up the chain"""
+        parent = self
+        while parent.name != ROOT_NAME:
+            for handle in parent.handles:
+                handle.unset()
+            parent = parent.parent
+
+    def _invalidate_descendants(self, new_val):
         """Invalidate the cached handles for (sub)keys that are not present in new_val"""
         for subview in self.subviews.values():
             try:
@@ -777,7 +787,7 @@ class CachedViewMixin:
                 # old key is present, possibly with a new value- unset.
                 for handle in subview.handles:
                     handle.unset()
-            subview._recursive_invalidate(subval)
+            subview._invalidate_descendants(subval)
 
 
 class CachedConfigView(CachedViewMixin, Subview):

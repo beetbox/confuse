@@ -16,7 +16,7 @@ class CachedViewTest(unittest.TestCase):
     def setUp(self) -> None:
         self.config = CachedRootView([confuse.ConfigSource.of(
             {"a": ["b", "c"],
-             "x": {"y": [1, 2], "w": "z"}})])
+             "x": {"y": [1, 2], "w": "z", "p": {"q": 3}}})])
         return super().setUp()
 
     def test_basic(self):
@@ -63,3 +63,13 @@ class CachedViewTest(unittest.TestCase):
 
     def test_root_invalidated(self):
         pass
+
+    def test_invalidate_then_set(self):
+        pass
+
+    def test_parent_unset(self):
+        view: CachedConfigView = self.config['x']['p']
+        handle = view.get_handle(dict)
+        self.assertEqual(handle.get(), {'q': 3})
+        self.config['x']['p']['q'] = 4
+        self.assertEqual(handle.get(), {'q': 4})
