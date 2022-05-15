@@ -424,7 +424,7 @@ class RootView(ConfigView):
 
 class Subview(ConfigView):
     """A subview accessed via a subscript of a parent view."""
-    def __init__(self, parent: ConfigView, key):
+    def __init__(self, parent, key):
         """Make a subview of a parent view for a given subscript key.
         """
         self.parent = parent
