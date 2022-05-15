@@ -30,7 +30,7 @@ class CachedViewTest(unittest.TestCase):
         self.config['x'] = {'y': [4, 5]}
         self.assertEqual(handle.get(), [4, 5])
 
-    def test_invalidation(self):
+    def test_missing(self):
         view: CachedConfigView = self.config['x']['y']
         handle: CachedHandle = view.get_handle(Sequence(int))
 
@@ -39,7 +39,7 @@ class CachedViewTest(unittest.TestCase):
         with self.assertRaises(NotFoundError):
             handle.get()
 
-    def test_multi_handle_invalidation(self):
+    def test_missing2(self):
         view: CachedConfigView = self.config['x']['w']
         handle = view.get_handle(str)
         self.assertEqual(handle.get(), 'z')
@@ -50,7 +50,11 @@ class CachedViewTest(unittest.TestCase):
             handle.get()
 
     def test_list_update(self):
-        pass
+        view: CachedConfigView = self.config['a'][1]
+        handle = view.get_handle(str)
+        self.assertEqual(handle.get(), 'c')
+        self.config['a'][1] = 'd'
+        self.assertEqual(handle.get(), 'd')
 
     def test_root_update(self):
         root = self.config
@@ -59,10 +63,7 @@ class CachedViewTest(unittest.TestCase):
         root['a'] = ['c', 'd']
         self.assertDictEqual(handle.get(), {'a': ['c', 'd']})
 
-    def test_invalidate_then_set(self):
-        pass
-
-    def test_parent_unset(self):
+    def test_parent_invalidation(self):
         view: CachedConfigView = self.config['x']['p']
         handle = view.get_handle(dict)
         self.assertEqual(handle.get(), {'q': 3})
