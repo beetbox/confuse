@@ -4,7 +4,7 @@ import yaml
 
 __all__ = [
     'ConfigError', 'NotFoundError', 'ConfigValueError', 'ConfigTypeError',
-    'ConfigTemplateError', 'ConfigReadError', 'ConfigHandleInvalidatedError']
+    'ConfigTemplateError', 'ConfigReadError']
 
 YAML_TAB_PROBLEM = "found character '\\t' that cannot start any token"
 
@@ -54,9 +54,3 @@ class ConfigReadError(ConfigError):
             message += u': {0}'.format(reason)
 
         super(ConfigReadError, self).__init__(message)
-
-
-class ConfigHandleInvalidatedError(ConfigError):
-    """Cached handle has been invalidated"""
-    def __init__(self) -> None:
-        super().__init__("Cache has been invalidated")

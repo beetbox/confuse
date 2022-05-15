@@ -1,18 +1,12 @@
-from __future__ import division, absolute_import, print_function
-
-import confuse
-from confuse import CachedConfigView, CachedHandle, CachedRootView
-import sys
 import unittest
 
-from confuse.exceptions import ConfigHandleInvalidatedError
+import confuse
+from confuse.cache import CachedConfigView, CachedHandle, CachedRootView
+from confuse.exceptions import NotFoundError
 from confuse.templates import Sequence
-
-PY3 = sys.version_info[0] == 3
 
 
 class CachedViewTest(unittest.TestCase):
-
     def setUp(self) -> None:
         self.config = CachedRootView([confuse.ConfigSource.of(
             {"a": ["b", "c"],
@@ -42,7 +36,7 @@ class CachedViewTest(unittest.TestCase):
 
         self.config['x'] = {'p': [4, 5]}
         # new dict doesn't have a 'y' key
-        with self.assertRaises(ConfigHandleInvalidatedError):
+        with self.assertRaises(NotFoundError):
             handle.get()
 
     def test_multi_handle_invalidation(self):
@@ -52,7 +46,7 @@ class CachedViewTest(unittest.TestCase):
 
         self.config['x'] = {'y': [4, 5]}
         # new dict doesn't have a 'w' key
-        with self.assertRaises(ConfigHandleInvalidatedError):
+        with self.assertRaises(NotFoundError):
             handle.get()
 
     def test_list_update(self):

@@ -26,8 +26,7 @@ from . import util
 from . import templates
 from . import yaml_util
 from .sources import ConfigSource, EnvSource, YamlSource
-from .exceptions import (ConfigTypeError, NotFoundError, ConfigError,
-                         ConfigHandleInvalidatedError)
+from .exceptions import ConfigTypeError, NotFoundError, ConfigError
 
 CONFIG_FILENAME = 'config.yaml'
 DEFAULT_FILENAME = 'config_default.yaml'
@@ -723,101 +722,3 @@ class LazyConfig(Configuration):
 
 
 # "Validated" configuration views: experimental!
-
-
-class CachedHandle(object):
-    """Handle for a cached value computed by applying a template on the view"""
-    # some sentinel objects
-    _UNDEFINED = object()
-    _INVALID = object()
-
-    def __init__(self, view: ConfigView, template: templates.Template) -> None:
-        self.value = self._UNDEFINED
-        self.view = view
-        self.template = template
-
-    def get(self):
-        if self.value is self._INVALID:
-            raise ConfigHandleInvalidatedError()
-        if self.value is self._UNDEFINED:
-            self.value = self.view.get(self.template)
-        return self.value
-
-    def unset(self):
-        """Unset the cached value, will be repopulated on next get()"""
-        self.value = self._UNDEFINED
-
-    def invalidate(self):
-        """Invalidate the handle, will raise ConfigHandleInvalidatedError on get()"""
-        self.value = self._INVALID
-
-
-class CachedViewMixin:
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.handles = []  # keep track of all the handles from this view
-        self.subviews = {}
-
-    def __getitem__(self, key) -> "CachedConfigView":
-        try:
-            return self.subviews[key]
-        except KeyError:
-            val = CachedConfigView(self, key)
-            self.subviews[key] = val
-            return val
-
-    def __setitem__(self, key, value):
-        subview: CachedConfigView = self[key]
-        for handle in subview.handles:
-            handle.unset()
-        subview._invalidate_descendants(value)
-        self._invalidate_ancestors()
-
-        return super().__setitem__(key, value)
-
-    def _invalidate_ancestors(self):
-        """Invalidate the cached handles for all the views up the chain"""
-        parent = self
-        while True:
-            for handle in parent.handles:
-                handle.unset()
-            if parent.name == ROOT_NAME:
-                break
-            parent = parent.parent
-
-    def _invalidate_descendants(self, new_val):
-        """Invalidate the cached handles for (sub)keys that are absent in new_val"""
-        for subview in self.subviews.values():
-            try:
-                subval = new_val[subview.key]
-            except (KeyError, IndexError, TypeError):
-                # the old key doesn't exist in the new value anymore- invalidate.
-                for handle in subview.handles:
-                    handle.invalidate()
-                subval = None
-            else:
-                # old key is present, possibly with a new value- unset.
-                for handle in subview.handles:
-                    handle.unset()
-            subview._invalidate_descendants(subval)
-
-    def get_handle(self, template: templates.Template):
-        handle = CachedHandle(self, template)
-        self.handles.append(handle)
-        return handle
-
-    def get(self, template=templates.REQUIRED):
-        """You probably want to use get_handle instead."""
-        return super().get(template)
-
-
-class CachedConfigView(CachedViewMixin, Subview):
-    pass
-
-
-class CachedRootView(CachedViewMixin, RootView):
-    pass
-
-
-class CachedConfiguration(CachedViewMixin, Configuration):
-    pass
