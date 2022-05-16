@@ -2,7 +2,6 @@ from typing import Dict, List
 
 from . import templates
 from .core import ROOT_NAME, Configuration, ConfigView, RootView, Subview
-from .exceptions import NotFoundError
 
 
 class CachedHandle(object):
@@ -27,7 +26,8 @@ class CachedHandle(object):
         invalidated.
         """
         if self.value is self._MISSING:
-            raise NotFoundError("The cached handle doesn't have a valid view")
+            # will raise a NotFoundError if no default value was provided
+            self.value = templates.as_template(self.template).get_default_value()
         if self.value is self._INVALID:
             self.value = self.view.get(self.template)
         return self.value
