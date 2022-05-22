@@ -2,7 +2,6 @@ import unittest
 
 import confuse
 from confuse.cache import CachedConfigView, CachedHandle, CachedRootView
-from confuse.exceptions import NotFoundError
 from confuse.templates import Sequence
 
 
@@ -35,9 +34,9 @@ class CachedViewTest(unittest.TestCase):
         handle: CachedHandle = view.get_handle(Sequence(int))
 
         self.config['x'] = {'p': [4, 5]}
-        # new dict doesn't have a 'y' key
-        with self.assertRaises(NotFoundError):
-            handle.get()
+        # new dict doesn't have a 'y' key, but according to the view-theory,
+        # it will get the value from the older view that has been shadowed.
+        self.assertEqual(handle.get(), [1, 2])
 
     def test_missing2(self):
         view: CachedConfigView = self.config['x']['w']
@@ -45,9 +44,7 @@ class CachedViewTest(unittest.TestCase):
         self.assertEqual(handle.get(), 'z')
 
         self.config['x'] = {'y': [4, 5]}
-        # new dict doesn't have a 'w' key
-        with self.assertRaises(NotFoundError):
-            handle.get()
+        self.assertEqual(handle.get(), 'z')
 
     def test_list_update(self):
         view: CachedConfigView = self.config['a'][1]

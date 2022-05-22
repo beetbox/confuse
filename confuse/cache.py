@@ -7,9 +7,8 @@ from .core import ROOT_NAME, Configuration, ConfigView, RootView, Subview
 class CachedHandle(object):
     """Handle for a cached value computed by applying a template on the view.
     """
-    # some sentinel objects
     _INVALID = object()
-    _MISSING = object()
+    """Sentinel object to denote that the cached value is out-of-date."""
 
     def __init__(self, view: ConfigView, template=templates.REQUIRED) -> None:
         self.value = self._INVALID
@@ -22,12 +21,8 @@ class CachedHandle(object):
         Will re-compute the value using `view.get(template)` if it has been
         invalidated.
 
-        May raise a `NotFoundError` if the underlying view has been
-        invalidated.
+        May raise a `NotFoundError` if the underlying view is missing.
         """
-        if self.value is self._MISSING:
-            # will raise a NotFoundError if no default value was provided
-            self.value = templates.as_template(self.template).get_default_value()
         if self.value is self._INVALID:
             self.value = self.view.get(self.template)
         return self.value
@@ -36,11 +31,6 @@ class CachedHandle(object):
         """Invalidate the cached value, will be repopulated on next `get()`.
         """
         self.value = self._INVALID
-
-    def _set_view_missing(self):
-        """Invalidate the handle, will raise `NotFoundError` on `get()`.
-        """
-        self.value = self._MISSING
 
 
 class CachedViewMixin:
@@ -62,9 +52,7 @@ class CachedViewMixin:
     def __setitem__(self, key, value):
         subview: CachedConfigView = self[key]
         # invalidate the existing handles up and down the view tree
-        for handle in subview.handles:
-            handle._invalidate()
-        subview._invalidate_descendants(value)
+        subview._invalidate_descendants()
         self._invalidate_ancestors()
 
         return super().__setitem__(key, value)
@@ -82,24 +70,13 @@ class CachedViewMixin:
                 break
             parent = parent.parent
 
-    def _invalidate_descendants(self, new_val):
-        """Invalidate the handles for (sub)keys that were updated and
-        set_view_missing for keys that are absent in new_val.
+    def _invalidate_descendants(self):
+        """Invalidate the handles for (sub)keys that were updated.
         """
+        for handle in self.handles:
+            handle._invalidate()
         for subview in self.subviews.values():
-            try:
-                subval = new_val[subview.key]
-            except (KeyError, IndexError, TypeError):
-                # the old key doesn't exist in the new value anymore- 
-                # set view as missing for the handles.
-                for handle in subview.handles:
-                    handle._set_view_missing()
-                subval = None
-            else:
-                # old key is present, possibly with a new value- invalidate.
-                for handle in subview.handles:
-                    handle._invalidate()
-            subview._invalidate_descendants(subval)
+            subview._invalidate_descendants()
 
     def get_handle(self, template=templates.REQUIRED):
         """Retreive a `CachedHandle` for the current view and template.
