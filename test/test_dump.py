@@ -3,7 +3,7 @@ from __future__ import division, absolute_import, print_function
 import confuse
 import textwrap
 import unittest
-from . import _root
+from . import _root, TempDir
 
 
 class PrettyDumpTest(unittest.TestCase):
@@ -58,6 +58,25 @@ class PrettyDumpTest(unittest.TestCase):
 
         yaml = config.dump(full=False).strip()
         self.assertEqual(yaml, "baz: qux")
+
+
+class YAMLTest(unittest.TestCase):
+    def _add_source(self, config, contents):
+        with TempDir() as temp:
+            path = temp.sub('test_config.yaml', contents)
+            config.set_file(path)
+
+    def test_basic_roundtrip(self):
+        config = confuse.Configuration('myapp', read=False)
+        self._add_source(config, "foo: bar".encode())
+        yaml = config.dump().strip()
+        self.assertEqual(yaml, "foo: bar")
+
+    def test_comment(self):
+        config = confuse.Configuration('myapp', read=False)
+        self._add_source(config, "x: foo\n#baz\nfoo: bar".encode())
+        yaml = config.dump().strip()
+        self.assertEqual(yaml, "#baz\nfoo: bar")
 
 
 class RedactTest(unittest.TestCase):
