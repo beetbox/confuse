@@ -1,6 +1,11 @@
 Changelog
 ---------
 
+v2.0.0
+''''''
+
+- Drop support for versions of Python below 3.6.
+
 v1.7.0
 ''''''
 
