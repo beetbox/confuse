@@ -172,9 +172,9 @@ class PrimaryConfigDirTest(FakeSystem):
         def join(self, *args):
             return self.os_path.normpath(self.os_path.join(*args))
 
-        def makedirs(self, path, *args):
+        def makedirs(self, path, *args, **kwargs):
             os.path, os_path = self.os_path, os.path
-            self._makedirs(path, *args)
+            self._makedirs(path, *args, **kwargs)
             os.path = os_path
 
     def setUp(self):
