@@ -8,12 +8,6 @@ import platform
 import pkgutil
 
 
-PY3 = sys.version_info[0] == 3
-STRING = str if PY3 else unicode  # noqa: F821
-BASESTRING = str if PY3 else basestring  # noqa: F821
-NUMERIC_TYPES = (int, float) if PY3 else (int, float, long)  # noqa: F821
-
-
 UNIX_DIR_FALLBACK = '~/.config'
 WINDOWS_DIR_VAR = 'APPDATA'
 WINDOWS_DIR_FALLBACK = '~\\AppData\\Roaming'
@@ -75,7 +69,7 @@ def build_dict(obj, sep='', keep_none=False):
         return obj
 
     # Get keys iterator
-    keys = obj.keys() if PY3 else obj.iterkeys()
+    keys = obj.keys()
     if sep:
         # Splitting keys by `sep` needs sorted keys to prevent parents
         # from clobbering children
