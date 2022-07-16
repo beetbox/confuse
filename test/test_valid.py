@@ -1,5 +1,3 @@
-from __future__ import division, absolute_import, print_function
-
 try:
     import enum
     SUPPORTS_ENUM = True
@@ -114,18 +112,6 @@ class AsTemplateTest(unittest.TestCase):
         typ = confuse.as_template('foo')
         self.assertIsInstance(typ, confuse.String)
         self.assertEqual(typ.default, 'foo')
-
-    @unittest.skipIf(confuse.PY3, "unicode only present in Python 2")
-    def test_unicode_type_as_template(self):
-        typ = confuse.as_template(unicode)  # noqa ignore=F821
-        self.assertIsInstance(typ, confuse.String)
-        self.assertEqual(typ.default, confuse.REQUIRED)
-
-    @unittest.skipIf(confuse.PY3, "basestring only present in Python 2")
-    def test_basestring_as_template(self):
-        typ = confuse.as_template(basestring)  # noqa ignore=F821
-        self.assertIsInstance(typ, confuse.String)
-        self.assertEqual(typ.default, confuse.REQUIRED)
 
     def test_dict_as_template(self):
         typ = confuse.as_template({'key': 9})

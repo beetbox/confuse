@@ -1,5 +1,3 @@
-from __future__ import division, absolute_import, print_function
-
 from argparse import Namespace
 from collections import OrderedDict
 import confuse

@@ -1,8 +1,6 @@
 """Painless YAML configuration.
 """
 
-from __future__ import division, absolute_import, print_function
-
 __version__ = '2.0.0'
 
 from .exceptions import * # NOQA

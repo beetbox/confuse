@@ -1,5 +1,3 @@
-from __future__ import division, absolute_import, print_function
-
 import confuse
 import confuse.yaml_util
 import ntpath
