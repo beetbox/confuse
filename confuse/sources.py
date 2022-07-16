@@ -1,5 +1,3 @@
-from __future__ import division, absolute_import, print_function
-
 from .util import build_dict
 from . import yaml_util
 import os

@@ -1,5 +1,3 @@
-from __future__ import division, absolute_import, print_function
-
 import confuse
 import unittest
 from . import _root

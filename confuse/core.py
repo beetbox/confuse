@@ -15,8 +15,6 @@
 
 """Worry-free YAML configuration files.
 """
-from __future__ import division, absolute_import, print_function
-
 import errno
 import os
 import yaml

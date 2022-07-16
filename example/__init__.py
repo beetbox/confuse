@@ -1,5 +1,4 @@
 """An example application using Confuse for configuration."""
-from __future__ import division, absolute_import, print_function
 import confuse
 import argparse
 
