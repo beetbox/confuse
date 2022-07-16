@@ -10,7 +10,7 @@ on:
 
 jobs:
   test:
-      name: '${{ matrix.os }}: ${{ matrix.tox-env }}'
+      name: '${{ matrix.os }}: ${{ matrix.python-version }}'
       runs-on: ${{ matrix.os }}
       strategy:
         matrix:
