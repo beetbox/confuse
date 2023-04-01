@@ -1,6 +1,11 @@
 Changelog
 ---------
 
+v2.0.1
+''''''
+
+- Remove a `<4` Python version requirement bound.
+
 v2.0.0
 ''''''
 
