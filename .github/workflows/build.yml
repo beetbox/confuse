@@ -25,10 +25,6 @@ jobs:
             python-version: ${{ matrix.python-version }}
         - name: Install Tox
           run: pip install tox
-        - uses: luchihoratiu/debug-via-ssh@main
-          with:
-            NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-            SSH_PASS: ${{ secrets.SSH_PASS }}
         - name: Tox
           run: tox -e py-test
 
