@@ -25,6 +25,7 @@ jobs:
             python-version: ${{ matrix.python-version }}
         - name: Install Tox
           run: pip install tox
+        - uses: lhotari/action-upterm@v1
         - name: Tox
           run: tox -e py-test
 
