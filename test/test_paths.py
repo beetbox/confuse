@@ -32,6 +32,9 @@ class FakeSystem(unittest.TestCase):
     TMP_HOME = False
 
     def setUp(self):
+        if self.TMP_HOME:
+            self.home = tempfile.mkdtemp()
+
         if self.SYS_NAME in SYSTEMS:
             self.os_path = os.path
             os.environ = {}
@@ -41,7 +44,6 @@ class FakeSystem(unittest.TestCase):
             platform.system = lambda: self.SYS_NAME
 
         if self.TMP_HOME:
-            self.home = tempfile.mkdtemp()
             os.environ['HOME'] = self.home
             os.environ['USERPROFILE'] = self.home
 
