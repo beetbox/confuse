@@ -307,6 +307,9 @@ class ConfigView(object):
     def as_choice(self, choices):
         """Get the value from a list of choices. Equivalent to
         `get(Choice(choices))`.
+
+        Sequences, dictionaries and :class:`Enum` types are supported,
+        see :class:`confuse.templates.Choice` for more details.
         """
         return self.get(templates.Choice(choices))
 

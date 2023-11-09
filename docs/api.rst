@@ -34,6 +34,7 @@ Templates
 .. automodule:: confuse.templates
     :members:
     :private-members:
+    :special-members: __init__
     :show-inheritance:
 
 Utility

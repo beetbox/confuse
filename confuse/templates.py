@@ -243,6 +243,9 @@ class String(Template):
 
 class Choice(Template):
     """A template that permits values from a sequence of choices.
+
+    Sequences, dictionaries and :class:`Enum` types are supported,
+    see :meth:`__init__` for usage.
     """
     def __init__(self, choices, default=REQUIRED):
         """Create a template that validates any of the values from the
