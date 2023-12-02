@@ -534,10 +534,10 @@ class Configuration(RootView):
         discovered user configuration files or the in-package defaults,
         set `user` or `defaults` to `False`.
         """
-        if user:
-            self._add_user_source()
         if defaults:
             self._add_default_source()
+        if user:
+            self._add_user_source()
 
     def config_dir(self):
         """Get the path to the user configuration directory. The
