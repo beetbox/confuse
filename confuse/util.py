@@ -130,15 +130,12 @@ def find_package_path(name):
 
 
 def xdg_config_home():
-    """Returns a list that contain  UNIX_DIR_FALLBACK if
-    the XDG_CONFIG_HOME environment variable is either unset
-    or an empty string, the value of XDG_CONFIG_HOME if it
-    is an absolute path, and is empty otherwise
+    """Return the value of the XDG_CONFIG_HOME
+    environment variable if it is set and nonempty,
+    and UNIX_DIR_FALLBACK otherwise
     """
-    config_dir = os.path.expanduser(os.getenv('XDG_CONFIG_HOME', UNIX_DIR_FALLBACK))
-    if config_dir == '':
-        return [UNIX_DIR_FALLBACK]
-    return [config_dir] if os.path.isabs(config_dir) else []
+    config_path = os.getenv('XDG_CONFIG_HOME', UNIX_DIR_FALLBACK)
+    return config_path if config_path != '' else UNIX_DIR_FALLBACK
 
 def xdg_config_dirs():
     """Returns a list of paths taken from the XDG_CONFIG_DIRS
@@ -146,10 +143,7 @@ def xdg_config_dirs():
     """
     paths = []
     if 'XDG_CONFIG_DIRS' in os.environ and os.environ['XDG_CONFIG_DIRS'] != '':
-        config_path_list = [os.path.expanduser(path) for path in os.environ['XDG_CONFIG_DIRS'].split(':')]
-        # Filter out paths that are not absolute
-        config_abs_path_list = [path for path in config_path_list if os.path.isabs(path)]
-        paths.extend(config_abs_path_list)
+        paths.extend(os.environ['XDG_CONFIG_DIRS'].split(':'))
     else:
         paths.append('/etc/xdg')
     paths.append('/etc')
@@ -167,7 +161,7 @@ def config_dirs():
     paths = []
 
     if platform.system() == 'Darwin':
-        paths.extend(xdg_config_home())
+        paths.append(xdg_config_home())
         paths.append(MAC_DIR)
         paths.extend(xdg_config_dirs())
 
@@ -178,13 +172,13 @@ def config_dirs():
 
     else:
         # Assume Unix.
-        paths.extend(xdg_config_home())
+        paths.append(xdg_config_home())
         paths.extend(xdg_config_dirs())
 
-    # Expand and deduplicate paths.
+    # Expand and paths and remove duplicates and relative paths.
     out = []
     for path in paths:
-        path = os.path.abspath(os.path.expanduser(path))
-        if path not in out:
+        path = os.path.expanduser(path)
+        if path not in out and os.path.isabs(path):
             out.append(path)
     return out
