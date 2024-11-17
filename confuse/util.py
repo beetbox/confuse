@@ -129,6 +129,16 @@ def find_package_path(name):
     return os.path.dirname(os.path.abspath(filepath))
 
 
+def xdg_config_home():
+    """Returns a list containing the value of XDG_CONFIG_HOME
+    environment variable if it exists and is an absolute path
+    """
+    if 'XDG_CONFIG_HOME' in os.environ and os.path.isabs(os.environ['XDG_CONFIG_HOME']):
+        return [os.environ['XDG_CONFIG_HOME']]
+    else:
+        return []
+
+
 def xdg_config_dirs():
     """Returns a list of paths taken from the XDG_CONFIG_DIRS
     environment variable if it exists
@@ -153,8 +163,7 @@ def config_dirs():
     paths = []
 
     if platform.system() == 'Darwin':
-        if 'XDG_CONFIG_HOME' in os.environ and os.path.isabs(os.environ['XDG_CONFIG_HOME']):
-            paths.append(os.environ['XDG_CONFIG_HOME'])
+        paths.extend(xdg_config_home())
         paths.append(UNIX_DIR_FALLBACK)
         paths.append(MAC_DIR)
         paths.extend(xdg_config_dirs())
@@ -166,8 +175,7 @@ def config_dirs():
 
     else:
         # Assume Unix.
-        if 'XDG_CONFIG_HOME' in os.environ and os.path.isabs(os.environ['XDG_CONFIG_HOME']):
-            paths.append(os.environ['XDG_CONFIG_HOME'])
+        paths.extend(xdg_config_home())
         paths.append(UNIX_DIR_FALLBACK)
         paths.extend(xdg_config_dirs())
 
