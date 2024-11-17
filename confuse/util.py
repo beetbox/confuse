@@ -131,11 +131,12 @@ def find_package_path(name):
 
 def xdg_config_home():
     """Returns the value of XDG_CONFIG_HOME environment
-    variable if it exists and is an absolute path,
-    and UNIX_DIR_FALLBACK otherwise
+    variable if it exists and is an absolute path, and
+    UNIX_DIR_FALLBACK otherwise
     """
-    if 'XDG_CONFIG_HOME' in os.environ and os.path.isabs(os.environ['XDG_CONFIG_HOME']):
-        return os.environ['XDG_CONFIG_HOME']
+    config_dir = os.getenv('XDG_CONFIG_HOME', UNIX_DIR_FALLBACK)
+    if os.path.isabs(config_dir):
+        return config_dir
     else:
         return UNIX_DIR_FALLBACK
 
