@@ -130,24 +130,26 @@ def find_package_path(name):
 
 
 def xdg_config_home():
-    """Returns the value of XDG_CONFIG_HOME environment
-    variable if it exists and is an absolute path, and
-    UNIX_DIR_FALLBACK otherwise
+    """Returns a list that contain  UNIX_DIR_FALLBACK if
+    the XDG_CONFIG_HOME environment variable is either unset
+    or an empty string, the value of XDG_CONFIG_HOME if it
+    is an absolute path, and is empty otherwise
     """
-    config_dir = os.getenv('XDG_CONFIG_HOME', UNIX_DIR_FALLBACK)
-    if os.path.isabs(config_dir):
-        return config_dir
-    else:
-        return UNIX_DIR_FALLBACK
-
+    config_dir = os.path.expanduser(os.getenv('XDG_CONFIG_HOME', UNIX_DIR_FALLBACK))
+    if config_dir == '':
+        return [UNIX_DIR_FALLBACK]
+    return [config_dir] if os.path.isabs(config_dir) else []
 
 def xdg_config_dirs():
     """Returns a list of paths taken from the XDG_CONFIG_DIRS
-    environment variable if it exists
+    environment variable if it exists and is nonempty
     """
     paths = []
-    if 'XDG_CONFIG_DIRS' in os.environ:
-        paths.extend(os.environ['XDG_CONFIG_DIRS'].split(':'))
+    if 'XDG_CONFIG_DIRS' in os.environ and os.environ['XDG_CONFIG_DIRS'] != '':
+        config_path_list = [os.path.expanduser(path) for path in os.environ['XDG_CONFIG_DIRS'].split(':')]
+        # Filter out paths that are not absolute
+        config_abs_path_list = [path for path in config_path_list if os.path.isabs(path)]
+        paths.extend(config_abs_path_list)
     else:
         paths.append('/etc/xdg')
     paths.append('/etc')
@@ -165,7 +167,7 @@ def config_dirs():
     paths = []
 
     if platform.system() == 'Darwin':
-        paths.append(xdg_config_home())
+        paths.extend(xdg_config_home())
         paths.append(MAC_DIR)
         paths.extend(xdg_config_dirs())
 
@@ -176,7 +178,7 @@ def config_dirs():
 
     else:
         # Assume Unix.
-        paths.append(xdg_config_home())
+        paths.extend(xdg_config_home())
         paths.extend(xdg_config_dirs())
 
     # Expand and deduplicate paths.
