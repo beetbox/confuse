@@ -1,5 +1,5 @@
 [build-system]
-requires = ["flit_core >=2,<4"]
+requires = ["flit_core >=2,<4", "pyxdg >= 0.28,<0.30"]
 build-backend = "flit_core.buildapi"
 
 [tool.flit.metadata]
@@ -9,6 +9,7 @@ author-email = "adrian@radbox.org"
 home-page = "https://github.com/beetbox/confuse"
 requires = [
     "pyyaml"
+    "pyxdg"
 ]
 description-file = "README.rst"
 requires-python = ">=3.6"

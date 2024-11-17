@@ -4,9 +4,10 @@ import argparse
 import optparse
 import platform
 import pkgutil
+from xdg import BaseDirectory
 
 
-UNIX_DIR_FALLBACK = '~/.config'
+UNIX_DIR_FALLBACK = BaseDirectory.xdg_config_home
 WINDOWS_DIR_VAR = 'APPDATA'
 WINDOWS_DIR_FALLBACK = '~\\AppData\\Roaming'
 MAC_DIR = '~/Library/Application Support'
