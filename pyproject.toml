@@ -1,5 +1,5 @@
 [build-system]
-requires = ["flit_core >=2,<4", "pyxdg >= 0.28,<0.30"]
+requires = ["flit_core >=2,<4"]
 build-backend = "flit_core.buildapi"
 
 [tool.flit.metadata]
