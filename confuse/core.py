@@ -68,7 +68,7 @@ class ConfigView():
         try:
             return util.iter_first(pairs)
         except ValueError:
-            raise NotFoundError(u"{0} not found".format(self.name))
+            raise NotFoundError("{0} not found".format(self.name))
 
     def exists(self):
         """Determine whether the view has a setting in any source.
@@ -119,7 +119,7 @@ class ConfigView():
             except ConfigTypeError:
                 item, _ = self.first()
                 raise ConfigTypeError(
-                    u'{0} must be a dictionary or a list, not {1}'.format(
+                    '{0} must be a dictionary or a list, not {1}'.format(
                         self.name, type(item).__name__
                     )
                 )
@@ -188,7 +188,7 @@ class ConfigView():
                 cur_keys = dic.keys()
             except AttributeError:
                 raise ConfigTypeError(
-                    u'{0} must be a dict, not {1}'.format(
+                    '{0} must be a dict, not {1}'.format(
                         self.name, type(dic).__name__
                     )
                 )
@@ -228,7 +228,7 @@ class ConfigView():
             return
         if not isinstance(collection, (list, tuple)):
             raise ConfigTypeError(
-                u'{0} must be a list, not {1}'.format(
+                '{0} must be a list, not {1}'.format(
                     self.name, type(collection).__name__
                 )
             )
@@ -249,7 +249,7 @@ class ConfigView():
                 it = iter(collection)
             except TypeError:
                 raise ConfigTypeError(
-                    u'{0} must be an iterable, not {1}'.format(
+                    '{0} must be an iterable, not {1}'.format(
                         self.name, type(collection).__name__
                     )
                 )
@@ -426,7 +426,7 @@ class Subview(ConfigView):
             if not isinstance(self.key, int):
                 self.name += '.'
         if isinstance(self.key, int):
-            self.name += u'#{0}'.format(self.key)
+            self.name += '#{0}'.format(self.key)
         elif isinstance(self.key, bytes):
             self.name += self.key.decode('utf-8')
         elif isinstance(self.key, str):
@@ -447,7 +447,7 @@ class Subview(ConfigView):
             except TypeError:
                 # Not subscriptable.
                 raise ConfigTypeError(
-                    u"{0} must be a collection, not {1}".format(
+                    "{0} must be a collection, not {1}".format(
                         self.parent.name, type(collection).__name__
                     )
                 )
@@ -555,7 +555,7 @@ class Configuration(RootView):
             appdir = os.environ[self._env_var]
             appdir = os.path.abspath(os.path.expanduser(appdir))
             if os.path.isfile(appdir):
-                raise ConfigError(u'{0} must be a directory'.format(
+                raise ConfigError('{0} must be a directory'.format(
                     self._env_var
                 ))
 

@@ -26,7 +26,7 @@ class ConfigSource(dict):
         """
         super().__init__(value)
         if filename is not None and not isinstance(filename, str):
-            raise TypeError(u'filename must be a string or None')
+            raise TypeError('filename must be a string or None')
         self.filename = filename
         self.default = default
         self.base_for_paths = base_for_paths if filename is not None else False
@@ -50,7 +50,7 @@ class ConfigSource(dict):
         elif isinstance(value, dict):
             return ConfigSource(value)
         else:
-            raise TypeError(u'source value must be a dict')
+            raise TypeError('source value must be a dict')
 
 
 class YamlSource(ConfigSource):
