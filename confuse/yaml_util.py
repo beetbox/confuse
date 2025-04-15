@@ -52,7 +52,7 @@ class Loader(yaml.SafeLoader):
 
     # Allow bare strings to begin with %. Directives are still detected.
     def check_plain(self):
-        plain = super(Loader, self).check_plain()
+        plain = super().check_plain()
         return plain or self.peek() == '%'
 
     @staticmethod
@@ -164,7 +164,7 @@ class Dumper(yaml.SafeDumper):
         """If a list has less than 4 items, represent it in inline style
         (i.e. comma separated, within square brackets).
         """
-        node = super(Dumper, self).represent_list(data)
+        node = super().represent_list(data)
         length = len(data)
         if self.default_flow_style is None and length < 4:
             node.flow_style = True

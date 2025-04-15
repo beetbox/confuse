@@ -51,4 +51,4 @@ class ConfigReadError(ConfigError):
             # Generic error message uses exception's message.
             message += u': {0}'.format(reason)
 
-        super(ConfigReadError, self).__init__(message)
+        super().__init__(message)

@@ -485,7 +485,7 @@ class Configuration(RootView):
         object at module load time and then call the `read` method
         later. Specify the Loader class as `loader`.
         """
-        super(Configuration, self).__init__([])
+        super().__init__([])
         self.appname = appname
         self.modname = modname
         self.loader = loader
@@ -671,14 +671,14 @@ class LazyConfig(Configuration):
     the module level.
     """
     def __init__(self, appname, modname=None):
-        super(LazyConfig, self).__init__(appname, modname, False)
+        super().__init__(appname, modname, False)
         self._materialized = False  # Have we read the files yet?
         self._lazy_prefix = []  # Pre-materialization calls to set().
         self._lazy_suffix = []  # Calls to add().
 
     def read(self, user=True, defaults=True):
         self._materialized = True
-        super(LazyConfig, self).read(user, defaults)
+        super().read(user, defaults)
 
     def resolve(self):
         if not self._materialized:
@@ -686,17 +686,17 @@ class LazyConfig(Configuration):
             self.read()
             self.sources += self._lazy_suffix
             self.sources[:0] = self._lazy_prefix
-        return super(LazyConfig, self).resolve()
+        return super().resolve()
 
     def add(self, value):
-        super(LazyConfig, self).add(value)
+        super().add(value)
         if not self._materialized:
             # Buffer additions to end.
             self._lazy_suffix += self.sources
             del self.sources[:]
 
     def set(self, value):
-        super(LazyConfig, self).set(value)
+        super().set(value)
         if not self._materialized:
             # Buffer additions to beginning.
             self._lazy_prefix[:0] = self.sources
@@ -704,7 +704,7 @@ class LazyConfig(Configuration):
 
     def clear(self):
         """Remove all sources from this configuration."""
-        super(LazyConfig, self).clear()
+        super().clear()
         self._lazy_suffix = []
         self._lazy_prefix = []
 

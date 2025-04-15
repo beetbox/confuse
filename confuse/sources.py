@@ -24,7 +24,7 @@ class ConfigSource(dict):
         See `templates.Filename` for details of the relative path resolution
         behavior.
         """
-        super(ConfigSource, self).__init__(value)
+        super().__init__(value)
         if filename is not None and not isinstance(filename, str):
             raise TypeError(u'filename must be a string or None')
         self.filename = filename
@@ -33,7 +33,7 @@ class ConfigSource(dict):
 
     def __repr__(self):
         return 'ConfigSource({0!r}, {1!r}, {2!r}, {3!r})'.format(
-            super(ConfigSource, self),
+            super(),
             self.filename,
             self.default,
             self.base_for_paths,
@@ -67,7 +67,7 @@ class YamlSource(ConfigSource):
         empty.
         """
         filename = os.path.abspath(filename)
-        super(YamlSource, self).__init__({}, filename, default, base_for_paths)
+        super().__init__({}, filename, default, base_for_paths)
         self.loader = loader
         self.optional = optional
         self.load()
@@ -108,7 +108,7 @@ class EnvSource(ConfigSource):
 
         :param loader: PyYAML Loader class to use to parse YAML values.
         """
-        super(EnvSource, self).__init__({}, filename=None, default=False,
+        super().__init__({}, filename=None, default=False,
                                         base_for_paths=False)
         self.prefix = prefix
         self.sep = sep

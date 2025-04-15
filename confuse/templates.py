@@ -206,7 +206,7 @@ class String(Template):
         """Create a template with the added optional `pattern` argument,
         a regular expression string that the value should match.
         """
-        super(String, self).__init__(default)
+        super().__init__(default)
         self.pattern = pattern
         self.expand_vars = expand_vars
         if pattern:
@@ -257,7 +257,7 @@ class Choice(Template):
         If `choices` is a `Enum`, then the enum entry with the value is
         emitted.
         """
-        super(Choice, self).__init__(default)
+        super().__init__(default)
         self.choices = choices
 
     def convert(self, value, view):
@@ -297,7 +297,7 @@ class OneOf(Template):
     """A template that permits values complying to one of the given templates.
     """
     def __init__(self, allowed, default=REQUIRED):
-        super(OneOf, self).__init__(default)
+        super().__init__(default)
         self.allowed = list(allowed)
 
     def __repr__(self):
@@ -313,7 +313,7 @@ class OneOf(Template):
 
     def value(self, view, template):
         self.template = template
-        return super(OneOf, self).value(view, template)
+        return super().value(view, template)
 
     def convert(self, value, view):
         """Ensure that the value follows at least one template.
@@ -367,7 +367,7 @@ class StrSeq(Template):
         string, it should be split on whitespace. Otherwise, the
         resulting value is a list containing a single string.
         """
-        super(StrSeq, self).__init__(default)
+        super().__init__(default)
         self.split = split
 
     def _convert_value(self, x, view):
@@ -416,12 +416,12 @@ class Pairs(StrSeq):
         `default` is the dictionary value returned for items that are not
         a mapping, but a single string.
         """
-        super(Pairs, self).__init__(split=True)
+        super().__init__(split=True)
         self.default_value = default_value
 
     def _convert_value(self, x, view):
         try:
-            return (super(Pairs, self)._convert_value(x, view),
+            return (super()._convert_value(x, view),
                     self.default_value)
         except exceptions.ConfigTypeError:
             if isinstance(x, abc.Mapping):
@@ -438,8 +438,8 @@ class Pairs(StrSeq):
                 self.fail(u'must be a single string, mapping, or a list'
                           u'' + str(x),
                           view, True)
-            return (super(Pairs, self)._convert_value(k, view),
-                    super(Pairs, self)._convert_value(v, view))
+            return (super()._convert_value(k, view),
+                    super()._convert_value(v, view))
 
 
 class Filename(Template):
@@ -469,7 +469,7 @@ class Filename(Template):
         relative to the directory containing the source file, if there is
         one, taking precedence over the application's config directory.
         """
-        super(Filename, self).__init__(default)
+        super().__init__(default)
         self.cwd = cwd
         self.relative_to = relative_to
         self.in_app_dir = in_app_dir
@@ -590,7 +590,7 @@ class Path(Filename):
     converted to `pathlib.Path` objects.
     """
     def value(self, view, template=None):
-        value = super(Path, self).value(view, template)
+        value = super().value(view, template)
         if value is None:
             return
         import pathlib
@@ -649,7 +649,7 @@ class TypeTemplate(Template):
         """Create a template that checks that the value is an instance
         of `typ`.
         """
-        super(TypeTemplate, self).__init__(default)
+        super().__init__(default)
         self.typ = typ
 
     def convert(self, value, view):
