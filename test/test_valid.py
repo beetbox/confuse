@@ -172,7 +172,7 @@ class AsTemplateTest(unittest.TestCase):
         self.assertEqual(typ.default, confuse.REQUIRED)
 
     def test_other_type_as_template(self):
-        class MyClass(object):
+        class MyClass():
             pass
         typ = confuse.as_template(MyClass)
         self.assertIsInstance(typ, confuse.TypeTemplate)
@@ -286,7 +286,7 @@ class OneOfTest(unittest.TestCase):
             ]))
 
     def test_validate_bad_template(self):
-        class BadTemplate(object):
+        class BadTemplate():
             pass
         config = _root({})
         with self.assertRaises(confuse.ConfigTemplateError):

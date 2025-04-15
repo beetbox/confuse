@@ -8,7 +8,7 @@ def _root(*sources):
     return confuse.RootView([confuse.ConfigSource.of(s) for s in sources])
 
 
-class TempDir(object):
+class TempDir():
     """Context manager that creates and destroys a temporary directory.
     """
     def __init__(self):

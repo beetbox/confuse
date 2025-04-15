@@ -14,7 +14,7 @@ should be raised when the value is missing.
 """
 
 
-class Template(object):
+class Template():
     """A value template for configuration fields.
 
     The template works like a type and instructs Confuse about how to

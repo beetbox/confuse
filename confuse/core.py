@@ -36,7 +36,7 @@ REDACTED_TOMBSTONE = 'REDACTED'
 # Views and sources.
 
 
-class ConfigView(object):
+class ConfigView():
     """A configuration "view" is a query into a program's configuration
     data. A view represents a hypothetical location in the configuration
     tree; to extract the data from the location, a client typically
