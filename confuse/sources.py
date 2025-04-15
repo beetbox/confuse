@@ -109,7 +109,7 @@ class EnvSource(ConfigSource):
         :param loader: PyYAML Loader class to use to parse YAML values.
         """
         super().__init__({}, filename=None, default=False,
-                                        base_for_paths=False)
+                         base_for_paths=False)
         self.prefix = prefix
         self.sep = sep
         self.lower = lower
