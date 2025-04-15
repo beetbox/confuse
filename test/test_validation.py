@@ -1,10 +1,5 @@
-try:
-    import enum
-    SUPPORTS_ENUM = True
-except ImportError:
-    SUPPORTS_ENUM = False
-
 import confuse
+import enum
 import os
 import unittest
 from . import _root
@@ -91,8 +86,6 @@ class BuiltInValidatorTest(unittest.TestCase):
         })
         self.assertEqual(res, 'baz')
 
-    @unittest.skipUnless(SUPPORTS_ENUM,
-                         "enum not supported in this version of Python.")
     def test_as_choice_with_enum(self):
         class Foobar(enum.Enum):
             Foo = 'bar'
@@ -101,8 +94,6 @@ class BuiltInValidatorTest(unittest.TestCase):
         res = config['foo'].as_choice(Foobar)
         self.assertEqual(res, Foobar.Foo)
 
-    @unittest.skipUnless(SUPPORTS_ENUM,
-                         "enum not supported in this version of Python.")
     def test_as_choice_with_enum_error(self):
         class Foobar(enum.Enum):
             Foo = 'bar'
