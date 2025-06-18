@@ -36,7 +36,7 @@ REDACTED_TOMBSTONE = 'REDACTED'
 # Views and sources.
 
 
-class ConfigView(object):
+class ConfigView():
     """A configuration "view" is a query into a program's configuration
     data. A view represents a hypothetical location in the configuration
     tree; to extract the data from the location, a client typically
@@ -68,7 +68,7 @@ class ConfigView(object):
         try:
             return util.iter_first(pairs)
         except ValueError:
-            raise NotFoundError(u"{0} not found".format(self.name))
+            raise NotFoundError("{0} not found".format(self.name))
 
     def exists(self):
         """Determine whether the view has a setting in any source.
@@ -119,7 +119,7 @@ class ConfigView(object):
             except ConfigTypeError:
                 item, _ = self.first()
                 raise ConfigTypeError(
-                    u'{0} must be a dictionary or a list, not {1}'.format(
+                    '{0} must be a dictionary or a list, not {1}'.format(
                         self.name, type(item).__name__
                     )
                 )
@@ -188,7 +188,7 @@ class ConfigView(object):
                 cur_keys = dic.keys()
             except AttributeError:
                 raise ConfigTypeError(
-                    u'{0} must be a dict, not {1}'.format(
+                    '{0} must be a dict, not {1}'.format(
                         self.name, type(dic).__name__
                     )
                 )
@@ -228,7 +228,7 @@ class ConfigView(object):
             return
         if not isinstance(collection, (list, tuple)):
             raise ConfigTypeError(
-                u'{0} must be a list, not {1}'.format(
+                '{0} must be a list, not {1}'.format(
                     self.name, type(collection).__name__
                 )
             )
@@ -249,7 +249,7 @@ class ConfigView(object):
                 it = iter(collection)
             except TypeError:
                 raise ConfigTypeError(
-                    u'{0} must be an iterable, not {1}'.format(
+                    '{0} must be an iterable, not {1}'.format(
                         self.name, type(collection).__name__
                     )
                 )
@@ -426,7 +426,7 @@ class Subview(ConfigView):
             if not isinstance(self.key, int):
                 self.name += '.'
         if isinstance(self.key, int):
-            self.name += u'#{0}'.format(self.key)
+            self.name += '#{0}'.format(self.key)
         elif isinstance(self.key, bytes):
             self.name += self.key.decode('utf-8')
         elif isinstance(self.key, str):
@@ -447,7 +447,7 @@ class Subview(ConfigView):
             except TypeError:
                 # Not subscriptable.
                 raise ConfigTypeError(
-                    u"{0} must be a collection, not {1}".format(
+                    "{0} must be a collection, not {1}".format(
                         self.parent.name, type(collection).__name__
                     )
                 )
@@ -485,7 +485,7 @@ class Configuration(RootView):
         object at module load time and then call the `read` method
         later. Specify the Loader class as `loader`.
         """
-        super(Configuration, self).__init__([])
+        super().__init__([])
         self.appname = appname
         self.modname = modname
         self.loader = loader
@@ -555,7 +555,7 @@ class Configuration(RootView):
             appdir = os.environ[self._env_var]
             appdir = os.path.abspath(os.path.expanduser(appdir))
             if os.path.isfile(appdir):
-                raise ConfigError(u'{0} must be a directory'.format(
+                raise ConfigError('{0} must be a directory'.format(
                     self._env_var
                 ))
 
@@ -671,14 +671,14 @@ class LazyConfig(Configuration):
     the module level.
     """
     def __init__(self, appname, modname=None):
-        super(LazyConfig, self).__init__(appname, modname, False)
+        super().__init__(appname, modname, False)
         self._materialized = False  # Have we read the files yet?
         self._lazy_prefix = []  # Pre-materialization calls to set().
         self._lazy_suffix = []  # Calls to add().
 
     def read(self, user=True, defaults=True):
         self._materialized = True
-        super(LazyConfig, self).read(user, defaults)
+        super().read(user, defaults)
 
     def resolve(self):
         if not self._materialized:
@@ -686,17 +686,17 @@ class LazyConfig(Configuration):
             self.read()
             self.sources += self._lazy_suffix
             self.sources[:0] = self._lazy_prefix
-        return super(LazyConfig, self).resolve()
+        return super().resolve()
 
     def add(self, value):
-        super(LazyConfig, self).add(value)
+        super().add(value)
         if not self._materialized:
             # Buffer additions to end.
             self._lazy_suffix += self.sources
             del self.sources[:]
 
     def set(self, value):
-        super(LazyConfig, self).set(value)
+        super().set(value)
         if not self._materialized:
             # Buffer additions to beginning.
             self._lazy_prefix[:0] = self.sources
@@ -704,7 +704,7 @@ class LazyConfig(Configuration):
 
     def clear(self):
         """Remove all sources from this configuration."""
-        super(LazyConfig, self).clear()
+        super().clear()
         self._lazy_suffix = []
         self._lazy_prefix = []
 

@@ -14,7 +14,7 @@ should be raised when the value is missing.
 """
 
 
-class Template(object):
+class Template():
     """A value template for configuration fields.
 
     The template works like a type and instructs Confuse about how to
@@ -59,7 +59,7 @@ class Template(object):
         """
         if not hasattr(self, 'default') or self.default is REQUIRED:
             # The value is required. A missing value is an error.
-            raise exceptions.NotFoundError(u"{} not found".format(key_name))
+            raise exceptions.NotFoundError("{} not found".format(key_name))
         # The value is not required.
         return self.default
 
@@ -84,7 +84,7 @@ class Template(object):
         exc_class = (
             exceptions.ConfigTypeError if type_error
             else exceptions.ConfigValueError)
-        raise exc_class(u'{0}: {1}'.format(view.name, message))
+        raise exc_class('{0}: {1}'.format(view.name, message))
 
     def __repr__(self):
         return '{0}({1})'.format(
@@ -104,7 +104,7 @@ class Integer(Template):
         elif isinstance(value, float):
             return int(value)
         else:
-            self.fail(u'must be a number', view, True)
+            self.fail('must be a number', view, True)
 
 
 class Number(Template):
@@ -117,7 +117,7 @@ class Number(Template):
             return value
         else:
             self.fail(
-                u'must be numeric, not {0}'.format(type(value).__name__),
+                'must be numeric, not {0}'.format(type(value).__name__),
                 view,
                 True
             )
@@ -206,7 +206,7 @@ class String(Template):
         """Create a template with the added optional `pattern` argument,
         a regular expression string that the value should match.
         """
-        super(String, self).__init__(default)
+        super().__init__(default)
         self.pattern = pattern
         self.expand_vars = expand_vars
         if pattern:
@@ -227,11 +227,11 @@ class String(Template):
         """Check that the value is a string and matches the pattern.
         """
         if not isinstance(value, str):
-            self.fail(u'must be a string', view, True)
+            self.fail('must be a string', view, True)
 
         if self.pattern and not self.regex.match(value):
             self.fail(
-                u"must match the pattern {0}".format(self.pattern),
+                "must match the pattern {0}".format(self.pattern),
                 view
             )
 
@@ -257,7 +257,7 @@ class Choice(Template):
         If `choices` is a `Enum`, then the enum entry with the value is
         emitted.
         """
-        super(Choice, self).__init__(default)
+        super().__init__(default)
         self.choices = choices
 
     def convert(self, value, view):
@@ -270,7 +270,7 @@ class Choice(Template):
                 return self.choices(value)
             except ValueError:
                 self.fail(
-                    u'must be one of {0!r}, not {1!r}'.format(
+                    'must be one of {0!r}, not {1!r}'.format(
                         [c.value for c in self.choices], value
                     ),
                     view
@@ -278,7 +278,7 @@ class Choice(Template):
 
         if value not in self.choices:
             self.fail(
-                u'must be one of {0!r}, not {1!r}'.format(
+                'must be one of {0!r}, not {1!r}'.format(
                     list(self.choices), value
                 ),
                 view
@@ -297,7 +297,7 @@ class OneOf(Template):
     """A template that permits values complying to one of the given templates.
     """
     def __init__(self, allowed, default=REQUIRED):
-        super(OneOf, self).__init__(default)
+        super().__init__(default)
         self.allowed = list(allowed)
 
     def __repr__(self):
@@ -313,7 +313,7 @@ class OneOf(Template):
 
     def value(self, view, template):
         self.template = template
-        return super(OneOf, self).value(view, template)
+        return super().value(view, template)
 
     def convert(self, value, view):
         """Ensure that the value follows at least one template.
@@ -347,7 +347,7 @@ class OneOf(Template):
                 raise exceptions.ConfigTemplateError(exc)
 
         self.fail(
-            u'must be one of {0}, not {1}'.format(
+            'must be one of {0}, not {1}'.format(
                 repr(self.allowed), repr(value)
             ),
             view
@@ -367,7 +367,7 @@ class StrSeq(Template):
         string, it should be split on whitespace. Otherwise, the
         resulting value is a list containing a single string.
         """
-        super(StrSeq, self).__init__(default)
+        super().__init__(default)
         self.split = split
 
     def _convert_value(self, x, view):
@@ -376,7 +376,7 @@ class StrSeq(Template):
         elif isinstance(x, bytes):
             return x.decode('utf-8', 'ignore')
         else:
-            self.fail(u'must be a list of strings', view, True)
+            self.fail('must be a list of strings', view, True)
 
     def convert(self, value, view):
         if isinstance(value, bytes):
@@ -391,7 +391,7 @@ class StrSeq(Template):
             try:
                 value = list(value)
             except TypeError:
-                self.fail(u'must be a whitespace-separated string or a list',
+                self.fail('must be a whitespace-separated string or a list',
                           view, True)
         return [self._convert_value(v, view) for v in value]
 
@@ -416,30 +416,30 @@ class Pairs(StrSeq):
         `default` is the dictionary value returned for items that are not
         a mapping, but a single string.
         """
-        super(Pairs, self).__init__(split=True)
+        super().__init__(split=True)
         self.default_value = default_value
 
     def _convert_value(self, x, view):
         try:
-            return (super(Pairs, self)._convert_value(x, view),
+            return (super()._convert_value(x, view),
                     self.default_value)
         except exceptions.ConfigTypeError:
             if isinstance(x, abc.Mapping):
                 if len(x) != 1:
-                    self.fail(u'must be a single-element mapping', view, True)
+                    self.fail('must be a single-element mapping', view, True)
                 k, v = util.iter_first(x.items())
             elif isinstance(x, abc.Sequence):
                 if len(x) != 2:
-                    self.fail(u'must be a two-element list', view, True)
+                    self.fail('must be a two-element list', view, True)
                 k, v = x
             else:
                 # Is this even possible? -> Likely, if some !directive cause
                 # YAML to parse this to some custom type.
-                self.fail(u'must be a single string, mapping, or a list'
-                          u'' + str(x),
+                self.fail('must be a single string, mapping, or a list'
+                          '' + str(x),
                           view, True)
-            return (super(Pairs, self)._convert_value(k, view),
-                    super(Pairs, self)._convert_value(v, view))
+            return (super()._convert_value(k, view),
+                    super()._convert_value(v, view))
 
 
 class Filename(Template):
@@ -469,7 +469,7 @@ class Filename(Template):
         relative to the directory containing the source file, if there is
         one, taking precedence over the application's config directory.
         """
-        super(Filename, self).__init__(default)
+        super().__init__(default)
         self.cwd = cwd
         self.relative_to = relative_to
         self.in_app_dir = in_app_dir
@@ -499,19 +499,19 @@ class Filename(Template):
         if not isinstance(template, (abc.Mapping, MappingTemplate)):
             # disallow config.get(Filename(relative_to='foo'))
             raise exceptions.ConfigTemplateError(
-                u'relative_to may only be used when getting multiple values.'
+                'relative_to may only be used when getting multiple values.'
             )
 
         elif self.relative_to == view.key:
             raise exceptions.ConfigTemplateError(
-                u'{0} is relative to itself'.format(view.name)
+                '{0} is relative to itself'.format(view.name)
             )
 
         elif self.relative_to not in view.parent.keys():
             # self.relative_to is not in the config
             self.fail(
                 (
-                    u'needs sibling value "{0}" to expand relative path'
+                    'needs sibling value "{0}" to expand relative path'
                 ).format(self.relative_to),
                 view
             )
@@ -533,12 +533,12 @@ class Filename(Template):
                 if next_relative in template.subtemplates:
                     # we encountered this config key previously
                     raise exceptions.ConfigTemplateError((
-                        u'{0} and {1} are recursively relative'
+                        '{0} and {1} are recursively relative'
                     ).format(view.name, self.relative_to))
                 else:
                     raise exceptions.ConfigTemplateError((
-                        u'missing template for {0}, needed to expand {1}\'s'
-                        u'relative path'
+                        'missing template for {0}, needed to expand {1}\'s'
+                        'relative path'
                     ).format(self.relative_to, view.name))
 
             next_template.subtemplates[next_relative] = rel_to_template
@@ -554,7 +554,7 @@ class Filename(Template):
 
         if not isinstance(path, str):
             self.fail(
-                u'must be a filename, not {0}'.format(type(path).__name__),
+                'must be a filename, not {0}'.format(type(path).__name__),
                 view,
                 True
             )
@@ -590,7 +590,7 @@ class Path(Filename):
     converted to `pathlib.Path` objects.
     """
     def value(self, view, template=None):
-        value = super(Path, self).value(view, template)
+        value = super().value(view, template)
         if value is None:
             return
         import pathlib
@@ -626,7 +626,7 @@ class Optional(Template):
                 # Value is missing but not required
                 return self.default
             # Value must be present even though it can be null. Raise an error.
-            raise exceptions.NotFoundError(u'{} not found'.format(view.name))
+            raise exceptions.NotFoundError('{} not found'.format(view.name))
 
         if value is None:
             # None (ie, null) is always a valid value
@@ -649,13 +649,13 @@ class TypeTemplate(Template):
         """Create a template that checks that the value is an instance
         of `typ`.
         """
-        super(TypeTemplate, self).__init__(default)
+        super().__init__(default)
         self.typ = typ
 
     def convert(self, value, view):
         if not isinstance(value, self.typ):
             self.fail(
-                u'must be a {0}, not {1}'.format(
+                'must be a {0}, not {1}'.format(
                     self.typ.__name__,
                     type(value).__name__,
                 ),
@@ -720,4 +720,4 @@ def as_template(value):
     elif isinstance(value, type):
         return TypeTemplate(value)
     else:
-        raise ValueError(u'cannot convert to template: {0!r}'.format(value))
+        raise ValueError('cannot convert to template: {0!r}'.format(value))

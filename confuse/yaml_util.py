@@ -31,7 +31,7 @@ class Loader(yaml.SafeLoader):
         else:
             raise yaml.constructor.ConstructorError(
                 None, None,
-                u'expected a mapping node, but found %s' % node.id,
+                'expected a mapping node, but found %s' % node.id,
                 node.start_mark
             )
 
@@ -42,7 +42,7 @@ class Loader(yaml.SafeLoader):
                 hash(key)
             except TypeError as exc:
                 raise yaml.constructor.ConstructorError(
-                    u'while constructing a mapping',
+                    'while constructing a mapping',
                     node.start_mark, 'found unacceptable key (%s)' % exc,
                     key_node.start_mark
                 )
@@ -52,7 +52,7 @@ class Loader(yaml.SafeLoader):
 
     # Allow bare strings to begin with %. Directives are still detected.
     def check_plain(self):
-        plain = super(Loader, self).check_plain()
+        plain = super().check_plain()
         return plain or self.peek() == '%'
 
     @staticmethod
@@ -164,7 +164,7 @@ class Dumper(yaml.SafeDumper):
         """If a list has less than 4 items, represent it in inline style
         (i.e. comma separated, within square brackets).
         """
-        node = super(Dumper, self).represent_list(data)
+        node = super().represent_list(data)
         length = len(data)
         if self.default_flow_style is None and length < 4:
             node.flow_style = True
@@ -176,9 +176,9 @@ class Dumper(yaml.SafeDumper):
         """Represent bool as 'yes' or 'no' instead of 'true' or 'false'.
         """
         if data:
-            value = u'yes'
+            value = 'yes'
         else:
-            value = u'no'
+            value = 'no'
         return self.represent_scalar('tag:yaml.org,2002:bool', value)
 
     def represent_none(self, data):
