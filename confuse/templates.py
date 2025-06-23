@@ -323,19 +323,7 @@ class OneOf(Template):
         for candidate in self.allowed:
             try:
                 if is_mapping:
-                    if isinstance(candidate, Filename) and \
-                            candidate.relative_to:
-                        next_template = candidate.template_with_relatives(
-                            view,
-                            self.template
-                        )
-
-                        next_template.subtemplates[view.key] = as_template(
-                            candidate
-                        )
-                    else:
-                        next_template = MappingTemplate({view.key: candidate})
-
+                    next_template = MappingTemplate({view.key: candidate})
                     return view.parent.get(next_template)[view.key]
                 else:
                     return view.get(candidate)
