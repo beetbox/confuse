@@ -17,6 +17,8 @@
 """
 import errno
 import os
+from pathlib import Path
+from typing import Any, Iterable, Sequence, TypeVar
 import yaml
 from collections import OrderedDict
 
@@ -32,6 +34,7 @@ ROOT_NAME = 'root'
 
 REDACTED_TOMBSTONE = 'REDACTED'
 
+R = TypeVar('R')
 
 # Views and sources.
 
@@ -277,7 +280,7 @@ class ConfigView():
                     od[key] = view.get()
         return od
 
-    def get(self, template=templates.REQUIRED):
+    def get(self, template=templates.REQUIRED) -> Any:
         """Retrieve the value for this view according to the template.
 
         The `template` against which the values are checked can be
@@ -294,17 +297,17 @@ class ConfigView():
 
     # Shortcuts for common templates.
 
-    def as_filename(self):
+    def as_filename(self) -> str:
         """Get the value as a path. Equivalent to `get(Filename())`.
         """
         return self.get(templates.Filename())
 
-    def as_path(self):
+    def as_path(self) -> Path:
         """Get the value as a `pathlib.Path` object. Equivalent to `get(Path())`.
         """
         return self.get(templates.Path())
 
-    def as_choice(self, choices):
+    def as_choice(self, choices: Iterable[R]) -> R:
         """Get the value from a list of choices. Equivalent to
         `get(Choice(choices))`.
 
@@ -313,31 +316,31 @@ class ConfigView():
         """
         return self.get(templates.Choice(choices))
 
-    def as_number(self):
+    def as_number(self) -> int | float:
         """Get the value as any number type: int or float. Equivalent to
         `get(Number())`.
         """
         return self.get(templates.Number())
 
-    def as_str_seq(self, split=True):
+    def as_str_seq(self, split=True) -> Sequence[str]:
         """Get the value as a sequence of strings. Equivalent to
         `get(StrSeq(split=split))`.
         """
         return self.get(templates.StrSeq(split=split))
 
-    def as_pairs(self, default_value=None):
+    def as_pairs(self, default_value=None) -> Sequence[tuple[str, str]]:
         """Get the value as a sequence of pairs of two strings. Equivalent to
         `get(Pairs(default_value=default_value))`.
         """
         return self.get(templates.Pairs(default_value=default_value))
 
-    def as_str(self):
+    def as_str(self) -> str:
         """Get the value as a (Unicode) string. Equivalent to
         `get(unicode)` on Python 2 and `get(str)` on Python 3.
         """
         return self.get(templates.String())
 
-    def as_str_expanded(self):
+    def as_str_expanded(self) -> str:
         """Get the value as a (Unicode) string, with env vars
         expanded by `os.path.expandvars()`.
         """
@@ -381,8 +384,8 @@ class RootView(ConfigView):
         self.name = ROOT_NAME
         self.redactions = set()
 
-    def add(self, obj):
-        self.sources.append(ConfigSource.of(obj))
+    def add(self, value):
+        self.sources.append(ConfigSource.of(value=value))
 
     def set(self, value):
         self.sources.insert(0, ConfigSource.of(value))
