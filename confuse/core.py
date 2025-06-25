@@ -17,6 +17,13 @@
 """
 from __future__ import annotations
 
+__all__ = [
+    'CONFIG_FILENAME', 'DEFAULT_FILENAME', 'ROOT_NAME', 'REDACTED_TOMBSTONE',
+    'ConfigView', 'RootView', 'Subview', 'Configuration',
+    'ConfigSource', 'EnvSource', 'YamlSource',
+    'ConfigTypeError', 'NotFoundError', 'ConfigError',
+]
+
 import errno
 import os
 from pathlib import Path
@@ -715,10 +722,3 @@ class LazyConfig(Configuration):
 
 
 # "Validated" configuration views: experimental!
-
-__all__ = [
-    'CONFIG_FILENAME', 'DEFAULT_FILENAME', 'ROOT_NAME', 'REDACTED_TOMBSTONE',
-    'ConfigView', 'RootView', 'Subview', 'Configuration',
-    'ConfigSource', 'EnvSource', 'YamlSource',
-    'ConfigTypeError', 'NotFoundError', 'ConfigError',
-]
