@@ -135,14 +135,20 @@ def find_package_path(name):
     return os.path.dirname(os.path.abspath(filepath))
 
 
+def xdg_config_home():
+    """Return the value of the XDG_CONFIG_HOME
+    environment variable if it is set and nonempty,
+    and UNIX_DIR_FALLBACK otherwise
+    """
+    config_path = os.getenv('XDG_CONFIG_HOME', UNIX_DIR_FALLBACK)
+    return config_path if config_path != '' else UNIX_DIR_FALLBACK
+
 def xdg_config_dirs():
     """Returns a list of paths taken from the XDG_CONFIG_DIRS
-    and XDG_CONFIG_HOME environment varibables if they exist
+    environment variable if it exists and is nonempty
     """
     paths = []
-    if 'XDG_CONFIG_HOME' in os.environ:
-        paths.append(os.environ['XDG_CONFIG_HOME'])
-    if 'XDG_CONFIG_DIRS' in os.environ:
+    if 'XDG_CONFIG_DIRS' in os.environ and os.environ['XDG_CONFIG_DIRS'] != '':
         paths.extend(os.environ['XDG_CONFIG_DIRS'].split(':'))
     else:
         paths.append('/etc/xdg')
@@ -161,7 +167,7 @@ def config_dirs():
     paths = []
 
     if platform.system() == 'Darwin':
-        paths.append(UNIX_DIR_FALLBACK)
+        paths.append(xdg_config_home())
         paths.append(MAC_DIR)
         paths.extend(xdg_config_dirs())
 
@@ -172,13 +178,13 @@ def config_dirs():
 
     else:
         # Assume Unix.
-        paths.append(UNIX_DIR_FALLBACK)
+        paths.append(xdg_config_home())
         paths.extend(xdg_config_dirs())
 
-    # Expand and deduplicate paths.
+    # Expand and paths and remove duplicates and relative paths.
     out = []
     for path in paths:
-        path = os.path.abspath(os.path.expanduser(path))
-        if path not in out:
+        path = os.path.expanduser(path)
+        if path not in out and os.path.isabs(path):
             out.append(path)
     return out
