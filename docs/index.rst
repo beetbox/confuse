@@ -8,3 +8,4 @@
    examples
    changelog
    api
+   dev

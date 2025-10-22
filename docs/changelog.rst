@@ -5,6 +5,13 @@ v2.1.0
 ''''''
 
 - Drop support for versions of Python below 3.9.
+- Removed 'u' prefix from string literals for Python 3.0+ compatibility.
+- Removed a number of python 2 leftovers.
+- Removed deprecated `pkgutil.get_loader` usage in favor of
+  `importlib..util.find_spec` for better compatibility with modern Python versions.
+- Added typehints to `as_*` functions which allows for 
+  enhanced type checking and IDE support.
+- Added a minimal release workflow for GitHub Actions to automate the release process.
 
 v2.0.1
 ''''''
