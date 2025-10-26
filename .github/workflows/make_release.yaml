@@ -1,0 +1,79 @@
+name: Make a release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version of the new release, just as a number with no prepended "v"'
+        required: true
+
+env:
+  PYTHON_VERSION: 3.9
+  NEW_VERSION: ${{ inputs.version }}
+  NEW_TAG: v${{ inputs.version }}
+
+jobs:
+  increment-version:
+    name: Bump version, commit and create tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python tools
+        uses: BrandonLWhite/pipx-install-action@v1.0.3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: poetry
+
+      - name: Bump project version
+        run: poetry version "${{ env.NEW_VERSION }}"
+
+      - uses: EndBug/add-and-commit@v9
+        id: commit_and_tag
+        name: Commit the changes and create tag
+        with:
+          message: "Increment version to ${{ env.NEW_VERSION }}"
+          tag: "${{ env.NEW_TAG }} --force"
+
+  build:
+    name: Build the distribution package
+    runs-on: ubuntu-latest
+    needs: increment-version
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.NEW_TAG }}
+
+      - name: Install Python tools
+        uses: BrandonLWhite/pipx-install-action@v1.0.3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: poetry
+
+      - name: Build a binary wheel and a source tarball
+        run: poetry build
+
+      - name: Store the package
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  publish-to-pypi:
+    name: Publish distribution 📦 to PyPI
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: pypi
+      url: https://pypi.org/p/confuse
+    permissions:
+      id-token: write
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Publish distribution 📦 to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

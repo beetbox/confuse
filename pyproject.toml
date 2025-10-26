@@ -1,22 +1,60 @@
-[build-system]
-requires = ["flit_core >=2,<4"]
-build-backend = "flit_core.buildapi"
-
-[tool.flit.metadata]
-module = "confuse"
-author = "Adrian Sampson"
-author-email = "adrian@radbox.org"
-home-page = "https://github.com/beetbox/confuse"
-requires = [
-    "pyyaml"
-]
-description-file = "README.rst"
+[project]
+name = "confuse"
+version = "2.1.0"
+description = "Painless YAML config files"
+authors = [{ name = "Adrian Sampson", email = "adrian@radbox.org" }]
+readme = "README.rst"
+license = "MIT"
 requires-python = ">=3.9"
 classifiers = [
-    'Intended Audience :: Developers',
-    'License :: OSI Approved :: MIT License',
-    'Programming Language :: Python :: 3.9',
-    'Programming Language :: Python :: 3.10',
-    'Programming Language :: Python :: 3.11',
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     'Programming Language :: Python :: 3.12',
 ]
+dependencies = [
+    "pyyaml",
+]
+
+[project.urls]
+Homepage = "https://github.com/beetbox/confuse"
+Repository = "https://github.com/beetbox/confuse"
+"Bug Tracker" = "https://github.com/beetbox/confuse/issues"
+
+[project.optional-dependencies]
+test = ["pytest >= 8.4.2", "pytest-cov >= 7.0.0"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pipx-install]
+poethepoet = ">=0.26"
+poetry = ">=2.1"
+
+[tool.poetry.requires-plugins]
+poethepoet = ">=0.32"
+
+[tool.poe.tasks.test]
+help = "Run tests with pytest"
+cmd = "pytest $OPTS"
+env.OPTS.default = "-p no:cov"
+
+[tool.poe.tasks.test-with-coverage]
+help = "Run tests and record coverage"
+ref = "test"
+# record coverage in confuse package
+# save xml for coverage upload to codecov
+# save html report for local dev use
+# measure coverage across logical branches
+# show which tests cover specific lines in the code (see the HTML report)
+env.OPTS = """
+--cov=confuse
+--cov-report=xml:.reports/coverage.xml
+--cov-report=html:.reports/html
+--cov-branch
+--cov-context=test
+"""

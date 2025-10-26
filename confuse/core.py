@@ -19,9 +19,7 @@ from __future__ import annotations
 
 __all__ = [
     'CONFIG_FILENAME', 'DEFAULT_FILENAME', 'ROOT_NAME', 'REDACTED_TOMBSTONE',
-    'ConfigView', 'RootView', 'Subview', 'Configuration',
-    'ConfigSource', 'EnvSource', 'YamlSource',
-    'ConfigTypeError', 'NotFoundError', 'ConfigError',
+    'ConfigView', 'RootView', 'Subview', 'Configuration', 'LazyConfig'
 ]
 
 import errno
