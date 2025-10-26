@@ -46,8 +46,8 @@ env.OPTS.default = "-p no:cov"
 [tool.poe.tasks.test-with-coverage]
 help = "Run tests and record coverage"
 ref = "test"
-# record coverage in audioread package
-# save xml for coverage upload to coveralls
+# record coverage in confuse package
+# save xml for coverage upload to codecov
 # save html report for local dev use
 # measure coverage across logical branches
 # show which tests cover specific lines in the code (see the HTML report)
