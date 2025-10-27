@@ -25,9 +25,10 @@ dependencies = [
 dev = [
     "pytest >= 8.4.2",
     "pytest-cov >= 7.0.0",
-    "sphinx >= 7.4.7",
-    "sphinx-rtd-theme >= 3.0.2",
 ]
+
+[project.optional-dependencies]
+docs = ["sphinx >= 7.4.7", "sphinx-rtd-theme >= 3.0.2"]
 
 [project.urls]
 Homepage = "https://github.com/beetbox/confuse"
