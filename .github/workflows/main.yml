@@ -23,5 +23,5 @@ jobs:
 
       - name: Test
         run: |-
-          poetry install --extras=test
+          poetry install
           poe test

@@ -21,13 +21,16 @@ dependencies = [
     "pyyaml",
 ]
 
+[dependency-groups]
+dev = [
+    "pytest >= 8.4.2",
+    "pytest-cov >= 7.0.0",
+]
+
 [project.urls]
 Homepage = "https://github.com/beetbox/confuse"
 Repository = "https://github.com/beetbox/confuse"
 "Bug Tracker" = "https://github.com/beetbox/confuse/issues"
-
-[project.optional-dependencies]
-test = ["pytest >= 8.4.2", "pytest-cov >= 7.0.0"]
 
 [build-system]
 requires = ["poetry-core"]
