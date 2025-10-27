@@ -1,7 +1,7 @@
 Confuse: painless YAML config files
 ===================================
 
-.. image:: https://github.com/beetbox/confuse/actions/workflows/build.yml/badge.svg
+.. image:: https://github.com/beetbox/confuse/actions/workflows/main.yml/badge.svg
     :target: https://github.com/beetbox/confuse/actions
 
 .. image:: http://img.shields.io/pypi/v/confuse.svg
