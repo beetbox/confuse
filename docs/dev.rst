@@ -1,19 +1,23 @@
 Development Guide
 =================
 
-This document provides guidelines for developers working on the `confuse` library.
+This document provides guidelines for developers working on the ``confuse``
+library.
 
 Version Bumps
 -------------
 
-This section outlines how to create a new version of the `confuse` library and publish it on PyPi. The versioning follows semantic versioning principles, where the version number is structured as `MAJOR.MINOR.PATCH`.
+This section outlines how to create a new version of the ``confuse`` library
+and publish it on PyPi. The versioning follows semantic versioning principles,
+where the version number is structured as ``MAJOR.MINOR.PATCH``.
 
 To create a new version, follow these steps:
 
-- make sure the changes are documented in the `changelog.rst` file
-- update the version number in `confuse/__init__.py`
-- create a new release in GitHub with the tag `vMAJOR.MINOR.PATCH`
-
-This should trigger the GitHub Actions workflow that builds the package and publishes it to PyPi.
-
-Check if the github actions succeeded by looking at the Actions tab in the repository. If it failed, you can check the logs to see what went wrong and try to fix it.
+1. Navigate to `Make release
+   <https://github.com/beetbox/confuse/actions/workflows/make_release.yaml>`_
+   action in the GitHub repository.
+2. Press **Run workflow**, enter the new version number in the format
+   ``MAJOR.MINOR.PATCH``, e.g., ``1.8.0`` and submit it.
+3. Refresh the page to see the status of the workflow.
+4. Once it succeeds, create a GitHub release with notes from the
+   ``docs/changelog.rst`` file.
