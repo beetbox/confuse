@@ -25,6 +25,8 @@ dependencies = [
 dev = [
     "pytest >= 8.4.2",
     "pytest-cov >= 7.0.0",
+    "sphinx >= 7.4.7",
+    "sphinx-rtd-theme >= 3.0.2",
 ]
 
 [project.urls]
@@ -42,6 +44,11 @@ poetry = ">=2.1"
 
 [tool.poetry.requires-plugins]
 poethepoet = ">=0.32"
+
+[tool.poe.tasks.docs]
+help = "Build documentation"
+args = [{ name = "COMMANDS", positional = true, multiple = true, default = "html" }]
+cmd = "make -C docs $COMMANDS"
 
 [tool.poe.tasks.test]
 help = "Run tests with pytest"
