@@ -13,19 +13,26 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    'Programming Language :: Python :: 3.12',
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
     "pyyaml",
+]
+
+[dependency-groups]
+dev = [
+    "pytest >= 8.4.2",
+    "pytest-cov >= 7.0.0",
+    "sphinx >= 7.4.7",
+    "sphinx-rtd-theme >= 3.0.2",
 ]
 
 [project.urls]
 Homepage = "https://github.com/beetbox/confuse"
 Repository = "https://github.com/beetbox/confuse"
 "Bug Tracker" = "https://github.com/beetbox/confuse/issues"
-
-[project.optional-dependencies]
-test = ["pytest >= 8.4.2", "pytest-cov >= 7.0.0"]
 
 [build-system]
 requires = ["poetry-core"]
@@ -37,6 +44,11 @@ poetry = ">=2.1"
 
 [tool.poetry.requires-plugins]
 poethepoet = ">=0.32"
+
+[tool.poe.tasks.docs]
+help = "Build documentation"
+args = [{ name = "COMMANDS", positional = true, multiple = true, default = "html" }]
+cmd = "make -C docs $COMMANDS"
 
 [tool.poe.tasks.test]
 help = "Run tests with pytest"

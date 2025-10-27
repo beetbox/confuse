@@ -12,6 +12,8 @@ v2.1.0
 - Added typehints to `as_*` functions which allows for 
   enhanced type checking and IDE support.
 - Added a minimal release workflow for GitHub Actions to automate the release process.
+- Added support for Python 3.13 and Python 3.14.
+- Modernized package and tests setup.
 
 v2.0.1
 ''''''
