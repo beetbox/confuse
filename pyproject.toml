@@ -43,6 +43,12 @@ build-backend = "poetry.core.masonry.api"
 poethepoet = ">=0.26"
 poetry = ">=2.1"
 
+[tool.poetry]
+include = [
+    { path = "docs", format = "sdist" },
+    { path = "test", format = "sdist" },
+]
+
 [tool.poetry.requires-plugins]
 poethepoet = ">=0.32"
 
