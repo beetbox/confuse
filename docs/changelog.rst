@@ -1,6 +1,11 @@
 Changelog
 ---------
 
+v2.1.1
+''''''
+
+- Include `docs` and `tests` directory in source distributions.
+
 v2.1.0
 ''''''
 

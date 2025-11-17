@@ -21,3 +21,6 @@ To create a new version, follow these steps:
 3. Refresh the page to see the status of the workflow.
 4. Once it succeeds, create a GitHub release with notes from the
    ``docs/changelog.rst`` file.
+
+Note: This workflow does not update the changelog version numbers; this must be
+done manually before running the release workflow.
