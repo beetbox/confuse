@@ -4,8 +4,8 @@ Confuse: painless YAML config files
 .. image:: https://github.com/beetbox/confuse/actions/workflows/main.yml/badge.svg
     :target: https://github.com/beetbox/confuse/actions
 
-.. image:: http://img.shields.io/pypi/v/confuse.svg
-    :target: https://pypi.python.org/pypi/confuse
+.. image:: https://img.shields.io/pypi/v/confuse.svg
+    :target: https://pypi.org/project/confuse/
 
 **Confuse** is a configuration library for Python that uses YAML_. It takes care
 of defaults, overrides, type checking, command-line integration, environment
@@ -60,18 +60,18 @@ Credits
 Confuse was made to power beets_. Like beets, it is available under the `MIT
 license`_.
 
-.. _argparse: http://docs.python.org/dev/library/argparse.html
+.. _argparse: https://docs.python.org/dev/library/argparse.html
 
 .. _beets: https://github.com/beetbox/beets
 
-.. _configparser: http://docs.python.org/library/configparser.html
+.. _configparser: https://docs.python.org/library/configparser.html
 
-.. _confuse's documentation: http://confuse.readthedocs.org/en/latest/usage.html
+.. _confuse's documentation: https://confuse.readthedocs.io/en/latest/usage.html
 
-.. _logging: http://docs.python.org/library/logging.html
+.. _logging: https://docs.python.org/library/logging.html
 
-.. _mit license: http://www.opensource.org/licenses/mit-license.php
+.. _mit license: https://opensource.org/license/mit
 
-.. _optparse: http://docs.python.org/dev/library/optparse.html
+.. _optparse: https://docs.python.org/dev/library/optparse.html
 
-.. _yaml: http://yaml.org/
+.. _yaml: https://yaml.org/

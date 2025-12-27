@@ -97,7 +97,7 @@ granularity you want config files to override each other.
     an empty configuration at the top of the stack. A subsequent call to
     ``config.get()`` might then return no configuration at all.
 
-.. _xpath: http://www.w3.org/TR/xpath/
+.. _xpath: https://www.w3.org/TR/xpath/
 
 Validation
 ----------
@@ -131,7 +131,7 @@ that perform fancier validation or even conversion:
 - ``as_str_expanded()``: Expand any environment variables contained in a string
   using `os.path.expandvars()`_.
 
-.. _os.path.expandvars(): https://docs.python.org/library/os.path.html#os.path.expandvars
+.. _os.path.expandvars(): https://docs.python.org/3/library/os.path.html#os.path.expandvars
 
 For example, ``config['path'].as_filename()`` ensures that you get a reasonable
 filename string from the configuration. And calling
@@ -199,11 +199,11 @@ dot-delimited properties on the incoming object.
     config.set_args(args, dots=True)
     print(config["foo"]["bar"].get())
 
-.. _argparse: http://docs.python.org/dev/library/argparse.html
+.. _argparse: https://docs.python.org/dev/library/argparse.html
 
-.. _optparse: http://docs.python.org/library/optparse.html
+.. _optparse: https://docs.python.org/3/library/optparse.html
 
-.. _parse_args: http://docs.python.org/library/argparse.html#the-parse-args-method
+.. _parse_args: https://docs.python.org/library/argparse.html#the-parse-args-method
 
 Note that, while you can use the full power of your favorite command-line
 parsing library, you'll probably want to avoid specifying defaults in your
@@ -374,7 +374,7 @@ older configuration system such as ConfigParser_. Just do something like this:
     with open(config_filename, "w") as f:
         yaml.dump(migrated_config, f)
 
-.. _configparser: http://docs.python.org/library/configparser.html
+.. _configparser: https://docs.python.org/3/library/configparser.html
 
 Dynamic Updates
 ---------------
@@ -414,7 +414,7 @@ Confuse uses the PyYAML_ module to parse YAML configuration files. However, it
 deviates very slightly from the official YAML specification to provide a few
 niceties suited to human-written configuration files. Those tweaks are:
 
-.. _pyyaml: http://pyyaml.org/
+.. _pyyaml: https://pyyaml.org/
 
 - All strings are returned as Python Unicode objects.
 - YAML maps are parsed as Python OrderedDict_ objects. This means that you can
@@ -422,7 +422,7 @@ niceties suited to human-written configuration files. Those tweaks are:
 - Bare strings can begin with the % character. In stock PyYAML, this will throw
   a parse error.
 
-.. _ordereddict: http://docs.python.org/2/library/collections.html#collections.OrderedDict
+.. _ordereddict: https://docs.python.org/2/library/collections.html#collections.OrderedDict
 
 To produce a YAML string reflecting a configuration, just call
 ``config.dump()``. This does not cleanly round-trip YAML, but it does play some
@@ -490,9 +490,9 @@ defaults (but not the user's configuration files). Your tests can then modify
 the global configuration values without affecting other tests since these
 modifications will be cleared out before the next test runs.
 
-.. _setup: http://docs.python.org/2/library/unittest.html#unittest.TestCase.setUp
+.. _setup: https://docs.python.org/2/library/unittest.html#unittest.TestCase.setUp
 
-.. _unittest: http://docs.python.org/2/library/unittest.html
+.. _unittest: https://docs.python.org/2/library/unittest.html
 
 Redaction
 ---------
