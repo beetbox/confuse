@@ -1,14 +1,15 @@
-from .util import build_dict
-from . import yaml_util
 import os
+
+from . import yaml_util
+from .util import build_dict
 
 
 class ConfigSource(dict):
     """A dictionary augmented with metadata about the source of the
     configuration.
     """
-    def __init__(self, value, filename=None, default=False,
-                 base_for_paths=False):
+
+    def __init__(self, value, filename=None, default=False, base_for_paths=False):
         """Create a configuration source from a dictionary.
 
         :param filename: The file with the data for this configuration source.
@@ -26,13 +27,13 @@ class ConfigSource(dict):
         """
         super().__init__(value)
         if filename is not None and not isinstance(filename, str):
-            raise TypeError('filename must be a string or None')
+            raise TypeError("filename must be a string or None")
         self.filename = filename
         self.default = default
         self.base_for_paths = base_for_paths if filename is not None else False
 
     def __repr__(self):
-        return 'ConfigSource({0!r}, {1!r}, {2!r}, {3!r})'.format(
+        return "ConfigSource({0!r}, {1!r}, {2!r}, {3!r})".format(
             super(),
             self.filename,
             self.default,
@@ -50,15 +51,20 @@ class ConfigSource(dict):
         elif isinstance(value, dict):
             return ConfigSource(value)
         else:
-            raise TypeError('source value must be a dict')
+            raise TypeError("source value must be a dict")
 
 
 class YamlSource(ConfigSource):
-    """A configuration data source that reads from a YAML file.
-    """
+    """A configuration data source that reads from a YAML file."""
 
-    def __init__(self, filename=None, default=False, base_for_paths=False,
-                 optional=False, loader=yaml_util.Loader):
+    def __init__(
+        self,
+        filename=None,
+        default=False,
+        base_for_paths=False,
+        optional=False,
+        loader=yaml_util.Loader,
+    ):
         """Create a YAML data source by reading data from a file.
 
         May raise a `ConfigReadError`. However, if `optional` is
@@ -73,21 +79,26 @@ class YamlSource(ConfigSource):
         self.load()
 
     def load(self):
-        """Load YAML data from the source's filename.
-        """
+        """Load YAML data from the source's filename."""
         if self.optional and not os.path.isfile(self.filename):
             value = {}
         else:
-            value = yaml_util.load_yaml(self.filename,
-                                        loader=self.loader) or {}
+            value = yaml_util.load_yaml(self.filename, loader=self.loader) or {}
         self.update(value)
 
 
 class EnvSource(ConfigSource):
-    """A configuration data source loaded from environment variables.
-    """
-    def __init__(self, prefix, sep='__', lower=True, handle_lists=True,
-                 parse_yaml_docs=False, loader=yaml_util.Loader):
+    """A configuration data source loaded from environment variables."""
+
+    def __init__(
+        self,
+        prefix,
+        sep="__",
+        lower=True,
+        handle_lists=True,
+        parse_yaml_docs=False,
+        loader=yaml_util.Loader,
+    ):
         """Create a configuration source from the environment.
 
         :param prefix: The prefix used to identify the environment variables
@@ -108,8 +119,7 @@ class EnvSource(ConfigSource):
 
         :param loader: PyYAML Loader class to use to parse YAML values.
         """
-        super().__init__({}, filename=None, default=False,
-                         base_for_paths=False)
+        super().__init__({}, filename=None, default=False, base_for_paths=False)
         self.prefix = prefix
         self.sep = sep
         self.lower = lower
@@ -119,13 +129,12 @@ class EnvSource(ConfigSource):
         self.load()
 
     def load(self):
-        """Load configuration data from the environment.
-        """
+        """Load configuration data from the environment."""
         # Read config variables with prefix from the environment.
         config_vars = {}
         for var, value in os.environ.items():
             if var.startswith(self.prefix):
-                key = var[len(self.prefix):]
+                key = var[len(self.prefix) :]
                 if self.lower:
                     key = key.lower()
                 if self.parse_yaml_docs:
@@ -133,16 +142,15 @@ class EnvSource(ConfigSource):
                     # string representations of dicts and lists into the
                     # appropriate object (ie, '{foo: bar}' to {'foo': 'bar'}).
                     # Will raise a ConfigReadError if YAML parsing fails.
-                    value = yaml_util.load_yaml_string(value,
-                                                       'env variable ' + var,
-                                                       loader=self.loader)
+                    value = yaml_util.load_yaml_string(
+                        value, "env variable " + var, loader=self.loader
+                    )
                 else:
                     # Parse the value as a YAML scalar so that values are type
                     # converted using the same rules as the YAML Loader (ie,
                     # numeric string to int/float, 'true' to True, etc.). Will
                     # not raise a ConfigReadError.
-                    value = yaml_util.parse_as_scalar(value,
-                                                      loader=self.loader)
+                    value = yaml_util.parse_as_scalar(value, loader=self.loader)
                 config_vars[key] = value
         if self.sep:
             # Build a nested dict, keeping keys with `None` values to allow
@@ -169,13 +177,13 @@ class EnvSource(ConfigSource):
         try:
             # Convert the keys to integers, mapping the ints back to the keys
             int_to_key = {int(k): k for k in obj.keys()}
-        except (ValueError):
+        except ValueError:
             # Not all of the keys represent integers
             return obj
         try:
             # For the integers from 0 to the length of the dict, try to create
             # a list from the dict values using the integer to key mapping
             return [obj[int_to_key[i]] for i in range(len(obj))]
-        except (KeyError):
+        except KeyError:
             # At least one integer within the range is not a key of the dict
             return obj
