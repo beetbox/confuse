@@ -31,6 +31,7 @@ lint = [
     "mypy >= 1.18.2",
     "ruff >= 0.6.4",
     "sphinx-lint >= 1.0.0",
+    "types-pyyaml >=6.0.12",
 ]
 
 [project.optional-dependencies]
