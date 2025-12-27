@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This file is part of Confuse.
 # Copyright 2016, Adrian Sampson.
 #
@@ -32,8 +31,9 @@ __all__ = [
 import errno
 import os
 from collections import OrderedDict
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Any, Iterable, Sequence, TypeVar
+from typing import Any, TypeVar
 
 import yaml
 
@@ -84,7 +84,7 @@ class ConfigView:
         try:
             return util.iter_first(pairs)
         except ValueError:
-            raise NotFoundError("{0} not found".format(self.name))
+            raise NotFoundError(f"{self.name} not found")
 
     def exists(self):
         """Determine whether the view has a setting in any source."""
@@ -113,7 +113,7 @@ class ConfigView:
         raise NotImplementedError
 
     def __repr__(self):
-        return "<{}: {}>".format(self.__class__.__name__, self.name)
+        return f"<{self.__class__.__name__}: {self.name}>"
 
     def __iter__(self):
         """Iterate over the keys of a dictionary view or the *subviews*
@@ -121,21 +121,18 @@ class ConfigView:
         """
         # Try iterating over the keys, if this is a dictionary view.
         try:
-            for key in self.keys():
-                yield key
+            yield from self.keys()
 
         except ConfigTypeError:
             # Otherwise, try iterating over a list view.
             try:
-                for subview in self.sequence():
-                    yield subview
+                yield from self.sequence()
 
             except ConfigTypeError:
                 item, _ = self.first()
                 raise ConfigTypeError(
-                    "{0} must be a dictionary or a list, not {1}".format(
-                        self.name, type(item).__name__
-                    )
+                    f"{self.name} must be a dictionary or a list, not "
+                    f"{type(item).__name__}"
                 )
 
     def __getitem__(self, key):
@@ -200,7 +197,7 @@ class ConfigView:
                 cur_keys = dic.keys()
             except AttributeError:
                 raise ConfigTypeError(
-                    "{0} must be a dict, not {1}".format(self.name, type(dic).__name__)
+                    f"{self.name} must be a dict, not {type(dic).__name__}"
                 )
 
             for key in cur_keys:
@@ -238,9 +235,7 @@ class ConfigView:
             return
         if not isinstance(collection, (list, tuple)):
             raise ConfigTypeError(
-                "{0} must be a list, not {1}".format(
-                    self.name, type(collection).__name__
-                )
+                f"{self.name} must be a list, not {type(collection).__name__}"
             )
 
         # Yield all the indices in the sequence.
@@ -259,12 +254,9 @@ class ConfigView:
                 it = iter(collection)
             except TypeError:
                 raise ConfigTypeError(
-                    "{0} must be an iterable, not {1}".format(
-                        self.name, type(collection).__name__
-                    )
+                    f"{self.name} must be an iterable, not {type(collection).__name__}"
                 )
-            for value in it:
-                yield value
+            yield from it
 
     # Validation and conversion.
 
@@ -434,7 +426,7 @@ class Subview(ConfigView):
             if not isinstance(self.key, int):
                 self.name += "."
         if isinstance(self.key, int):
-            self.name += "#{0}".format(self.key)
+            self.name += f"#{self.key}"
         elif isinstance(self.key, bytes):
             self.name += self.key.decode("utf-8")
         elif isinstance(self.key, str):
@@ -455,9 +447,8 @@ class Subview(ConfigView):
             except TypeError:
                 # Not subscriptable.
                 raise ConfigTypeError(
-                    "{0} must be a collection, not {1}".format(
-                        self.parent.name, type(collection).__name__
-                    )
+                    f"{self.parent.name} must be a collection, not "
+                    f"{type(collection).__name__}"
                 )
             yield value, source
 
@@ -506,7 +497,7 @@ class Configuration(RootView):
         else:
             self._package_path = None
 
-        self._env_var = "{0}DIR".format(self.appname.upper())
+        self._env_var = f"{self.appname.upper()}DIR"
 
         if read:
             self.read()
@@ -567,7 +558,7 @@ class Configuration(RootView):
             appdir = os.environ[self._env_var]
             appdir = os.path.abspath(os.path.expanduser(appdir))
             if os.path.isfile(appdir):
-                raise ConfigError("{0} must be a directory".format(self._env_var))
+                raise ConfigError(f"{self._env_var} must be a directory")
 
         else:
             # Search platform-specific locations. If no config file is
@@ -622,7 +613,7 @@ class Configuration(RootView):
         :param sep: Separator within variable names to define nested keys.
         """
         if prefix is None:
-            prefix = "{0}_".format(self.appname.upper())
+            prefix = f"{self.appname.upper()}_"
         self.set(EnvSource(prefix, sep=sep, loader=self.loader))
 
     def dump(self, full=True, redact=False):

@@ -33,11 +33,9 @@ class ConfigSource(dict):
         self.base_for_paths = base_for_paths if filename is not None else False
 
     def __repr__(self):
-        return "ConfigSource({0!r}, {1!r}, {2!r}, {3!r})".format(
-            super(),
-            self.filename,
-            self.default,
-            self.base_for_paths,
+        return (
+            f"ConfigSource({super()!r}, {self.filename!r}, {self.default!r}, "
+            f"{self.base_for_paths!r})"
         )
 
     @classmethod

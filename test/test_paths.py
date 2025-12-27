@@ -168,7 +168,7 @@ class EnvVarTest(FakeSystem):
     TMP_HOME = True
 
     def setUp(self):
-        super(EnvVarTest, self).setUp()
+        super().setUp()
         self.config = confuse.Configuration("myapp", read=False)
         os.environ["MYAPPDIR"] = self.home  # use the tmp home as a config dir
 
@@ -199,7 +199,7 @@ class PrimaryConfigDirTest(FakeSystem):
             os.path = os_path
 
     def setUp(self):
-        super(PrimaryConfigDirTest, self).setUp()
+        super().setUp()
         if hasattr(self, "join"):
             os.path.join = self.join
             os.makedirs, self._makedirs = self.makedirs, os.makedirs
@@ -207,7 +207,7 @@ class PrimaryConfigDirTest(FakeSystem):
         self.config = confuse.Configuration("test", read=False)
 
     def tearDown(self):
-        super(PrimaryConfigDirTest, self).tearDown()
+        super().tearDown()
         if hasattr(self, "_makedirs"):
             os.makedirs = self._makedirs
 
