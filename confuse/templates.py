@@ -630,7 +630,7 @@ class TypeTemplate(Template):
         return value
 
 
-class AttrDict(dict):
+class AttrDict(dict[str, object]):
     """A `dict` subclass that can be accessed via attributes (dot
     notation) for convenience.
     """

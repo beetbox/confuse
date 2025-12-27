@@ -5,6 +5,7 @@ import posixpath
 import shutil
 import tempfile
 import unittest
+from typing import ClassVar
 
 import confuse
 import confuse.yaml_util
@@ -29,30 +30,33 @@ def _touch(path):
     open(path, "a").close()
 
 
-class FakeSystem(unittest.TestCase):
-    SYS_NAME = None
-    TMP_HOME = False
-
+class FakeHome(unittest.TestCase):
     def setUp(self):
-        if self.TMP_HOME:
-            self.home = tempfile.mkdtemp()
-
-        if self.SYS_NAME in SYSTEMS:
-            self.os_path = os.path
-            os.environ = {}
-
-            environ, os.path = SYSTEMS[self.SYS_NAME]
-            os.environ.update(environ)  # copy
-            platform.system = lambda: self.SYS_NAME
-
-        if self.TMP_HOME:
-            os.environ["HOME"] = self.home
-            os.environ["USERPROFILE"] = self.home
+        super().setUp()
+        self.home = tempfile.mkdtemp()
+        os.environ["HOME"] = self.home
+        os.environ["USERPROFILE"] = self.home
 
     def tearDown(self):
+        super().tearDown()
+        shutil.rmtree(self.home)
+
+
+class FakeSystem(unittest.TestCase):
+    SYS_NAME: ClassVar[str]
+
+    def setUp(self):
+        super().setUp()
+        self.os_path = os.path
+        os.environ = {}
+
+        environ, os.path = SYSTEMS[self.SYS_NAME]
+        os.environ.update(environ)  # copy
+        platform.system = lambda: self.SYS_NAME
+
+    def tearDown(self):
+        super().tearDown()
         platform.system, os.environ, os.path = DEFAULT
-        if hasattr(self, "home"):
-            shutil.rmtree(self.home)
 
 
 class LinuxTestCases(FakeSystem):
@@ -152,9 +156,7 @@ class ConfigFilenamesTest(unittest.TestCase):
         assert source.default
 
 
-class EnvVarTest(FakeSystem):
-    TMP_HOME = True
-
+class EnvVarTest(FakeHome):
     def setUp(self):
         super().setUp()
         self.config = confuse.Configuration("myapp", read=False)
@@ -171,33 +173,14 @@ class EnvVarTest(FakeSystem):
         assert self.config.config_dir() != self.home
 
 
-class PrimaryConfigDirTest(FakeSystem):
+@unittest.skipUnless(os.system == "Linux", "Linux-specific tests")
+class PrimaryConfigDirTest(FakeHome, FakeSystem):
     SYS_NAME = "Linux"  # conversion from posix to nt is easy
-    TMP_HOME = True
-
-    if platform.system() == "Windows":
-        # wrap these functions as they need to work on the host system which is
-        # only needed on Windows as we are using `posixpath`
-        def join(self, *args):
-            return self.os_path.normpath(self.os_path.join(*args))
-
-        def makedirs(self, path, *args, **kwargs):
-            os.path, os_path = self.os_path, os.path
-            self._makedirs(path, *args, **kwargs)
-            os.path = os_path
 
     def setUp(self):
         super().setUp()
-        if hasattr(self, "join"):
-            os.path.join = self.join
-            os.makedirs, self._makedirs = self.makedirs, os.makedirs
 
         self.config = confuse.Configuration("test", read=False)
-
-    def tearDown(self):
-        super().tearDown()
-        if hasattr(self, "_makedirs"):
-            os.makedirs = self._makedirs
 
     def test_create_dir_if_none_exists(self):
         path = os.path.join(self.home, ".config", "test")

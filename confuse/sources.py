@@ -4,7 +4,7 @@ from . import yaml_util
 from .util import build_dict
 
 
-class ConfigSource(dict):
+class ConfigSource(dict[str, object]):
     """A dictionary augmented with metadata about the source of the
     configuration.
     """
