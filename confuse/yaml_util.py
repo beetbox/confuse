@@ -35,7 +35,7 @@ class Loader(yaml.SafeLoader):
             raise yaml.constructor.ConstructorError(
                 None,
                 None,
-                "expected a mapping node, but found %s" % node.id,
+                f"expected a mapping node, but found {node.id}",
                 node.start_mark,
             )
 
@@ -48,7 +48,7 @@ class Loader(yaml.SafeLoader):
                 raise yaml.constructor.ConstructorError(
                     "while constructing a mapping",
                     node.start_mark,
-                    "found unacceptable key (%s)" % exc,
+                    f"found unacceptable key ({exc})",
                     key_node.start_mark,
                 )
             value = self.construct_object(value_node, deep=deep)
@@ -84,7 +84,7 @@ def load_yaml(filename, loader=Loader):
     try:
         with open(filename, "rb") as f:
             return yaml.load(f, Loader=loader)
-    except (IOError, yaml.error.YAMLError) as exc:
+    except (OSError, yaml.error.YAMLError) as exc:
         raise ConfigReadError(filename, exc)
 
 
@@ -205,14 +205,14 @@ def restore_yaml_comments(data, default_data):
         if not line:
             comment = "\n"
         elif line.startswith("#"):
-            comment = "{0}\n".format(line)
+            comment = f"{line}\n"
         else:
             continue
         while True:
             line = next(default_lines)
             if line and not line.startswith("#"):
                 break
-            comment += "{0}\n".format(line)
+            comment += f"{line}\n"
         key = line.split(":")[0].strip()
         comment_map[key] = comment
     out_lines = iter(data.splitlines())
@@ -221,5 +221,5 @@ def restore_yaml_comments(data, default_data):
         key = line.split(":")[0].strip()
         if key in comment_map:
             out_data += comment_map[key]
-        out_data += "{0}\n".format(line)
+        out_data += f"{line}\n"
     return out_data

@@ -33,11 +33,9 @@ class ConfigSource(dict):
         self.base_for_paths = base_for_paths if filename is not None else False
 
     def __repr__(self):
-        return "ConfigSource({0!r}, {1!r}, {2!r}, {3!r})".format(
-            super(),
-            self.filename,
-            self.default,
-            self.base_for_paths,
+        return (
+            f"ConfigSource({super()!r}, {self.filename!r}, {self.default!r}, "
+            f"{self.base_for_paths!r})"
         )
 
     @classmethod
@@ -143,7 +141,7 @@ class EnvSource(ConfigSource):
                     # appropriate object (ie, '{foo: bar}' to {'foo': 'bar'}).
                     # Will raise a ConfigReadError if YAML parsing fails.
                     value = yaml_util.load_yaml_string(
-                        value, "env variable " + var, loader=self.loader
+                        value, f"env variable {var}", loader=self.loader
                     )
                 else:
                     # Parse the value as a YAML scalar so that values are type

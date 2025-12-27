@@ -11,25 +11,25 @@ class PrettyDumpTest(unittest.TestCase):
         config = confuse.Configuration("myapp", read=False)
         config.add({"foo": None})
         yaml = config.dump().strip()
-        self.assertEqual(yaml, "foo:")
+        assert yaml == "foo:"
 
     def test_dump_true(self):
         config = confuse.Configuration("myapp", read=False)
         config.add({"foo": True})
         yaml = config.dump().strip()
-        self.assertEqual(yaml, "foo: yes")
+        assert yaml == "foo: yes"
 
     def test_dump_false(self):
         config = confuse.Configuration("myapp", read=False)
         config.add({"foo": False})
         yaml = config.dump().strip()
-        self.assertEqual(yaml, "foo: no")
+        assert yaml == "foo: no"
 
     def test_dump_short_list(self):
         config = confuse.Configuration("myapp", read=False)
         config.add({"foo": ["bar", "baz"]})
         yaml = config.dump().strip()
-        self.assertEqual(yaml, "foo: [bar, baz]")
+        assert yaml == "foo: [bar, baz]"
 
     def test_dump_ordered_dict(self):
         odict = confuse.OrderedDict()
@@ -40,14 +40,14 @@ class PrettyDumpTest(unittest.TestCase):
         config = confuse.Configuration("myapp", read=False)
         config.add({"key": odict})
         yaml = config.dump().strip()
-        self.assertEqual(
-            yaml,
-            textwrap.dedent("""
+        assert (
+            yaml
+            == textwrap.dedent("""
             key:
                 foo: bar
                 bar: baz
                 baz: qux
-        """).strip(),
+        """).strip()
         )
 
     def test_dump_sans_defaults(self):
@@ -57,44 +57,44 @@ class PrettyDumpTest(unittest.TestCase):
         config.add({"baz": "qux"})
 
         yaml = config.dump().strip()
-        self.assertEqual(yaml, "foo: bar\nbaz: qux")
+        assert yaml == "foo: bar\nbaz: qux"
 
         yaml = config.dump(full=False).strip()
-        self.assertEqual(yaml, "baz: qux")
+        assert yaml == "baz: qux"
 
 
 class RedactTest(unittest.TestCase):
     def test_no_redaction(self):
         config = _root({"foo": "bar"})
         data = config.flatten(redact=True)
-        self.assertEqual(data, {"foo": "bar"})
+        assert data == {"foo": "bar"}
 
     def test_redact_key(self):
         config = _root({"foo": "bar"})
         config["foo"].redact = True
         data = config.flatten(redact=True)
-        self.assertEqual(data, {"foo": "REDACTED"})
+        assert data == {"foo": "REDACTED"}
 
     def test_unredact(self):
         config = _root({"foo": "bar"})
         config["foo"].redact = True
         config["foo"].redact = False
         data = config.flatten(redact=True)
-        self.assertEqual(data, {"foo": "bar"})
+        assert data == {"foo": "bar"}
 
     def test_dump_redacted(self):
         config = confuse.Configuration("myapp", read=False)
         config.add({"foo": "bar"})
         config["foo"].redact = True
         yaml = config.dump(redact=True).strip()
-        self.assertEqual(yaml, "foo: REDACTED")
+        assert yaml == "foo: REDACTED"
 
     def test_dump_unredacted(self):
         config = confuse.Configuration("myapp", read=False)
         config.add({"foo": "bar"})
         config["foo"].redact = True
         yaml = config.dump(redact=False).strip()
-        self.assertEqual(yaml, "foo: bar")
+        assert yaml == "foo: bar"
 
     def test_dump_redacted_sans_defaults(self):
         config = confuse.Configuration("myapp", read=False)
@@ -104,4 +104,4 @@ class RedactTest(unittest.TestCase):
         config["baz"].redact = True
 
         yaml = config.dump(redact=True, full=False).strip()
-        self.assertEqual(yaml, "baz: REDACTED")
+        assert yaml == "baz: REDACTED"

@@ -58,7 +58,7 @@ class Template:
         """
         if not hasattr(self, "default") or self.default is REQUIRED:
             # The value is required. A missing value is an error.
-            raise exceptions.NotFoundError("{} not found".format(key_name))
+            raise exceptions.NotFoundError(f"{key_name} not found")
         # The value is not required.
         return self.default
 
@@ -83,10 +83,10 @@ class Template:
         exc_class = (
             exceptions.ConfigTypeError if type_error else exceptions.ConfigValueError
         )
-        raise exc_class("{0}: {1}".format(view.name, message))
+        raise exc_class(f"{view.name}: {message}")
 
     def __repr__(self):
-        return "{0}({1})".format(
+        return "{}({})".format(
             type(self).__name__,
             "" if self.default is REQUIRED else repr(self.default),
         )
@@ -113,9 +113,7 @@ class Number(Template):
         if isinstance(value, (int, float)):
             return value
         else:
-            self.fail(
-                "must be numeric, not {0}".format(type(value).__name__), view, True
-            )
+            self.fail(f"must be numeric, not {type(value).__name__}", view, True)
 
 
 class MappingTemplate(Template):
@@ -143,7 +141,7 @@ class MappingTemplate(Template):
         return out
 
     def __repr__(self):
-        return "MappingTemplate({0})".format(repr(self.subtemplates))
+        return f"MappingTemplate({self.subtemplates!r})"
 
 
 class Sequence(Template):
@@ -165,7 +163,7 @@ class Sequence(Template):
         return out
 
     def __repr__(self):
-        return "Sequence({0})".format(repr(self.subtemplate))
+        return f"Sequence({self.subtemplate!r})"
 
 
 class MappingValues(Template):
@@ -193,7 +191,7 @@ class MappingValues(Template):
         return out
 
     def __repr__(self):
-        return "MappingValues({0})".format(repr(self.subtemplate))
+        return f"MappingValues({self.subtemplate!r})"
 
 
 class String(Template):
@@ -218,7 +216,7 @@ class String(Template):
         if self.pattern is not None:
             args.append("pattern=" + repr(self.pattern))
 
-        return "String({0})".format(", ".join(args))
+        return f"String({', '.join(args)})"
 
     def convert(self, value, view):
         """Check that the value is a string and matches the pattern."""
@@ -226,7 +224,7 @@ class String(Template):
             self.fail("must be a string", view, True)
 
         if self.pattern and not self.regex.match(value):
-            self.fail("must match the pattern {0}".format(self.pattern), view)
+            self.fail(f"must match the pattern {self.pattern}", view)
 
         if self.expand_vars:
             return os.path.expandvars(value)
@@ -263,15 +261,14 @@ class Choice(Template):
                 return self.choices(value)
             except ValueError:
                 self.fail(
-                    "must be one of {0!r}, not {1!r}".format(
-                        [c.value for c in self.choices], value
-                    ),
+                    f"must be one of {[c.value for c in self.choices]!r}, not "
+                    f"{value!r}",
                     view,
                 )
 
         if value not in self.choices:
             self.fail(
-                "must be one of {0!r}, not {1!r}".format(list(self.choices), value),
+                f"must be one of {list(self.choices)!r}, not {value!r}",
                 view,
             )
 
@@ -281,7 +278,7 @@ class Choice(Template):
             return value
 
     def __repr__(self):
-        return "Choice({0!r})".format(self.choices)
+        return f"Choice({self.choices!r})"
 
 
 class OneOf(Template):
@@ -300,7 +297,7 @@ class OneOf(Template):
         if self.default is not REQUIRED:
             args.append(repr(self.default))
 
-        return "OneOf({0})".format(", ".join(args))
+        return f"OneOf({', '.join(args)})"
 
     def value(self, view, template):
         self.template = template
@@ -324,9 +321,7 @@ class OneOf(Template):
             except ValueError as exc:
                 raise exceptions.ConfigTemplateError(exc)
 
-        self.fail(
-            "must be one of {0}, not {1}".format(repr(self.allowed), repr(value)), view
-        )
+        self.fail(f"must be one of {self.allowed!r}, not {value!r}", view)
 
 
 class StrSeq(Template):
@@ -409,9 +404,7 @@ class Pairs(StrSeq):
             else:
                 # Is this even possible? -> Likely, if some !directive cause
                 # YAML to parse this to some custom type.
-                self.fail(
-                    "must be a single string, mapping, or a list" + str(x), view, True
-                )
+                self.fail(f"must be a single string, mapping, or a list{x}", view, True)
             return (super()._convert_value(k, view), super()._convert_value(v, view))
 
 
@@ -473,7 +466,7 @@ class Filename(Template):
         if self.in_source_dir:
             args.append("in_source_dir=True")
 
-        return "Filename({0})".format(", ".join(args))
+        return f"Filename({', '.join(args)})"
 
     def resolve_relative_to(self, view, template):
         if not isinstance(template, (abc.Mapping, MappingTemplate)):
@@ -483,16 +476,12 @@ class Filename(Template):
             )
 
         elif self.relative_to == view.key:
-            raise exceptions.ConfigTemplateError(
-                "{0} is relative to itself".format(view.name)
-            )
+            raise exceptions.ConfigTemplateError(f"{view.name} is relative to itself")
 
         elif self.relative_to not in view.parent.keys():
             # self.relative_to is not in the config
             self.fail(
-                ('needs sibling value "{0}" to expand relative path').format(
-                    self.relative_to
-                ),
+                (f'needs sibling value "{self.relative_to}" to expand relative path'),
                 view,
             )
 
@@ -513,16 +502,12 @@ class Filename(Template):
                 if next_relative in template.subtemplates:
                     # we encountered this config key previously
                     raise exceptions.ConfigTemplateError(
-                        ("{0} and {1} are recursively relative").format(
-                            view.name, self.relative_to
-                        )
+                        f"{view.name} and {self.relative_to} are recursively relative"
                     )
                 else:
                     raise exceptions.ConfigTemplateError(
-                        (
-                            "missing template for {0}, needed to expand {1}'s"
-                            "relative path"
-                        ).format(self.relative_to, view.name)
+                        f"missing template for {self.relative_to}, needed to expand "
+                        f"{view.name}'s relative path"
                     )
 
             next_template.subtemplates[next_relative] = rel_to_template
@@ -537,9 +522,7 @@ class Filename(Template):
             return self.get_default_value(view.name)
 
         if not isinstance(path, str):
-            self.fail(
-                "must be a filename, not {0}".format(type(path).__name__), view, True
-            )
+            self.fail(f"must be a filename, not {type(path).__name__}", view, True)
         path = os.path.expanduser(str(path))
 
         if not os.path.isabs(path):
@@ -611,7 +594,7 @@ class Optional(Template):
                 # Value is missing but not required
                 return self.default
             # Value must be present even though it can be null. Raise an error.
-            raise exceptions.NotFoundError("{} not found".format(view.name))
+            raise exceptions.NotFoundError(f"{view.name} not found")
 
         if value is None:
             # None (ie, null) is always a valid value
@@ -619,10 +602,9 @@ class Optional(Template):
         return self.subtemplate.value(view, self)
 
     def __repr__(self):
-        return "Optional({0}, {1}, allow_missing={2})".format(
-            repr(self.subtemplate),
-            repr(self.default),
-            self.allow_missing,
+        return (
+            f"Optional({self.subtemplate!r}, {self.default!r}, "
+            f"allow_missing={self.allow_missing})"
         )
 
 
@@ -641,10 +623,7 @@ class TypeTemplate(Template):
     def convert(self, value, view):
         if not isinstance(value, self.typ):
             self.fail(
-                "must be a {0}, not {1}".format(
-                    self.typ.__name__,
-                    type(value).__name__,
-                ),
+                f"must be a {self.typ.__name__}, not {type(value).__name__}",
                 view,
                 True,
             )
@@ -706,4 +685,4 @@ def as_template(value):
     elif isinstance(value, type):
         return TypeTemplate(value)
     else:
-        raise ValueError("cannot convert to template: {0!r}".format(value))
+        raise ValueError(f"cannot convert to template: {value!r}")

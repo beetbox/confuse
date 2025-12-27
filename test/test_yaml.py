@@ -1,5 +1,6 @@
 import unittest
 
+import pytest
 import yaml
 
 import confuse
@@ -14,12 +15,12 @@ def load(s):
 class ParseTest(unittest.TestCase):
     def test_dict_parsed_as_ordereddict(self):
         v = load("a: b\nc: d")
-        self.assertTrue(isinstance(v, confuse.OrderedDict))
-        self.assertEqual(list(v), ["a", "c"])
+        assert isinstance(v, confuse.OrderedDict)
+        assert list(v) == ["a", "c"]
 
     def test_string_beginning_with_percent(self):
         v = load("foo: %bar")
-        self.assertEqual(v["foo"], "%bar")
+        assert v["foo"] == "%bar"
 
 
 class FileParseTest(unittest.TestCase):
@@ -30,101 +31,85 @@ class FileParseTest(unittest.TestCase):
 
     def test_load_file(self):
         v = self._parse_contents(b"foo: bar")
-        self.assertEqual(v["foo"], "bar")
+        assert v["foo"] == "bar"
 
     def test_syntax_error(self):
-        try:
+        with pytest.raises(confuse.ConfigError, match=r"test_config\.yaml"):
             self._parse_contents(b":")
-        except confuse.ConfigError as exc:
-            self.assertTrue("test_config.yaml" in exc.name)
-        else:
-            self.fail("ConfigError not raised")
 
     def test_reload_conf(self):
         with TempDir() as temp:
             path = temp.sub("test_config.yaml", b"foo: bar")
             config = confuse.Configuration("test", __name__)
             config.set_file(filename=path)
-            self.assertEqual(config["foo"].get(), "bar")
+            assert config["foo"].get() == "bar"
             temp.sub("test_config.yaml", b"foo: bar2\ntest: hello world")
             config.reload()
-            self.assertEqual(config["foo"].get(), "bar2")
-            self.assertEqual(config["test"].get(), "hello world")
+            assert config["foo"].get() == "bar2"
+            assert config["test"].get() == "hello world"
 
     def test_tab_indentation_error(self):
-        try:
+        with pytest.raises(confuse.ConfigError, match="found tab"):
             self._parse_contents(b"foo:\n\tbar: baz")
-        except confuse.ConfigError as exc:
-            self.assertTrue("found tab" in exc.args[0])
-        else:
-            self.fail("ConfigError not raised")
 
 
 class StringParseTest(unittest.TestCase):
     def test_load_string(self):
         v = confuse.load_yaml_string("foo: bar", "test")
-        self.assertEqual(v["foo"], "bar")
+        assert v["foo"] == "bar"
 
     def test_string_syntax_error(self):
-        try:
+        with pytest.raises(confuse.ConfigError, match="test"):
             confuse.load_yaml_string(":", "test")
-        except confuse.ConfigError as exc:
-            self.assertTrue("test" in exc.name)
-        else:
-            self.fail("ConfigError not raised")
 
     def test_string_tab_indentation_error(self):
-        try:
+        with pytest.raises(confuse.ConfigError, match="found tab"):
             confuse.load_yaml_string("foo:\n\tbar: baz", "test")
-        except confuse.ConfigError as exc:
-            self.assertTrue("found tab" in exc.args[0])
-        else:
-            self.fail("ConfigError not raised")
 
 
 class ParseAsScalarTest(unittest.TestCase):
     def test_text_string(self):
         v = confuse.yaml_util.parse_as_scalar("foo", confuse.Loader)
-        self.assertEqual(v, "foo")
+        assert v == "foo"
 
     def test_number_string_to_int(self):
         v = confuse.yaml_util.parse_as_scalar("1", confuse.Loader)
-        self.assertIsInstance(v, int)
-        self.assertEqual(v, 1)
+        assert isinstance(v, int)
+        assert v == 1
 
     def test_number_string_to_float(self):
         v = confuse.yaml_util.parse_as_scalar("1.0", confuse.Loader)
-        self.assertIsInstance(v, float)
-        self.assertEqual(v, 1.0)
+        assert isinstance(v, float)
+        assert v == 1.0
 
     def test_bool_string_to_bool(self):
         v = confuse.yaml_util.parse_as_scalar("true", confuse.Loader)
-        self.assertIs(v, True)
+        assert v is True
 
     def test_empty_string_to_none(self):
         v = confuse.yaml_util.parse_as_scalar("", confuse.Loader)
-        self.assertIs(v, None)
+        assert v is None
 
     def test_null_string_to_none(self):
         v = confuse.yaml_util.parse_as_scalar("null", confuse.Loader)
-        self.assertIs(v, None)
+        assert v is None
 
     def test_dict_string_unchanged(self):
         v = confuse.yaml_util.parse_as_scalar('{"foo": "bar"}', confuse.Loader)
-        self.assertEqual(v, '{"foo": "bar"}')
+        assert v == '{"foo": "bar"}'
 
     def test_dict_unchanged(self):
         v = confuse.yaml_util.parse_as_scalar({"foo": "bar"}, confuse.Loader)
-        self.assertEqual(v, {"foo": "bar"})
+        assert v == {"foo": "bar"}
 
     def test_list_string_unchanged(self):
         v = confuse.yaml_util.parse_as_scalar('["foo", "bar"]', confuse.Loader)
-        self.assertEqual(v, '["foo", "bar"]')
+        assert v == '["foo", "bar"]'
 
     def test_list_unchanged(self):
         v = confuse.yaml_util.parse_as_scalar(["foo", "bar"], confuse.Loader)
-        self.assertEqual(v, ["foo", "bar"])
+        assert v == ["foo", "bar"]
 
     def test_invalid_yaml_string_unchanged(self):
         v = confuse.yaml_util.parse_as_scalar("!", confuse.Loader)
-        self.assertEqual(v, "!")
+        assert v == "!"
