@@ -6,10 +6,12 @@ on: [push]
 jobs:
   test:
     name: Run tests
-    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
+        platform: [ubuntu-latest, windows-latest]
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+    runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Python tools
