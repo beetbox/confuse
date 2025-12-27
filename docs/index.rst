@@ -1,11 +1,11 @@
 .. include:: ../README.rst
 
 .. toctree::
-   :maxdepth: 3
-   :hidden:
+    :maxdepth: 3
+    :hidden:
 
-   usage
-   examples
-   changelog
-   api
-   dev
+    usage
+    examples
+    changelog
+    api
+    dev
