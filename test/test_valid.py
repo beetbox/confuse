@@ -1,85 +1,95 @@
-from collections.abc import Mapping, Sequence
-import confuse
 import enum
 import os
 import unittest
+from collections.abc import Mapping, Sequence
+
+import confuse
+
 from . import _root
 
 
 class ValidConfigTest(unittest.TestCase):
     def test_validate_simple_dict(self):
-        config = _root({'foo': 5})
-        valid = config.get({'foo': confuse.Integer()})
-        self.assertEqual(valid['foo'], 5)
+        config = _root({"foo": 5})
+        valid = config.get({"foo": confuse.Integer()})
+        self.assertEqual(valid["foo"], 5)
 
     def test_default_value(self):
         config = _root({})
-        valid = config.get({'foo': confuse.Integer(8)})
-        self.assertEqual(valid['foo'], 8)
+        valid = config.get({"foo": confuse.Integer(8)})
+        self.assertEqual(valid["foo"], 8)
 
     def test_undeclared_key_raises_keyerror(self):
-        config = _root({'foo': 5})
-        valid = config.get({'foo': confuse.Integer()})
+        config = _root({"foo": 5})
+        valid = config.get({"foo": confuse.Integer()})
         with self.assertRaises(KeyError):
-            valid['bar']
+            valid["bar"]
 
     def test_undeclared_key_ignored_from_input(self):
-        config = _root({'foo': 5, 'bar': 6})
-        valid = config.get({'foo': confuse.Integer()})
+        config = _root({"foo": 5, "bar": 6})
+        valid = config.get({"foo": confuse.Integer()})
         with self.assertRaises(KeyError):
-            valid['bar']
+            valid["bar"]
 
     def test_int_template_shortcut(self):
-        config = _root({'foo': 5})
-        valid = config.get({'foo': int})
-        self.assertEqual(valid['foo'], 5)
+        config = _root({"foo": 5})
+        valid = config.get({"foo": int})
+        self.assertEqual(valid["foo"], 5)
 
     def test_int_default_shortcut(self):
         config = _root({})
-        valid = config.get({'foo': 9})
-        self.assertEqual(valid['foo'], 9)
+        valid = config.get({"foo": 9})
+        self.assertEqual(valid["foo"], 9)
 
     def test_attribute_access(self):
-        config = _root({'foo': 5})
-        valid = config.get({'foo': confuse.Integer()})
+        config = _root({"foo": 5})
+        valid = config.get({"foo": confuse.Integer()})
         self.assertEqual(valid.foo, 5)
 
     def test_missing_required_value_raises_error_on_validate(self):
         config = _root({})
         with self.assertRaises(confuse.NotFoundError):
-            config.get({'foo': confuse.Integer()})
+            config.get({"foo": confuse.Integer()})
 
     def test_none_as_default(self):
         config = _root({})
-        valid = config.get({'foo': confuse.Integer(None)})
-        self.assertIsNone(valid['foo'])
+        valid = config.get({"foo": confuse.Integer(None)})
+        self.assertIsNone(valid["foo"])
 
     def test_wrong_type_raises_error_on_validate(self):
-        config = _root({'foo': 'bar'})
+        config = _root({"foo": "bar"})
         with self.assertRaises(confuse.ConfigTypeError):
-            config.get({'foo': confuse.Integer()})
+            config.get({"foo": confuse.Integer()})
 
     def test_validate_individual_value(self):
-        config = _root({'foo': 5})
-        valid = config['foo'].get(confuse.Integer())
+        config = _root({"foo": 5})
+        valid = config["foo"].get(confuse.Integer())
         self.assertEqual(valid, 5)
 
     def test_nested_dict_template(self):
-        config = _root({
-            'foo': {'bar': 9},
-        })
-        valid = config.get({
-            'foo': {'bar': confuse.Integer()},
-        })
-        self.assertEqual(valid['foo']['bar'], 9)
+        config = _root(
+            {
+                "foo": {"bar": 9},
+            }
+        )
+        valid = config.get(
+            {
+                "foo": {"bar": confuse.Integer()},
+            }
+        )
+        self.assertEqual(valid["foo"]["bar"], 9)
 
     def test_nested_attribute_access(self):
-        config = _root({
-            'foo': {'bar': 8},
-        })
-        valid = config.get({
-            'foo': {'bar': confuse.Integer()},
-        })
+        config = _root(
+            {
+                "foo": {"bar": 8},
+            }
+        )
+        valid = config.get(
+            {
+                "foo": {"bar": confuse.Integer()},
+            }
+        )
         self.assertEqual(valid.foo.bar, 8)
 
 
@@ -100,25 +110,24 @@ class AsTemplateTest(unittest.TestCase):
         self.assertEqual(typ.default, confuse.REQUIRED)
 
     def test_concrete_string_as_template(self):
-        typ = confuse.as_template('foo')
+        typ = confuse.as_template("foo")
         self.assertIsInstance(typ, confuse.String)
-        self.assertEqual(typ.default, 'foo')
+        self.assertEqual(typ.default, "foo")
 
     def test_dict_as_template(self):
-        typ = confuse.as_template({'key': 9})
+        typ = confuse.as_template({"key": 9})
         self.assertIsInstance(typ, confuse.MappingTemplate)
-        self.assertIsInstance(typ.subtemplates['key'], confuse.Integer)
-        self.assertEqual(typ.subtemplates['key'].default, 9)
+        self.assertIsInstance(typ.subtemplates["key"], confuse.Integer)
+        self.assertEqual(typ.subtemplates["key"].default, 9)
 
     def test_nested_dict_as_template(self):
-        typ = confuse.as_template({'outer': {'inner': 2}})
+        typ = confuse.as_template({"outer": {"inner": 2}})
         self.assertIsInstance(typ, confuse.MappingTemplate)
-        self.assertIsInstance(typ.subtemplates['outer'],
-                              confuse.MappingTemplate)
-        self.assertIsInstance(typ.subtemplates['outer'].subtemplates['inner'],
-                              confuse.Integer)
-        self.assertEqual(typ.subtemplates['outer'].subtemplates['inner']
-                         .default, 2)
+        self.assertIsInstance(typ.subtemplates["outer"], confuse.MappingTemplate)
+        self.assertIsInstance(
+            typ.subtemplates["outer"].subtemplates["inner"], confuse.Integer
+        )
+        self.assertEqual(typ.subtemplates["outer"].subtemplates["inner"].default, 2)
 
     def test_list_as_template(self):
         typ = confuse.as_template(list())
@@ -139,9 +148,9 @@ class AsTemplateTest(unittest.TestCase):
         self.assertEqual(typ.default, confuse.REQUIRED)
 
     def test_concrete_float_as_template(self):
-        typ = confuse.as_template(2.)
+        typ = confuse.as_template(2.0)
         self.assertIsInstance(typ, confuse.Number)
-        self.assertEqual(typ.default, 2.)
+        self.assertEqual(typ.default, 2.0)
 
     def test_none_as_template(self):
         typ = confuse.as_template(None)
@@ -172,8 +181,9 @@ class AsTemplateTest(unittest.TestCase):
         self.assertEqual(typ.default, confuse.REQUIRED)
 
     def test_other_type_as_template(self):
-        class MyClass():
+        class MyClass:
             pass
+
         typ = confuse.as_template(MyClass)
         self.assertIsInstance(typ, confuse.TypeTemplate)
         self.assertEqual(typ.typ, MyClass)
@@ -182,112 +192,125 @@ class AsTemplateTest(unittest.TestCase):
 
 class StringTemplateTest(unittest.TestCase):
     def test_validate_string(self):
-        config = _root({'foo': 'bar'})
-        valid = config.get({'foo': confuse.String()})
-        self.assertEqual(valid['foo'], 'bar')
+        config = _root({"foo": "bar"})
+        valid = config.get({"foo": confuse.String()})
+        self.assertEqual(valid["foo"], "bar")
 
     def test_string_default_value(self):
         config = _root({})
-        valid = config.get({'foo': confuse.String('baz')})
-        self.assertEqual(valid['foo'], 'baz')
+        valid = config.get({"foo": confuse.String("baz")})
+        self.assertEqual(valid["foo"], "baz")
 
     def test_pattern_matching(self):
-        config = _root({'foo': 'bar', 'baz': 'zab'})
-        valid = config.get({'foo': confuse.String(pattern='^ba.$')})
-        self.assertEqual(valid['foo'], 'bar')
+        config = _root({"foo": "bar", "baz": "zab"})
+        valid = config.get({"foo": confuse.String(pattern="^ba.$")})
+        self.assertEqual(valid["foo"], "bar")
         with self.assertRaises(confuse.ConfigValueError):
-            config.get({'baz': confuse.String(pattern='!')})
+            config.get({"baz": confuse.String(pattern="!")})
 
     def test_string_template_shortcut(self):
-        config = _root({'foo': 'bar'})
-        valid = config.get({'foo': str})
-        self.assertEqual(valid['foo'], 'bar')
+        config = _root({"foo": "bar"})
+        valid = config.get({"foo": str})
+        self.assertEqual(valid["foo"], "bar")
 
     def test_string_default_shortcut(self):
         config = _root({})
-        valid = config.get({'foo': 'bar'})
-        self.assertEqual(valid['foo'], 'bar')
+        valid = config.get({"foo": "bar"})
+        self.assertEqual(valid["foo"], "bar")
 
     def test_check_string_type(self):
-        config = _root({'foo': 5})
+        config = _root({"foo": 5})
         with self.assertRaises(confuse.ConfigTypeError):
-            config.get({'foo': confuse.String()})
+            config.get({"foo": confuse.String()})
 
 
 class NumberTest(unittest.TestCase):
     def test_validate_int_as_number(self):
-        config = _root({'foo': 2})
-        valid = config['foo'].get(confuse.Number())
+        config = _root({"foo": 2})
+        valid = config["foo"].get(confuse.Number())
         self.assertIsInstance(valid, int)
         self.assertEqual(valid, 2)
 
     def test_validate_float_as_number(self):
-        config = _root({'foo': 3.0})
-        valid = config['foo'].get(confuse.Number())
+        config = _root({"foo": 3.0})
+        valid = config["foo"].get(confuse.Number())
         self.assertIsInstance(valid, float)
         self.assertEqual(valid, 3.0)
 
     def test_validate_string_as_number(self):
-        config = _root({'foo': 'bar'})
+        config = _root({"foo": "bar"})
         with self.assertRaises(confuse.ConfigTypeError):
-            config['foo'].get(confuse.Number())
+            config["foo"].get(confuse.Number())
 
 
 class ChoiceTest(unittest.TestCase):
     def test_validate_good_choice_in_list(self):
-        config = _root({'foo': 2})
-        valid = config['foo'].get(confuse.Choice([1, 2, 4, 8, 16]))
+        config = _root({"foo": 2})
+        valid = config["foo"].get(confuse.Choice([1, 2, 4, 8, 16]))
         self.assertEqual(valid, 2)
 
     def test_validate_bad_choice_in_list(self):
-        config = _root({'foo': 3})
+        config = _root({"foo": 3})
         with self.assertRaises(confuse.ConfigValueError):
-            config['foo'].get(confuse.Choice([1, 2, 4, 8, 16]))
+            config["foo"].get(confuse.Choice([1, 2, 4, 8, 16]))
 
     def test_validate_good_choice_in_dict(self):
-        config = _root({'foo': 2})
-        valid = config['foo'].get(confuse.Choice({2: 'two', 4: 'four'}))
-        self.assertEqual(valid, 'two')
+        config = _root({"foo": 2})
+        valid = config["foo"].get(confuse.Choice({2: "two", 4: "four"}))
+        self.assertEqual(valid, "two")
 
     def test_validate_bad_choice_in_dict(self):
-        config = _root({'foo': 3})
+        config = _root({"foo": 3})
         with self.assertRaises(confuse.ConfigValueError):
-            config['foo'].get(confuse.Choice({2: 'two', 4: 'four'}))
+            config["foo"].get(confuse.Choice({2: "two", 4: "four"}))
 
 
 class OneOfTest(unittest.TestCase):
     def test_default_value(self):
         config = _root({})
-        valid = config['foo'].get(confuse.OneOf([], default='bar'))
-        self.assertEqual(valid, 'bar')
+        valid = config["foo"].get(confuse.OneOf([], default="bar"))
+        self.assertEqual(valid, "bar")
 
     def test_validate_good_choice_in_list(self):
-        config = _root({'foo': 2})
-        valid = config['foo'].get(confuse.OneOf([
-            confuse.String(),
-            confuse.Integer(),
-        ]))
+        config = _root({"foo": 2})
+        valid = config["foo"].get(
+            confuse.OneOf(
+                [
+                    confuse.String(),
+                    confuse.Integer(),
+                ]
+            )
+        )
         self.assertEqual(valid, 2)
 
     def test_validate_first_good_choice_in_list(self):
-        config = _root({'foo': 3.14})
-        valid = config['foo'].get(confuse.OneOf([
-            confuse.Integer(),
-            confuse.Number(),
-        ]))
+        config = _root({"foo": 3.14})
+        valid = config["foo"].get(
+            confuse.OneOf(
+                [
+                    confuse.Integer(),
+                    confuse.Number(),
+                ]
+            )
+        )
         self.assertEqual(valid, 3)
 
     def test_validate_no_choice_in_list(self):
-        config = _root({'foo': None})
+        config = _root({"foo": None})
         with self.assertRaises(confuse.ConfigValueError):
-            config['foo'].get(confuse.OneOf([
-                confuse.String(),
-                confuse.Integer(),
-            ]))
+            config["foo"].get(
+                confuse.OneOf(
+                    [
+                        confuse.String(),
+                        confuse.Integer(),
+                    ]
+                )
+            )
 
     def test_validate_bad_template(self):
-        class BadTemplate():
+        class BadTemplate:
             pass
+
         config = _root({})
         with self.assertRaises(confuse.ConfigTemplateError):
             config.get(confuse.OneOf([BadTemplate()]))
@@ -296,401 +319,388 @@ class OneOfTest(unittest.TestCase):
 
 class StrSeqTest(unittest.TestCase):
     def test_string_list(self):
-        config = _root({'foo': ['bar', 'baz']})
-        valid = config['foo'].get(confuse.StrSeq())
-        self.assertEqual(valid, ['bar', 'baz'])
+        config = _root({"foo": ["bar", "baz"]})
+        valid = config["foo"].get(confuse.StrSeq())
+        self.assertEqual(valid, ["bar", "baz"])
 
     def test_string_tuple(self):
-        config = _root({'foo': ('bar', 'baz')})
-        valid = config['foo'].get(confuse.StrSeq())
-        self.assertEqual(valid, ['bar', 'baz'])
+        config = _root({"foo": ("bar", "baz")})
+        valid = config["foo"].get(confuse.StrSeq())
+        self.assertEqual(valid, ["bar", "baz"])
 
     def test_whitespace_separated_string(self):
-        config = _root({'foo': 'bar   baz'})
-        valid = config['foo'].get(confuse.StrSeq())
-        self.assertEqual(valid, ['bar', 'baz'])
+        config = _root({"foo": "bar   baz"})
+        valid = config["foo"].get(confuse.StrSeq())
+        self.assertEqual(valid, ["bar", "baz"])
 
     def test_invalid_type(self):
-        config = _root({'foo': 9})
+        config = _root({"foo": 9})
         with self.assertRaises(confuse.ConfigTypeError):
-            config['foo'].get(confuse.StrSeq())
+            config["foo"].get(confuse.StrSeq())
 
     def test_invalid_sequence_type(self):
-        config = _root({'foo': ['bar', 2126]})
+        config = _root({"foo": ["bar", 2126]})
         with self.assertRaises(confuse.ConfigTypeError):
-            config['foo'].get(confuse.StrSeq())
+            config["foo"].get(confuse.StrSeq())
 
 
 class FilenameTest(unittest.TestCase):
     def test_default_value(self):
         config = _root({})
-        valid = config['foo'].get(confuse.Filename('foo/bar'))
-        self.assertEqual(valid, 'foo/bar')
+        valid = config["foo"].get(confuse.Filename("foo/bar"))
+        self.assertEqual(valid, "foo/bar")
 
     def test_default_none(self):
         config = _root({})
-        valid = config['foo'].get(confuse.Filename(None))
+        valid = config["foo"].get(confuse.Filename(None))
         self.assertEqual(valid, None)
 
     def test_missing_required_value(self):
         config = _root({})
         with self.assertRaises(confuse.NotFoundError):
-            config['foo'].get(confuse.Filename())
+            config["foo"].get(confuse.Filename())
 
     def test_filename_relative_to_working_dir(self):
-        config = _root({'foo': 'bar'})
-        valid = config['foo'].get(confuse.Filename(cwd='/dev/null'))
-        self.assertEqual(valid, os.path.realpath('/dev/null/bar'))
+        config = _root({"foo": "bar"})
+        valid = config["foo"].get(confuse.Filename(cwd="/dev/null"))
+        self.assertEqual(valid, os.path.realpath("/dev/null/bar"))
 
     def test_filename_relative_to_sibling(self):
-        config = _root({'foo': '/', 'bar': 'baz'})
-        valid = config.get({
-            'foo': confuse.Filename(),
-            'bar': confuse.Filename(relative_to='foo')
-        })
-        self.assertEqual(valid.foo, os.path.realpath('/'))
-        self.assertEqual(valid.bar, os.path.realpath('/baz'))
+        config = _root({"foo": "/", "bar": "baz"})
+        valid = config.get(
+            {"foo": confuse.Filename(), "bar": confuse.Filename(relative_to="foo")}
+        )
+        self.assertEqual(valid.foo, os.path.realpath("/"))
+        self.assertEqual(valid.bar, os.path.realpath("/baz"))
 
     def test_filename_working_dir_overrides_sibling(self):
-        config = _root({'foo': 'bar'})
-        valid = config.get({
-            'foo': confuse.Filename(cwd='/dev/null', relative_to='baz')
-        })
-        self.assertEqual(valid.foo, os.path.realpath('/dev/null/bar'))
+        config = _root({"foo": "bar"})
+        valid = config.get(
+            {"foo": confuse.Filename(cwd="/dev/null", relative_to="baz")}
+        )
+        self.assertEqual(valid.foo, os.path.realpath("/dev/null/bar"))
 
     def test_filename_relative_to_sibling_with_recursion(self):
-        config = _root({'foo': '/', 'bar': 'r', 'baz': 'z'})
+        config = _root({"foo": "/", "bar": "r", "baz": "z"})
         with self.assertRaises(confuse.ConfigTemplateError):
-            config.get({
-                'foo': confuse.Filename(relative_to='bar'),
-                'bar': confuse.Filename(relative_to='baz'),
-                'baz': confuse.Filename(relative_to='foo')
-            })
+            config.get(
+                {
+                    "foo": confuse.Filename(relative_to="bar"),
+                    "bar": confuse.Filename(relative_to="baz"),
+                    "baz": confuse.Filename(relative_to="foo"),
+                }
+            )
 
     def test_filename_relative_to_self(self):
-        config = _root({'foo': 'bar'})
+        config = _root({"foo": "bar"})
         with self.assertRaises(confuse.ConfigTemplateError):
-            config.get({
-                'foo': confuse.Filename(relative_to='foo')
-            })
+            config.get({"foo": confuse.Filename(relative_to="foo")})
 
     def test_filename_relative_to_sibling_needs_siblings(self):
-        config = _root({'foo': 'bar'})
+        config = _root({"foo": "bar"})
         with self.assertRaises(confuse.ConfigTemplateError):
-            config['foo'].get(confuse.Filename(relative_to='bar'))
+            config["foo"].get(confuse.Filename(relative_to="bar"))
 
     def test_filename_relative_to_sibling_needs_template(self):
-        config = _root({'foo': '/', 'bar': 'baz'})
+        config = _root({"foo": "/", "bar": "baz"})
         with self.assertRaises(confuse.ConfigTemplateError):
-            config.get({
-                'bar': confuse.Filename(relative_to='foo')
-            })
+            config.get({"bar": confuse.Filename(relative_to="foo")})
 
     def test_filename_with_non_file_source(self):
-        config = _root({'foo': 'foo/bar'})
-        valid = config['foo'].get(confuse.Filename())
-        self.assertEqual(valid, os.path.join(os.getcwd(), 'foo', 'bar'))
+        config = _root({"foo": "foo/bar"})
+        valid = config["foo"].get(confuse.Filename())
+        self.assertEqual(valid, os.path.join(os.getcwd(), "foo", "bar"))
 
     def test_filename_with_file_source(self):
-        source = confuse.ConfigSource({'foo': 'foo/bar'},
-                                      filename='/baz/config.yaml')
+        source = confuse.ConfigSource({"foo": "foo/bar"}, filename="/baz/config.yaml")
         config = _root(source)
-        config.config_dir = lambda: '/config/path'
-        valid = config['foo'].get(confuse.Filename())
-        self.assertEqual(valid, os.path.realpath('/config/path/foo/bar'))
+        config.config_dir = lambda: "/config/path"
+        valid = config["foo"].get(confuse.Filename())
+        self.assertEqual(valid, os.path.realpath("/config/path/foo/bar"))
 
     def test_filename_with_default_source(self):
-        source = confuse.ConfigSource({'foo': 'foo/bar'},
-                                      filename='/baz/config.yaml',
-                                      default=True)
+        source = confuse.ConfigSource(
+            {"foo": "foo/bar"}, filename="/baz/config.yaml", default=True
+        )
         config = _root(source)
-        config.config_dir = lambda: '/config/path'
-        valid = config['foo'].get(confuse.Filename())
-        self.assertEqual(valid, os.path.realpath('/config/path/foo/bar'))
+        config.config_dir = lambda: "/config/path"
+        valid = config["foo"].get(confuse.Filename())
+        self.assertEqual(valid, os.path.realpath("/config/path/foo/bar"))
 
     def test_filename_use_config_source_dir(self):
-        source = confuse.ConfigSource({'foo': 'foo/bar'},
-                                      filename='/baz/config.yaml',
-                                      base_for_paths=True)
+        source = confuse.ConfigSource(
+            {"foo": "foo/bar"}, filename="/baz/config.yaml", base_for_paths=True
+        )
         config = _root(source)
-        config.config_dir = lambda: '/config/path'
-        valid = config['foo'].get(confuse.Filename())
-        self.assertEqual(valid, os.path.realpath('/baz/foo/bar'))
+        config.config_dir = lambda: "/config/path"
+        valid = config["foo"].get(confuse.Filename())
+        self.assertEqual(valid, os.path.realpath("/baz/foo/bar"))
 
     def test_filename_in_source_dir(self):
-        source = confuse.ConfigSource({'foo': 'foo/bar'},
-                                      filename='/baz/config.yaml')
+        source = confuse.ConfigSource({"foo": "foo/bar"}, filename="/baz/config.yaml")
         config = _root(source)
-        config.config_dir = lambda: '/config/path'
-        valid = config['foo'].get(confuse.Filename(in_source_dir=True))
-        self.assertEqual(valid, os.path.realpath('/baz/foo/bar'))
+        config.config_dir = lambda: "/config/path"
+        valid = config["foo"].get(confuse.Filename(in_source_dir=True))
+        self.assertEqual(valid, os.path.realpath("/baz/foo/bar"))
 
     def test_filename_in_source_dir_overrides_in_app_dir(self):
-        source = confuse.ConfigSource({'foo': 'foo/bar'},
-                                      filename='/baz/config.yaml')
+        source = confuse.ConfigSource({"foo": "foo/bar"}, filename="/baz/config.yaml")
         config = _root(source)
-        config.config_dir = lambda: '/config/path'
-        valid = config['foo'].get(confuse.Filename(in_source_dir=True,
-                                                   in_app_dir=True))
-        self.assertEqual(valid, os.path.realpath('/baz/foo/bar'))
+        config.config_dir = lambda: "/config/path"
+        valid = config["foo"].get(confuse.Filename(in_source_dir=True, in_app_dir=True))
+        self.assertEqual(valid, os.path.realpath("/baz/foo/bar"))
 
     def test_filename_in_app_dir_non_file_source(self):
-        source = confuse.ConfigSource({'foo': 'foo/bar'})
+        source = confuse.ConfigSource({"foo": "foo/bar"})
         config = _root(source)
-        config.config_dir = lambda: '/config/path'
-        valid = config['foo'].get(confuse.Filename(in_app_dir=True))
-        self.assertEqual(valid, os.path.realpath('/config/path/foo/bar'))
+        config.config_dir = lambda: "/config/path"
+        valid = config["foo"].get(confuse.Filename(in_app_dir=True))
+        self.assertEqual(valid, os.path.realpath("/config/path/foo/bar"))
 
     def test_filename_in_app_dir_overrides_config_source_dir(self):
-        source = confuse.ConfigSource({'foo': 'foo/bar'},
-                                      filename='/baz/config.yaml',
-                                      base_for_paths=True)
+        source = confuse.ConfigSource(
+            {"foo": "foo/bar"}, filename="/baz/config.yaml", base_for_paths=True
+        )
         config = _root(source)
-        config.config_dir = lambda: '/config/path'
-        valid = config['foo'].get(confuse.Filename(in_app_dir=True))
-        self.assertEqual(valid, os.path.realpath('/config/path/foo/bar'))
+        config.config_dir = lambda: "/config/path"
+        valid = config["foo"].get(confuse.Filename(in_app_dir=True))
+        self.assertEqual(valid, os.path.realpath("/config/path/foo/bar"))
 
     def test_filename_wrong_type(self):
-        config = _root({'foo': 8})
+        config = _root({"foo": 8})
         with self.assertRaises(confuse.ConfigTypeError):
-            config['foo'].get(confuse.Filename())
+            config["foo"].get(confuse.Filename())
 
 
 class PathTest(unittest.TestCase):
     def test_path_value(self):
         import pathlib
-        config = _root({'foo': 'foo/bar'})
-        valid = config['foo'].get(confuse.Path())
-        self.assertEqual(valid, pathlib.Path(os.path.abspath('foo/bar')))
+
+        config = _root({"foo": "foo/bar"})
+        valid = config["foo"].get(confuse.Path())
+        self.assertEqual(valid, pathlib.Path(os.path.abspath("foo/bar")))
 
     def test_default_value(self):
         import pathlib
+
         config = _root({})
-        valid = config['foo'].get(confuse.Path('foo/bar'))
-        self.assertEqual(valid, pathlib.Path('foo/bar'))
+        valid = config["foo"].get(confuse.Path("foo/bar"))
+        self.assertEqual(valid, pathlib.Path("foo/bar"))
 
     def test_default_none(self):
         config = _root({})
-        valid = config['foo'].get(confuse.Path(None))
+        valid = config["foo"].get(confuse.Path(None))
         self.assertEqual(valid, None)
 
     def test_missing_required_value(self):
         config = _root({})
         with self.assertRaises(confuse.NotFoundError):
-            config['foo'].get(confuse.Path())
+            config["foo"].get(confuse.Path())
 
 
 class BaseTemplateTest(unittest.TestCase):
     def test_base_template_accepts_any_value(self):
-        config = _root({'foo': 4.2})
-        valid = config['foo'].get(confuse.Template())
+        config = _root({"foo": 4.2})
+        valid = config["foo"].get(confuse.Template())
         self.assertEqual(valid, 4.2)
 
     def test_base_template_required(self):
         config = _root({})
         with self.assertRaises(confuse.NotFoundError):
-            config['foo'].get(confuse.Template())
+            config["foo"].get(confuse.Template())
 
     def test_base_template_with_default(self):
         config = _root({})
-        valid = config['foo'].get(confuse.Template('bar'))
-        self.assertEqual(valid, 'bar')
+        valid = config["foo"].get(confuse.Template("bar"))
+        self.assertEqual(valid, "bar")
 
 
 class TypeTemplateTest(unittest.TestCase):
     def test_correct_type(self):
-        config = _root({'foo': set()})
-        valid = config['foo'].get(confuse.TypeTemplate(set))
+        config = _root({"foo": set()})
+        valid = config["foo"].get(confuse.TypeTemplate(set))
         self.assertEqual(valid, set())
 
     def test_incorrect_type(self):
-        config = _root({'foo': dict()})
+        config = _root({"foo": dict()})
         with self.assertRaises(confuse.ConfigTypeError):
-            config['foo'].get(confuse.TypeTemplate(set))
+            config["foo"].get(confuse.TypeTemplate(set))
 
     def test_missing_required_value(self):
         config = _root({})
         with self.assertRaises(confuse.NotFoundError):
-            config['foo'].get(confuse.TypeTemplate(set))
+            config["foo"].get(confuse.TypeTemplate(set))
 
     def test_default_value(self):
         config = _root({})
-        valid = config['foo'].get(confuse.TypeTemplate(set, set([1, 2])))
+        valid = config["foo"].get(confuse.TypeTemplate(set, set([1, 2])))
         self.assertEqual(valid, set([1, 2]))
 
 
 class SequenceTest(unittest.TestCase):
     def test_int_list(self):
-        config = _root({'foo': [1, 2, 3]})
-        valid = config['foo'].get(confuse.Sequence(int))
+        config = _root({"foo": [1, 2, 3]})
+        valid = config["foo"].get(confuse.Sequence(int))
         self.assertEqual(valid, [1, 2, 3])
 
     def test_dict_list(self):
-        config = _root({'foo': [{'bar': 1, 'baz': 2}, {'bar': 3, 'baz': 4}]})
-        valid = config['foo'].get(confuse.Sequence(
-            {'bar': int, 'baz': int}
-        ))
-        self.assertEqual(valid, [
-            {'bar': 1, 'baz': 2}, {'bar': 3, 'baz': 4}
-        ])
+        config = _root({"foo": [{"bar": 1, "baz": 2}, {"bar": 3, "baz": 4}]})
+        valid = config["foo"].get(confuse.Sequence({"bar": int, "baz": int}))
+        self.assertEqual(valid, [{"bar": 1, "baz": 2}, {"bar": 3, "baz": 4}])
 
     def test_invalid_item(self):
-        config = _root({'foo': [{'bar': 1, 'baz': 2}, {'bar': 3, 'bak': 4}]})
+        config = _root({"foo": [{"bar": 1, "baz": 2}, {"bar": 3, "bak": 4}]})
         with self.assertRaises(confuse.NotFoundError):
-            config['foo'].get(confuse.Sequence(
-                {'bar': int, 'baz': int}
-            ))
+            config["foo"].get(confuse.Sequence({"bar": int, "baz": int}))
 
     def test_wrong_type(self):
-        config = _root({'foo': {'one': 1, 'two': 2, 'three': 3}})
+        config = _root({"foo": {"one": 1, "two": 2, "three": 3}})
         with self.assertRaises(confuse.ConfigTypeError):
-            config['foo'].get(confuse.Sequence(int))
+            config["foo"].get(confuse.Sequence(int))
 
     def test_missing(self):
-        config = _root({'foo': [1, 2, 3]})
-        valid = config['bar'].get(confuse.Sequence(int))
+        config = _root({"foo": [1, 2, 3]})
+        valid = config["bar"].get(confuse.Sequence(int))
         self.assertEqual(valid, [])
 
 
 class MappingValuesTest(unittest.TestCase):
     def test_int_dict(self):
-        config = _root({'foo': {'one': 1, 'two': 2, 'three': 3}})
-        valid = config['foo'].get(confuse.MappingValues(int))
-        self.assertEqual(valid, {'one': 1, 'two': 2, 'three': 3})
+        config = _root({"foo": {"one": 1, "two": 2, "three": 3}})
+        valid = config["foo"].get(confuse.MappingValues(int))
+        self.assertEqual(valid, {"one": 1, "two": 2, "three": 3})
 
     def test_dict_dict(self):
-        config = _root({'foo': {'first': {'bar': 1, 'baz': 2},
-                                'second': {'bar': 3, 'baz': 4}}})
-        valid = config['foo'].get(confuse.MappingValues(
-            {'bar': int, 'baz': int}
-        ))
-        self.assertEqual(valid, {
-            'first': {'bar': 1, 'baz': 2},
-            'second': {'bar': 3, 'baz': 4},
-        })
+        config = _root(
+            {"foo": {"first": {"bar": 1, "baz": 2}, "second": {"bar": 3, "baz": 4}}}
+        )
+        valid = config["foo"].get(confuse.MappingValues({"bar": int, "baz": int}))
+        self.assertEqual(
+            valid,
+            {
+                "first": {"bar": 1, "baz": 2},
+                "second": {"bar": 3, "baz": 4},
+            },
+        )
 
     def test_invalid_item(self):
-        config = _root({'foo': {'first': {'bar': 1, 'baz': 2},
-                                'second': {'bar': 3, 'bak': 4}}})
+        config = _root(
+            {"foo": {"first": {"bar": 1, "baz": 2}, "second": {"bar": 3, "bak": 4}}}
+        )
         with self.assertRaises(confuse.NotFoundError):
-            config['foo'].get(confuse.MappingValues(
-                {'bar': int, 'baz': int}
-            ))
+            config["foo"].get(confuse.MappingValues({"bar": int, "baz": int}))
 
     def test_wrong_type(self):
-        config = _root({'foo': [1, 2, 3]})
+        config = _root({"foo": [1, 2, 3]})
         with self.assertRaises(confuse.ConfigTypeError):
-            config['foo'].get(confuse.MappingValues(int))
+            config["foo"].get(confuse.MappingValues(int))
 
     def test_missing(self):
-        config = _root({'foo': {'one': 1, 'two': 2, 'three': 3}})
-        valid = config['bar'].get(confuse.MappingValues(int))
+        config = _root({"foo": {"one": 1, "two": 2, "three": 3}})
+        valid = config["bar"].get(confuse.MappingValues(int))
         self.assertEqual(valid, {})
 
 
 class OptionalTest(unittest.TestCase):
     def test_optional_string_valid_type(self):
-        config = _root({'foo': 'bar'})
-        valid = config['foo'].get(confuse.Optional(confuse.String()))
-        self.assertEqual(valid, 'bar')
+        config = _root({"foo": "bar"})
+        valid = config["foo"].get(confuse.Optional(confuse.String()))
+        self.assertEqual(valid, "bar")
 
     def test_optional_string_invalid_type(self):
-        config = _root({'foo': 5})
+        config = _root({"foo": 5})
         with self.assertRaises(confuse.ConfigTypeError):
-            config['foo'].get(confuse.Optional(confuse.String()))
+            config["foo"].get(confuse.Optional(confuse.String()))
 
     def test_optional_string_null(self):
-        config = _root({'foo': None})
-        valid = config['foo'].get(confuse.Optional(confuse.String()))
+        config = _root({"foo": None})
+        valid = config["foo"].get(confuse.Optional(confuse.String()))
         self.assertIsNone(valid)
 
     def test_optional_string_null_default_value(self):
-        config = _root({'foo': None})
-        valid = config['foo'].get(confuse.Optional(confuse.String(), 'baz'))
-        self.assertEqual(valid, 'baz')
+        config = _root({"foo": None})
+        valid = config["foo"].get(confuse.Optional(confuse.String(), "baz"))
+        self.assertEqual(valid, "baz")
 
     def test_optional_string_null_string_provides_default(self):
-        config = _root({'foo': None})
-        valid = config['foo'].get(confuse.Optional(confuse.String('baz')))
-        self.assertEqual(valid, 'baz')
+        config = _root({"foo": None})
+        valid = config["foo"].get(confuse.Optional(confuse.String("baz")))
+        self.assertEqual(valid, "baz")
 
     def test_optional_string_null_string_default_override(self):
-        config = _root({'foo': None})
-        valid = config['foo'].get(confuse.Optional(confuse.String('baz'),
-                                                   default='bar'))
-        self.assertEqual(valid, 'bar')
+        config = _root({"foo": None})
+        valid = config["foo"].get(
+            confuse.Optional(confuse.String("baz"), default="bar")
+        )
+        self.assertEqual(valid, "bar")
 
     def test_optional_string_allow_missing_no_explicit_default(self):
         config = _root({})
-        valid = config['foo'].get(confuse.Optional(confuse.String()))
+        valid = config["foo"].get(confuse.Optional(confuse.String()))
         self.assertIsNone(valid)
 
     def test_optional_string_allow_missing_default_value(self):
         config = _root({})
-        valid = config['foo'].get(confuse.Optional(confuse.String(), 'baz'))
-        self.assertEqual(valid, 'baz')
+        valid = config["foo"].get(confuse.Optional(confuse.String(), "baz"))
+        self.assertEqual(valid, "baz")
 
     def test_optional_string_missing_not_allowed(self):
         config = _root({})
         with self.assertRaises(confuse.NotFoundError):
-            config['foo'].get(
-                confuse.Optional(confuse.String(), allow_missing=False)
-            )
+            config["foo"].get(confuse.Optional(confuse.String(), allow_missing=False))
 
     def test_optional_string_null_missing_not_allowed(self):
-        config = _root({'foo': None})
-        valid = config['foo'].get(
+        config = _root({"foo": None})
+        valid = config["foo"].get(
             confuse.Optional(confuse.String(), allow_missing=False)
         )
         self.assertIsNone(valid)
 
     def test_optional_mapping_template_valid(self):
-        config = _root({'foo': {'bar': 5, 'baz': 'bak'}})
-        template = {'bar': confuse.Integer(), 'baz': confuse.String()}
-        valid = config.get({'foo': confuse.Optional(template)})
-        self.assertEqual(valid['foo']['bar'], 5)
-        self.assertEqual(valid['foo']['baz'], 'bak')
+        config = _root({"foo": {"bar": 5, "baz": "bak"}})
+        template = {"bar": confuse.Integer(), "baz": confuse.String()}
+        valid = config.get({"foo": confuse.Optional(template)})
+        self.assertEqual(valid["foo"]["bar"], 5)
+        self.assertEqual(valid["foo"]["baz"], "bak")
 
     def test_optional_mapping_template_invalid(self):
-        config = _root({'foo': {'bar': 5, 'baz': 10}})
-        template = {'bar': confuse.Integer(), 'baz': confuse.String()}
+        config = _root({"foo": {"bar": 5, "baz": 10}})
+        template = {"bar": confuse.Integer(), "baz": confuse.String()}
         with self.assertRaises(confuse.ConfigTypeError):
-            config.get({'foo': confuse.Optional(template)})
+            config.get({"foo": confuse.Optional(template)})
 
     def test_optional_mapping_template_null(self):
-        config = _root({'foo': None})
-        template = {'bar': confuse.Integer(), 'baz': confuse.String()}
-        valid = config.get({'foo': confuse.Optional(template)})
-        self.assertIsNone(valid['foo'])
+        config = _root({"foo": None})
+        template = {"bar": confuse.Integer(), "baz": confuse.String()}
+        valid = config.get({"foo": confuse.Optional(template)})
+        self.assertIsNone(valid["foo"])
 
     def test_optional_mapping_template_null_default_value(self):
-        config = _root({'foo': None})
-        template = {'bar': confuse.Integer(), 'baz': confuse.String()}
-        valid = config.get({'foo': confuse.Optional(template, {})})
-        self.assertIsInstance(valid['foo'], dict)
+        config = _root({"foo": None})
+        template = {"bar": confuse.Integer(), "baz": confuse.String()}
+        valid = config.get({"foo": confuse.Optional(template, {})})
+        self.assertIsInstance(valid["foo"], dict)
 
     def test_optional_mapping_template_allow_missing_no_explicit_default(self):
         config = _root({})
-        template = {'bar': confuse.Integer(), 'baz': confuse.String()}
-        valid = config.get({'foo': confuse.Optional(template)})
-        self.assertIsNone(valid['foo'])
+        template = {"bar": confuse.Integer(), "baz": confuse.String()}
+        valid = config.get({"foo": confuse.Optional(template)})
+        self.assertIsNone(valid["foo"])
 
     def test_optional_mapping_template_allow_missing_default_value(self):
         config = _root({})
-        template = {'bar': confuse.Integer(), 'baz': confuse.String()}
-        valid = config.get({'foo': confuse.Optional(template, {})})
-        self.assertIsInstance(valid['foo'], dict)
+        template = {"bar": confuse.Integer(), "baz": confuse.String()}
+        valid = config.get({"foo": confuse.Optional(template, {})})
+        self.assertIsInstance(valid["foo"], dict)
 
     def test_optional_mapping_template_missing_not_allowed(self):
         config = _root({})
-        template = {'bar': confuse.Integer(), 'baz': confuse.String()}
+        template = {"bar": confuse.Integer(), "baz": confuse.String()}
         with self.assertRaises(confuse.NotFoundError):
-            config.get({'foo': confuse.Optional(template,
-                                                allow_missing=False)})
+            config.get({"foo": confuse.Optional(template, allow_missing=False)})
 
     def test_optional_mapping_template_null_missing_not_allowed(self):
-        config = _root({'foo': None})
-        template = {'bar': confuse.Integer(), 'baz': confuse.String()}
-        valid = config.get({'foo': confuse.Optional(template,
-                                                    allow_missing=False)})
-        self.assertIsNone(valid['foo'])
+        config = _root({"foo": None})
+        template = {"bar": confuse.Integer(), "baz": confuse.String()}
+        valid = config.get({"foo": confuse.Optional(template, allow_missing=False)})
+        self.assertIsNone(valid["foo"])
