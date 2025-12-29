@@ -65,7 +65,7 @@ jobs:
           cache: poetry
 
       - name: Install dependencies
-        run: poetry install --only=lint
+        run: poetry install
 
       - name: Check code formatting
         # the job output will contain colored diffs with what needs adjusting
@@ -86,7 +86,7 @@ jobs:
           cache: poetry
 
       - name: Install dependencies
-        run: poetry install --only=lint
+        run: poetry install
 
       - name: Lint code
         run: poe lint --output-format=github ${{ needs.changed-files.outputs.changed_python_files }}
@@ -106,7 +106,7 @@ jobs:
           cache: poetry
 
       - name: Install dependencies
-        run: poetry install --only=lint
+        run: poetry install
 
       - name: Type check code
         uses: liskin/gh-problem-matcher-wrap@v3
