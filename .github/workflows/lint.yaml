@@ -136,9 +136,8 @@ jobs:
           echo "::add-matcher::.github/problem-matchers/sphinx-build.json"
           echo "::add-matcher::.github/problem-matchers/sphinx-lint.json"
 
-      # TODO: Re-enable once https://github.com/LilSpazJoekp/docstrfmt/pull/169 is merged and released
-      # - name: Check docs formatting
-      #   run: poe format-docs --check
+      - name: Check docs formatting
+        run: poe format-docs --check
 
       - name: Lint docs
         run: poe lint-docs

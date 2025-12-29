@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+- Drop support for Python 3.9.
+
 v2.1.1
 ------
 

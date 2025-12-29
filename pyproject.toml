@@ -5,12 +5,11 @@ description = "Painless YAML config files"
 authors = [{ name = "Adrian Sampson", email = "adrian@radbox.org" }]
 readme = "README.rst"
 license = "MIT"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -27,7 +26,7 @@ dev = [
     "pytest-cov >= 7.0.0",
 ]
 lint = [
-    "docstrfmt >= 1.11.1",
+    "docstrfmt >= 2.0.1",
     "mypy >= 1.18.2",
     "ruff >= 0.6.4",
     "sphinx-lint >= 1.0.0",
@@ -79,7 +78,8 @@ cmd = "ruff format"
 
 [tool.poe.tasks.format-docs]
 help = "Format the documentation"
-cmd = "docstrfmt docs *.rst"
+# TODO: Remove --no-format-python-code-blocks once https://github.com/LilSpazJoekp/docstrfmt/issues/171 is resolved
+cmd = "docstrfmt --no-format-python-code-blocks --preserve-adornments docs *.rst"
 
 [tool.poe.tasks.lint]
 help = "Check the code for linting issues. Accepts ruff options."
@@ -114,7 +114,7 @@ env.OPTS = """
 line-length = 80
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.lint]
 future-annotations = true
