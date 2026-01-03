@@ -314,7 +314,7 @@ class OneOfTest(unittest.TestCase):
             pass
 
         config = _root({})
-        with pytest.raises(confuse.ConfigTemplateError):
+        with pytest.raises(ValueError, match="cannot convert to template"):
             config.get(confuse.OneOf([BadTemplate()]))
         del BadTemplate
 
