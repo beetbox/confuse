@@ -1,8 +1,8 @@
-=================
 API Documentation
 =================
 
-This part of the documentation covers the interfaces used to develop with :code:`confuse`.
+This part of the documentation covers the interfaces used to develop with
+``confuse``.
 
 Core
 ----
