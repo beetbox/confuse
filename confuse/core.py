@@ -719,4 +719,18 @@ class LazyConfig(Configuration):
         self._lazy_prefix = []
 
 
+class PersistentConfig(Configuration):
+
+    def add(self, obj):
+        super(PersistentConfig, self).add(obj)
+
+        with open(self.user_config_path(), 'w') as f:
+            f.write(self.dump().strip())
+
+    def set(self, value):
+        super(PersistentConfig, self).set(value)
+
+        with open(self.user_config_path(), 'w') as f:
+            f.write(self.dump().strip())
+
 # "Validated" configuration views: experimental!
