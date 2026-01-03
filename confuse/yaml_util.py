@@ -1,6 +1,14 @@
+from __future__ import annotations
+
 from collections import OrderedDict
+from typing import TYPE_CHECKING, Any
 
 import yaml
+
+if TYPE_CHECKING:
+    from collections.abc import Hashable, Iterable, Iterator
+
+    from _typeshed import SupportsItems
 
 from .exceptions import ConfigReadError
 
@@ -17,18 +25,22 @@ class Loader(yaml.SafeLoader):
     """
 
     # All strings should be Unicode objects, regardless of contents.
-    def _construct_unicode(self, node):
+    def _construct_unicode(self, node: yaml.ScalarNode) -> str:
         return self.construct_scalar(node)
 
     # Use ordered dictionaries for every YAML map.
     # From https://gist.github.com/844388
-    def construct_yaml_map(self, node):
-        data = OrderedDict()
+    def construct_yaml_map(
+        self, node: yaml.MappingNode
+    ) -> Iterator[OrderedDict[object, object]]:
+        data: OrderedDict[object, object] = OrderedDict()
         yield data
         value = self.construct_mapping(node)
         data.update(value)
 
-    def construct_mapping(self, node, deep=False):
+    def construct_mapping(
+        self, node: yaml.MappingNode, deep: bool = False
+    ) -> dict[Hashable, Any]:
         if isinstance(node, yaml.MappingNode):
             self.flatten_mapping(node)
         else:
@@ -39,7 +51,7 @@ class Loader(yaml.SafeLoader):
                 node.start_mark,
             )
 
-        mapping = OrderedDict()
+        mapping: OrderedDict[object, object] = OrderedDict()
         for key_node, value_node in node.value:
             key = self.construct_object(key_node, deep=deep)
             try:
@@ -56,12 +68,12 @@ class Loader(yaml.SafeLoader):
         return mapping
 
     # Allow bare strings to begin with %. Directives are still detected.
-    def check_plain(self):
+    def check_plain(self) -> bool:
         plain = super().check_plain()
-        return plain or self.peek() == "%"
+        return plain or self.peek() == "%"  # type: ignore[no-any-return]
 
     @staticmethod
-    def add_constructors(loader):
+    def add_constructors(loader: type[yaml.SafeLoader]) -> None:
         """Modify a PyYAML Loader class to add extra constructors for strings
         and maps. Call this method on a custom Loader class to make it behave
         like Confuse's own Loader
@@ -74,7 +86,7 @@ class Loader(yaml.SafeLoader):
 Loader.add_constructors(Loader)
 
 
-def load_yaml(filename, loader=Loader):
+def load_yaml(filename: str, loader: type[yaml.SafeLoader] = Loader) -> object:
     """Read a YAML document from a file. If the file cannot be read or
     parsed, a ConfigReadError is raised.
     loader is the PyYAML Loader class to use to parse the YAML. By default,
@@ -88,7 +100,9 @@ def load_yaml(filename, loader=Loader):
         raise ConfigReadError(filename, exc)
 
 
-def load_yaml_string(yaml_string, name, loader=Loader):
+def load_yaml_string(
+    yaml_string: str | bytes, name: str, loader: type[yaml.SafeLoader] = Loader
+) -> object:
     """Read a YAML document from a string. If the string cannot be parsed,
     a ConfigReadError is raised.
     `yaml_string` is a string to be parsed as a YAML document.
@@ -103,7 +117,7 @@ def load_yaml_string(yaml_string, name, loader=Loader):
         raise ConfigReadError(name, exc)
 
 
-def parse_as_scalar(value, loader=Loader):
+def parse_as_scalar(value: object, loader: type[yaml.SafeLoader] = Loader) -> object:
     """Parse a value as if it were a YAML scalar to perform type conversion
     that is consistent with YAML documents.
     `value` should be a string. Non-string inputs or strings that raise YAML
@@ -121,10 +135,10 @@ def parse_as_scalar(value, loader=Loader):
     if not isinstance(value, str):
         return value
     try:
-        loader = loader("")
-        tag = loader.resolve(yaml.ScalarNode, value, (True, False))
+        loader_instance = loader("")
+        tag = loader_instance.resolve(yaml.ScalarNode, value, (True, False))
         node = yaml.ScalarNode(tag, value)
-        return loader.construct_object(node)
+        return loader_instance.construct_object(node)
     except yaml.error.YAMLError:
         # Fallback to returning the value unchanged
         return value
@@ -139,8 +153,13 @@ class Dumper(yaml.SafeDumper):
     """
 
     # From http://pyyaml.org/attachment/ticket/161/use_ordered_dict.py
-    def represent_mapping(self, tag, mapping, flow_style=None):
-        value = []
+    def represent_mapping(
+        self,
+        tag: str,
+        mapping: SupportsItems[Any, Any] | Iterable[tuple[Any, Any]],
+        flow_style: bool | None = None,
+    ) -> yaml.MappingNode:
+        value: list[tuple[yaml.Node, yaml.Node]] = []
         node = yaml.MappingNode(tag, value, flow_style=flow_style)
         if self.alias_key is not None:
             self.represented_objects[self.alias_key] = node
@@ -162,19 +181,18 @@ class Dumper(yaml.SafeDumper):
                 node.flow_style = best_style
         return node
 
-    def represent_list(self, data):
+    def represent_list(self, data: Iterable[Any]) -> yaml.SequenceNode:
         """If a list has less than 4 items, represent it in inline style
         (i.e. comma separated, within square brackets).
         """
         node = super().represent_list(data)
-        length = len(data)
-        if self.default_flow_style is None and length < 4:
+        if self.default_flow_style is None and len(list(data)) < 4:
             node.flow_style = True
         elif self.default_flow_style is None:
             node.flow_style = False
         return node
 
-    def represent_bool(self, data):
+    def represent_bool(self, data: bool) -> yaml.ScalarNode:
         """Represent bool as 'yes' or 'no' instead of 'true' or 'false'."""
         if data:
             value = "yes"
@@ -182,7 +200,7 @@ class Dumper(yaml.SafeDumper):
             value = "no"
         return self.represent_scalar("tag:yaml.org,2002:bool", value)
 
-    def represent_none(self, data):
+    def represent_none(self, data: Any) -> yaml.ScalarNode:
         """Represent a None value with nothing instead of 'none'."""
         return self.represent_scalar("tag:yaml.org,2002:null", "")
 
@@ -193,7 +211,7 @@ Dumper.add_representer(type(None), Dumper.represent_none)
 Dumper.add_representer(list, Dumper.represent_list)
 
 
-def restore_yaml_comments(data, default_data):
+def restore_yaml_comments(data: str, default_data: str) -> str:
     """Scan default_data for comments (we include empty lines in our
     definition of comments) and place them before the same keys in data.
     Only works with comments that are on one or more own lines, i.e.

@@ -37,7 +37,7 @@ class ConfigTemplateError(ConfigError):
 class ConfigReadError(ConfigError):
     """A configuration source could not be read."""
 
-    def __init__(self, name, reason=None):
+    def __init__(self, name: str, reason: Exception | None = None) -> None:
         self.name = name
         self.reason = reason
 
@@ -45,6 +45,7 @@ class ConfigReadError(ConfigError):
         if (
             isinstance(reason, yaml.scanner.ScannerError)
             and reason.problem == YAML_TAB_PROBLEM
+            and reason.problem_mark
         ):
             # Special-case error message for tab indentation in YAML markup.
             message += (

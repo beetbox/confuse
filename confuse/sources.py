@@ -1,15 +1,28 @@
+from __future__ import annotations
+
 import os
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import yaml
 
 from . import yaml_util
 from .util import build_dict
 
 
-class ConfigSource(dict[str, object]):
+class ConfigSource(dict[str, Any]):
     """A dictionary augmented with metadata about the source of the
     configuration.
     """
 
-    def __init__(self, value, filename=None, default=False, base_for_paths=False):
+    def __init__(
+        self,
+        value: Mapping[str, object],
+        filename: str | None = None,
+        default: bool = False,
+        base_for_paths: bool = False,
+    ):
         """Create a configuration source from a dictionary.
 
         :param filename: The file with the data for this configuration source.
@@ -32,14 +45,14 @@ class ConfigSource(dict[str, object]):
         self.default = default
         self.base_for_paths = base_for_paths if filename is not None else False
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"ConfigSource({super()!r}, {self.filename!r}, {self.default!r}, "
             f"{self.base_for_paths!r})"
         )
 
     @classmethod
-    def of(cls, value):
+    def of(cls, value: Mapping[str, object] | ConfigSource) -> ConfigSource:
         """Given either a dictionary or a `ConfigSource` object, return
         a `ConfigSource` object. This lets a function accept either type
         of object as an argument.
@@ -57,11 +70,11 @@ class YamlSource(ConfigSource):
 
     def __init__(
         self,
-        filename=None,
-        default=False,
-        base_for_paths=False,
-        optional=False,
-        loader=yaml_util.Loader,
+        filename: str | None = None,
+        default: bool = False,
+        base_for_paths: bool = False,
+        optional: bool = False,
+        loader: type[yaml.SafeLoader] = yaml_util.Loader,
     ):
         """Create a YAML data source by reading data from a file.
 
@@ -70,19 +83,29 @@ class YamlSource(ConfigSource):
         file does not exist---instead, the source will be silently
         empty.
         """
-        filename = os.path.abspath(filename)
+        if filename is not None:
+            filename = os.path.abspath(filename)
         super().__init__({}, filename, default, base_for_paths)
         self.loader = loader
         self.optional = optional
         self.load()
 
-    def load(self):
+    def load(self) -> None:
         """Load YAML data from the source's filename."""
-        if self.optional and not os.path.isfile(self.filename):
-            value = {}
+        if self.optional and (
+            self.filename is None or not os.path.isfile(self.filename)
+        ):
+            value: object = {}
+        elif self.filename is None:
+            raise TypeError("filename is required for YamlSource")
         else:
             value = yaml_util.load_yaml(self.filename, loader=self.loader) or {}
-        self.update(value)
+
+        if isinstance(value, Mapping):
+            self.update(value)
+        else:
+            # We enforce that the loaded YAML is a mapping (dict)
+            raise TypeError(f"YAML config must be a mapping, got {type(value)}")
 
 
 class EnvSource(ConfigSource):
@@ -90,12 +113,12 @@ class EnvSource(ConfigSource):
 
     def __init__(
         self,
-        prefix,
-        sep="__",
-        lower=True,
-        handle_lists=True,
-        parse_yaml_docs=False,
-        loader=yaml_util.Loader,
+        prefix: str,
+        sep: str = "__",
+        lower: bool = True,
+        handle_lists: bool = True,
+        parse_yaml_docs: bool = False,
+        loader: type[yaml.SafeLoader] = yaml_util.Loader,
     ):
         """Create a configuration source from the environment.
 
@@ -126,10 +149,10 @@ class EnvSource(ConfigSource):
         self.loader = loader
         self.load()
 
-    def load(self):
+    def load(self) -> None:
         """Load configuration data from the environment."""
         # Read config variables with prefix from the environment.
-        config_vars = {}
+        config_vars: dict[str, object] = {}
         for var, value in os.environ.items():
             if var.startswith(self.prefix):
                 key = var[len(self.prefix) :]
@@ -140,7 +163,7 @@ class EnvSource(ConfigSource):
                     # string representations of dicts and lists into the
                     # appropriate object (ie, '{foo: bar}' to {'foo': 'bar'}).
                     # Will raise a ConfigReadError if YAML parsing fails.
-                    value = yaml_util.load_yaml_string(
+                    val = yaml_util.load_yaml_string(
                         value, f"env variable {var}", loader=self.loader
                     )
                 else:
@@ -148,8 +171,8 @@ class EnvSource(ConfigSource):
                     # converted using the same rules as the YAML Loader (ie,
                     # numeric string to int/float, 'true' to True, etc.). Will
                     # not raise a ConfigReadError.
-                    value = yaml_util.parse_as_scalar(value, loader=self.loader)
-                config_vars[key] = value
+                    val = yaml_util.parse_as_scalar(value, loader=self.loader)
+                config_vars[key] = val
         if self.sep:
             # Build a nested dict, keeping keys with `None` values to allow
             # environment variables to unset values from lower priority sources
@@ -160,7 +183,7 @@ class EnvSource(ConfigSource):
         self.update(config_vars)
 
     @classmethod
-    def _convert_dict_lists(cls, obj):
+    def _convert_dict_lists(cls, obj: object) -> object:
         """Recursively search for dicts where all of the keys are integers
         from 0 to the length of the dict, and convert them to lists.
         """
