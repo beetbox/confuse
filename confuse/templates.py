@@ -16,11 +16,13 @@ from . import exceptions, util
 if TYPE_CHECKING:
     from .core import ConfigView, Subview
 
+
 T = TypeVar("T")
 K = TypeVar("K", bound=Hashable, default=str)
-Kstr = TypeVar("Kstr", bound=str, default=str)
 P = TypeVar("P", bound=pathlib.PurePath | str, default=str)
 V = TypeVar("V", default=object)
+ConfigKey = int | str | bytes
+ConfigKeyT = TypeVar("ConfigKeyT", bound=ConfigKey, default=str)
 
 
 class _Required:
@@ -35,7 +37,7 @@ should be raised when the value is missing.
 """
 
 
-class AttrDict(dict[Kstr, V]):
+class AttrDict(dict[ConfigKeyT, V]):
     """A `dict` subclass that can be accessed via attributes (dot
     notation) for convenience.
     """
@@ -161,17 +163,17 @@ class Number(Template[Numeric]):
             self.fail(f"must be numeric, not {type(value).__name__}", view, True)
 
 
-class MappingTemplate(Template[AttrDict[Kstr, V]]):
+class MappingTemplate(Template[AttrDict[ConfigKeyT, V]]):
     """A template that uses a dictionary to specify other types for the
     values for a set of keys and produce a validated `AttrDict`.
     """
 
-    def __init__(self, mapping: Mapping[Kstr, Template[V] | type[V]]) -> None:
+    def __init__(self, mapping: Mapping[ConfigKeyT, Template[V] | type[V]]) -> None:
         """Create a template according to a dict (mapping). The
         mapping's values should themselves either be Types or
         convertible to Types.
         """
-        subtemplates: dict[Kstr, Template[V]] = {}
+        subtemplates: dict[ConfigKeyT, Template[V]] = {}
         for key, typ in mapping.items():
             subtemplates[key] = as_template(typ)
         self.subtemplates = subtemplates
@@ -179,8 +181,8 @@ class MappingTemplate(Template[AttrDict[Kstr, V]]):
     def value(
         self,
         view: ConfigView,
-        template: Template[AttrDict[Kstr, V]] | object | None = None,
-    ) -> AttrDict[Kstr, V]:
+        template: Template[AttrDict[ConfigKeyT, V]] | object | None = None,
+    ) -> AttrDict[ConfigKeyT, V]:
         """Get a dict with the same keys as the template and values
         validated according to the value types.
         """

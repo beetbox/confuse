@@ -48,6 +48,8 @@ if TYPE_CHECKING:
     from optparse import Values
     from pathlib import Path
 
+    from .templates import ConfigKey
+
 CONFIG_FILENAME = "config.yaml"
 DEFAULT_FILENAME = "config_default.yaml"
 ROOT_NAME = "root"
@@ -73,7 +75,7 @@ class ConfigView:
     configuration in Python-like syntax (e.g., ``foo['bar'][42]``).
     """
 
-    def resolve(self) -> Iterator[tuple[dict[str, Any], ConfigSource]]:
+    def resolve(self) -> Iterator[tuple[dict[str, Any] | list[Any], ConfigSource]]:
         """The core (internal) data retrieval method. Generates (value,
         source) pairs for each source that contains a value for this
         view. May raise `ConfigTypeError` if a type error occurs while
@@ -81,7 +83,7 @@ class ConfigView:
         """
         raise NotImplementedError
 
-    def first(self) -> tuple[dict[str, Any], ConfigSource]:
+    def first(self) -> tuple[dict[str, Any] | list[Any], ConfigSource]:
         """Return a (value, source) pair for the first object found for
         this view. This amounts to the first element returned by
         `resolve`. If no values are available, a `NotFoundError` is
@@ -101,14 +103,14 @@ class ConfigView:
             return False
         return True
 
-    def add(self, value: dict[str, Any]) -> None:
+    def add(self, value: Any) -> None:
         """Set the *default* value for this configuration view. The
         specified value is added as the lowest-priority configuration
         data source.
         """
         raise NotImplementedError
 
-    def set(self, value: dict[str, Any]) -> None:
+    def set(self, value: Any) -> None:
         """*Override* the value for this configuration view. The
         specified value is added as the highest-priority configuration
         data source.
@@ -142,17 +144,17 @@ class ConfigView:
                     f"{type(item).__name__}"
                 )
 
-    def __getitem__(self, key: str) -> Subview:
+    def __getitem__(self, key: ConfigKey) -> Subview:
         """Get a subview of this view."""
         return Subview(self, key)
 
-    def __setitem__(self, key: str, value: Any) -> None:
+    def __setitem__(self, key: ConfigKey, value: Any) -> None:
         """Create an overlay source to assign a given key under this
         view.
         """
         self.set({key: value})
 
-    def __contains__(self, key: str) -> bool:
+    def __contains__(self, key: ConfigKey) -> bool:
         return self[key].exists()
 
     def set_args(
@@ -203,7 +205,7 @@ class ConfigView:
 
         for dic, _ in self.resolve():
             try:
-                cur_keys = dic.keys()
+                cur_keys = dic.keys()  # type: ignore[union-attr]
             except AttributeError:
                 raise ConfigTypeError(
                     f"{self.name} must be a dict, not {type(dic).__name__}"
@@ -388,13 +390,13 @@ class ConfigView:
     def redact(self, flag: bool) -> None:
         self.set_redaction((), flag)
 
-    def set_redaction(self, path: tuple[str, ...], flag: bool) -> None:
+    def set_redaction(self, path: tuple[ConfigKey, ...], flag: bool) -> None:
         """Add or remove a redaction for a key path, which should be an
         iterable of keys.
         """
         raise NotImplementedError()
 
-    def get_redactions(self) -> Iterable[tuple[str, ...]]:
+    def get_redactions(self) -> Iterable[tuple[ConfigKey, ...]]:
         """Get the set of currently-redacted sub-key-paths at this view."""
         raise NotImplementedError()
 
@@ -411,15 +413,15 @@ class RootView(ConfigView):
         """
         self.sources: list[ConfigSource] = list(sources)
         self.name = ROOT_NAME
-        self.redactions: set[tuple[str, ...]] = set()
+        self.redactions: set[tuple[ConfigKey, ...]] = set()
 
-    def add(self, value: dict[str, Any]) -> None:
+    def add(self, value: Any) -> None:
         self.sources.append(ConfigSource.of(value))
 
-    def set(self, value: dict[str, Any]) -> None:
+    def set(self, value: Any) -> None:
         self.sources.insert(0, ConfigSource.of(value))
 
-    def resolve(self) -> Iterator[tuple[dict[str, Any], ConfigSource]]:
+    def resolve(self) -> Iterator[tuple[dict[str, Any] | list[Any], ConfigSource]]:
         return ((dict(s), s) for s in self.sources)
 
     def clear(self) -> None:
@@ -432,20 +434,20 @@ class RootView(ConfigView):
     def root(self) -> Self:
         return self
 
-    def set_redaction(self, path: tuple[str, ...], flag: bool) -> None:
+    def set_redaction(self, path: tuple[ConfigKey, ...], flag: bool) -> None:
         if flag:
             self.redactions.add(path)
         elif path in self.redactions:
             self.redactions.remove(path)
 
-    def get_redactions(self) -> builtins.set[tuple[str, ...]]:
+    def get_redactions(self) -> builtins.set[tuple[ConfigKey, ...]]:
         return self.redactions
 
 
 class Subview(ConfigView):
     """A subview accessed via a subscript of a parent view."""
 
-    def __init__(self, parent: ConfigView, key: str) -> None:
+    def __init__(self, parent: ConfigView, key: ConfigKey) -> None:
         """Make a subview of a parent view for a given subscript key."""
         self.parent = parent
         self.key = key
@@ -466,10 +468,10 @@ class Subview(ConfigView):
         else:
             self.name += repr(self.key)
 
-    def resolve(self) -> Iterator[tuple[dict[str, Any], ConfigSource]]:
+    def resolve(self) -> Iterator[tuple[dict[str, Any] | list[Any], ConfigSource]]:
         for collection, source in self.parent.resolve():
             try:
-                value = collection[self.key]
+                value = collection[self.key]  # type: ignore[index]
             except IndexError:
                 # List index out of bounds.
                 continue
@@ -484,19 +486,19 @@ class Subview(ConfigView):
                 )
             yield value, source
 
-    def set(self, value: dict[str, Any]) -> None:
+    def set(self, value: Any) -> None:
         self.parent.set({self.key: value})
 
-    def add(self, value: dict[str, Any]) -> None:
+    def add(self, value: Any) -> None:
         self.parent.add({self.key: value})
 
     def root(self) -> RootView:
         return self.parent.root()
 
-    def set_redaction(self, path: tuple[str, ...], flag: bool) -> None:
+    def set_redaction(self, path: tuple[ConfigKey, ...], flag: bool) -> None:
         self.parent.set_redaction((self.key, *path), flag)
 
-    def get_redactions(self) -> Iterable[tuple[str, ...]]:
+    def get_redactions(self) -> Iterable[tuple[ConfigKey, ...]]:
         return (
             kp[1:] for kp in self.parent.get_redactions() if kp and kp[0] == self.key
         )
@@ -728,7 +730,7 @@ class LazyConfig(Configuration):
         self._materialized = True
         super().read(user, defaults)
 
-    def resolve(self) -> Iterator[tuple[dict[str, Any], ConfigSource]]:
+    def resolve(self) -> Iterator[tuple[dict[str, Any] | list[Any], ConfigSource]]:
         if not self._materialized:
             # Read files and unspool buffers.
             self.read()
@@ -736,14 +738,14 @@ class LazyConfig(Configuration):
             self.sources[:0] = self._lazy_prefix
         return super().resolve()
 
-    def add(self, value: dict[str, Any]) -> None:
+    def add(self, value: Any) -> None:
         super().add(value)
         if not self._materialized:
             # Buffer additions to end.
             self._lazy_suffix += self.sources
             del self.sources[:]
 
-    def set(self, value: dict[str, Any]) -> None:
+    def set(self, value: Any) -> None:
         super().set(value)
         if not self._materialized:
             # Buffer additions to beginning.
