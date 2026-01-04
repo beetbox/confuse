@@ -42,7 +42,6 @@ from .sources import ConfigSource, EnvSource, YamlSource
 
 if TYPE_CHECKING:
     import builtins
-    import pathlib
     from argparse import Namespace
     from collections.abc import Iterable, Iterator, Mapping, Sequence
     from optparse import Values
@@ -291,28 +290,17 @@ class ConfigView:
         return od
 
     @overload
-    def get(self, template: templates.Pairs) -> list[tuple[str, str]]: ...
-    @overload
-    def get(self, template: templates.MappingTemplate) -> templates.AttrDict: ...
-    @overload
-    def get(self, template: templates.Optional[R]) -> R | None: ...
-    @overload
     def get(self, template: templates.Path) -> Path: ...
+    @overload
+    def get(self, template: templates.Template[R]) -> R: ...
     @overload
     def get(self, template: type[R]) -> R: ...
     @overload
-    def get(self, template: Mapping[str, Any]) -> templates.AttrDict: ...
-    # Overload for list (OneOf)
+    def get(self, template: Mapping[str, object]) -> templates.AttrDict[str, Any]: ...
     @overload
     def get(self, template: list[R]) -> R: ...
     @overload
-    def get(self, template: None) -> None: ...
-    @overload
-    def get(self, template: templates.Template[R]) -> R: ...
-    # Overload for REQUIRED sentinel
-    @overload
     def get(self, template: templates._Required = ...) -> Any: ...
-
     def get(self, template: object = templates.REQUIRED) -> Any:
         """Retrieve the value for this view according to the template.
 
@@ -359,11 +347,17 @@ class ConfigView:
         """
         return self.get(templates.StrSeq(split=split))
 
-    def as_pairs(self, default_value: str | None = None) -> list[tuple[str, str]]:
+    @overload
+    def as_pairs(self, default_value: str) -> list[tuple[str, str]]: ...
+    @overload
+    def as_pairs(self, default_value: None = None) -> list[tuple[str, None]]: ...
+    def as_pairs(
+        self, default_value: str | None = None
+    ) -> list[tuple[str, str]] | list[tuple[str, None]]:
         """Get the value as a sequence of pairs of two strings. Equivalent to
         `get(Pairs(default_value=default_value))`.
         """
-        return self.get(templates.Pairs(default_value=default_value))
+        return self.get(templates.Pairs(default_value=default_value))  # type: ignore[return-value]
 
     def as_str(self) -> str:
         """Get the value as a (Unicode) string. Equivalent to
