@@ -10,19 +10,18 @@ from typing import ClassVar
 import confuse
 import confuse.yaml_util
 
-DEFAULT = [platform.system, os.environ, os.path]
-
+DEFAULT = (platform.system, os.environ, os.path)
 SYSTEMS = {
-    "Linux": [{"HOME": "/home/test", "XDG_CONFIG_HOME": "~/xdgconfig"}, posixpath],
-    "Darwin": [{"HOME": "/Users/test"}, posixpath],
-    "Windows": [
+    "Linux": ({"HOME": "/home/test", "XDG_CONFIG_HOME": "~/xdgconfig"}, posixpath),
+    "Darwin": ({"HOME": "/Users/test"}, posixpath),
+    "Windows": (
         {
             "APPDATA": "~\\winconfig",
             "HOME": "C:\\Users\\test",
             "USERPROFILE": "C:\\Users\\test",
         },
         ntpath,
-    ],
+    ),
 }
 
 
@@ -48,10 +47,10 @@ class FakeSystem(unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.os_path = os.path
-        os.environ = {}
+        os.environ = {}  # type: ignore[assignment]
 
         environ, os.path = SYSTEMS[self.SYS_NAME]
-        os.environ.update(environ)  # copy
+        os.environ.update(environ)
         platform.system = lambda: self.SYS_NAME
 
     def tearDown(self):
@@ -128,11 +127,11 @@ class WindowsTestCases(FakeSystem):
 class ConfigFilenamesTest(unittest.TestCase):
     def setUp(self):
         self._old = os.path.isfile, confuse.yaml_util.load_yaml
-        os.path.isfile = lambda x: True
+        os.path.isfile = lambda x: True  # type: ignore[assignment]
         confuse.yaml_util.load_yaml = lambda *args, **kwargs: {}
 
     def tearDown(self):
-        confuse.yaml_util.load_yaml, os.path.isfile = self._old
+        os.path.isfile, confuse.yaml_util.load_yaml = self._old
 
     def test_no_sources_when_files_missing(self):
         config = confuse.Configuration("myapp", read=False)
@@ -173,7 +172,7 @@ class EnvVarTest(FakeHome):
         assert self.config.config_dir() != self.home
 
 
-@unittest.skipUnless(os.system == "Linux", "Linux-specific tests")
+@unittest.skipUnless(platform.system() == "Linux", "Linux-specific tests")
 class PrimaryConfigDirTest(FakeHome, FakeSystem):
     SYS_NAME = "Linux"  # conversion from posix to nt is easy
 

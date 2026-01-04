@@ -1,11 +1,12 @@
 import os
 import shutil
 import tempfile
+from typing import Any
 
 import confuse
 
 
-def _root(*sources):
+def _root(*sources: dict[str, Any]) -> confuse.RootView:
     return confuse.RootView([confuse.ConfigSource.of(s) for s in sources])
 
 

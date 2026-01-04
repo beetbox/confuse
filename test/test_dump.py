@@ -1,5 +1,6 @@
 import textwrap
 import unittest
+from collections import OrderedDict
 
 import confuse
 
@@ -32,7 +33,7 @@ class PrettyDumpTest(unittest.TestCase):
         assert yaml == "foo: [bar, baz]"
 
     def test_dump_ordered_dict(self):
-        odict = confuse.OrderedDict()
+        odict = OrderedDict()
         odict["foo"] = "bar"
         odict["bar"] = "baz"
         odict["baz"] = "qux"

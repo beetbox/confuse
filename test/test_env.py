@@ -1,5 +1,6 @@
 import os
 import unittest
+from unittest.mock import patch
 
 import pytest
 
@@ -7,15 +8,14 @@ import confuse
 
 from . import _root
 
-ENVIRON = os.environ
-
 
 class EnvSourceTest(unittest.TestCase):
     def setUp(self):
-        os.environ = {}
+        self.env_patcher = patch.dict("os.environ", {})
+        self.env_patcher.start()
 
     def tearDown(self):
-        os.environ = ENVIRON
+        self.env_patcher.stop()
 
     def test_prefix(self):
         os.environ["TEST_FOO"] = "a"
@@ -235,16 +235,17 @@ class EnvSourceTest(unittest.TestCase):
 
 class ConfigEnvTest(unittest.TestCase):
     def setUp(self):
+        self.env_patcher = patch.dict(
+            "os.environ",
+            {
+                "TESTAPP_FOO": "a",
+                "TESTAPP_BAR__NESTED": "b",
+                "TESTAPP_BAZ_SEP_NESTED": "c",
+                "MYAPP_QUX_SEP_NESTED": "d",
+            },
+        )
+        self.env_patcher.start()
         self.config = confuse.Configuration("TestApp", read=False)
-        os.environ = {
-            "TESTAPP_FOO": "a",
-            "TESTAPP_BAR__NESTED": "b",
-            "TESTAPP_BAZ_SEP_NESTED": "c",
-            "MYAPP_QUX_SEP_NESTED": "d",
-        }
-
-    def tearDown(self):
-        os.environ = ENVIRON
 
     def test_defaults(self):
         self.config.set_env()

@@ -1,10 +1,18 @@
+from __future__ import annotations
+
 import unittest
+from typing import TYPE_CHECKING
 
 import pytest
 
 import confuse
 
 from . import _root
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from confuse import Subview
 
 
 class SingleSourceTest(unittest.TestCase):
@@ -35,7 +43,10 @@ class SingleSourceTest(unittest.TestCase):
 
     def test_list_iter(self):
         config = _root({"l": ["foo", "bar"]})
-        items = [subview.get() for subview in config["l"]]
+        # TODO(@snejus): we need to split Subview to SequenceView and MappingView in
+        # order to have automatic resolution here
+        _items: Iterator[Subview] = iter(config["l"])
+        items = [subview.get() for subview in _items]
         assert items == ["foo", "bar"]
 
     def test_int_iter(self):
