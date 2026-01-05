@@ -17,7 +17,7 @@ jobs:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Install Python tools
         uses: BrandonLWhite/pipx-install-action@v1.0.3
       - name: Setup Python with poetry caching
