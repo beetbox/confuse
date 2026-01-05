@@ -25,7 +25,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 project = "Confuse"
-copyright = "2012-{}, Adrian Sampson & contributors".format(dt.date.today().year)
+copyright = f"2012-{dt.date.today().year}, Adrian Sampson & contributors"
 
 exclude_patterns = ["_build"]
 

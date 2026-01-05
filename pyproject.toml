@@ -5,12 +5,11 @@ description = "Painless YAML config files"
 authors = [{ name = "Adrian Sampson", email = "adrian@radbox.org" }]
 readme = "README.rst"
 license = "MIT"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -25,6 +24,13 @@ dependencies = [
 dev = [
     "pytest >= 8.4.2",
     "pytest-cov >= 7.0.0",
+]
+lint = [
+    "docstrfmt >= 2.0.1",
+    "mypy >= 1.18.2",
+    "ruff >= 0.6.4",
+    "sphinx-lint >= 1.0.0",
+    "types-pyyaml >=6.0.12",
 ]
 
 [project.optional-dependencies]
@@ -49,13 +55,39 @@ include = [
     { path = "test", format = "sdist" },
 ]
 
-[tool.poetry.requires-plugins]
-poethepoet = ">=0.32"
+[tool.poe.tasks.check-docs-links]
+help = "Check the documentation for broken URLs"
+cmd = "make -C docs linkcheck"
+
+[tool.poe.tasks.check-format]
+help = "Check the code for style issues"
+cmd = "ruff format --check --diff"
+
+[tool.poe.tasks.check-types]
+help = "Check the code for typing issues. Accepts mypy options."
+cmd = "mypy"
 
 [tool.poe.tasks.docs]
 help = "Build documentation"
 args = [{ name = "COMMANDS", positional = true, multiple = true, default = "html" }]
 cmd = "make -C docs $COMMANDS"
+
+[tool.poe.tasks.format]
+help = "Format the codebase"
+cmd = "ruff format"
+
+[tool.poe.tasks.format-docs]
+help = "Format the documentation"
+# TODO: Remove --no-format-python-code-blocks once https://github.com/LilSpazJoekp/docstrfmt/issues/171 is resolved
+cmd = "docstrfmt --no-format-python-code-blocks --preserve-adornments docs *.rst"
+
+[tool.poe.tasks.lint]
+help = "Check the code for linting issues. Accepts ruff options."
+cmd = "ruff check"
+
+[tool.poe.tasks.lint-docs]
+help = "Lint the documentation"
+shell = "sphinx-lint --enable all --disable default-role $(git ls-files '*.rst')"
 
 [tool.poe.tasks.test]
 help = "Run tests with pytest"
@@ -77,3 +109,31 @@ env.OPTS = """
 --cov-branch
 --cov-context=test
 """
+
+[tool.docstrfmt]
+line-length = 80
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint]
+future-annotations = true
+select = [
+    "E", # pycodestyle
+    "F", # pyflakes
+    "G", # flake8-logging-format
+    "I", # isort
+    "ISC", # flake8-implicit-str-concat
+    "N", # pep8-naming
+    "PT", # flake8-pytest-style
+    "RUF", # ruff
+    "UP", # pyupgrade
+    "TC", # flake8-type-checking
+    "W", # pycodestyle
+]
+ignore = [
+    "TC006", # no need to quote 'cast's since we use 'from __future__ import annotations'
+]
+
+[tool.ruff.format]
+quote-style = "double"

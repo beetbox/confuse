@@ -1,16 +1,17 @@
-import confuse
-import tempfile
-import shutil
 import os
+import shutil
+import tempfile
+
+import confuse
 
 
 def _root(*sources):
     return confuse.RootView([confuse.ConfigSource.of(s) for s in sources])
 
 
-class TempDir():
-    """Context manager that creates and destroys a temporary directory.
-    """
+class TempDir:
+    """Context manager that creates and destroys a temporary directory."""
+
     def __init__(self):
         self.path = tempfile.mkdtemp()
 
@@ -27,6 +28,6 @@ class TempDir():
         """
         path = os.path.join(self.path, name)
         if contents:
-            with open(path, 'wb') as f:
+            with open(path, "wb") as f:
                 f.write(contents)
         return path

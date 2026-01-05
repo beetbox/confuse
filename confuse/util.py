@@ -1,15 +1,14 @@
-import importlib.util
-import os
-import sys
 import argparse
+import importlib.util
 import optparse
+import os
 import platform
+import sys
 
-
-UNIX_DIR_FALLBACK = '~/.config'
-WINDOWS_DIR_VAR = 'APPDATA'
-WINDOWS_DIR_FALLBACK = '~\\AppData\\Roaming'
-MAC_DIR = '~/Library/Application Support'
+UNIX_DIR_FALLBACK = "~/.config"
+WINDOWS_DIR_VAR = "APPDATA"
+WINDOWS_DIR_FALLBACK = "~\\AppData\\Roaming"
+MAC_DIR = "~/Library/Application Support"
 
 
 def iter_first(sequence):
@@ -38,7 +37,7 @@ def namespace_to_dict(obj):
     return obj
 
 
-def build_dict(obj, sep='', keep_none=False):
+def build_dict(obj, sep="", keep_none=False):
     """Recursively builds a dictionary from an argparse.Namespace,
     optparse.Values, or dict object.
 
@@ -90,8 +89,7 @@ def build_dict(obj, sep='', keep_none=False):
                 # Build the dict tree if needed and change where
                 # we're saving to
                 for child_key in split:
-                    if child_key in save_to and \
-                            isinstance(save_to[child_key], dict):
+                    if child_key in save_to and isinstance(save_to[child_key], dict):
                         save_to = save_to[child_key]
                     else:
                         # Clobber or create
@@ -109,6 +107,7 @@ def build_dict(obj, sep='', keep_none=False):
 # Config file paths, including platform-specific paths and in-package
 # defaults.
 
+
 def find_package_path(name):
     """Returns the path to the package containing the named module or
     None if the path could not be identified (e.g., if
@@ -122,10 +121,10 @@ def find_package_path(name):
         return None
 
     loader = spec.loader
-    if loader is None or name == '__main__':
+    if loader is None or name == "__main__":
         return None
 
-    if hasattr(loader, 'get_filename'):
+    if hasattr(loader, "get_filename"):
         filepath = loader.get_filename(name)
     else:
         # Fall back to importing the specified module.
@@ -140,13 +139,13 @@ def xdg_config_dirs():
     and XDG_CONFIG_HOME environment varibables if they exist
     """
     paths = []
-    if 'XDG_CONFIG_HOME' in os.environ:
-        paths.append(os.environ['XDG_CONFIG_HOME'])
-    if 'XDG_CONFIG_DIRS' in os.environ:
-        paths.extend(os.environ['XDG_CONFIG_DIRS'].split(':'))
+    if "XDG_CONFIG_HOME" in os.environ:
+        paths.append(os.environ["XDG_CONFIG_HOME"])
+    if "XDG_CONFIG_DIRS" in os.environ:
+        paths.extend(os.environ["XDG_CONFIG_DIRS"].split(":"))
     else:
-        paths.append('/etc/xdg')
-    paths.append('/etc')
+        paths.append("/etc/xdg")
+    paths.append("/etc")
     return paths
 
 
@@ -160,12 +159,12 @@ def config_dirs():
     """
     paths = []
 
-    if platform.system() == 'Darwin':
+    if platform.system() == "Darwin":
         paths.append(UNIX_DIR_FALLBACK)
         paths.append(MAC_DIR)
         paths.extend(xdg_config_dirs())
 
-    elif platform.system() == 'Windows':
+    elif platform.system() == "Windows":
         paths.append(WINDOWS_DIR_FALLBACK)
         if WINDOWS_DIR_VAR in os.environ:
             paths.append(os.environ[WINDOWS_DIR_VAR])

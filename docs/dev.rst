@@ -7,9 +7,9 @@ library.
 Version Bumps
 -------------
 
-This section outlines how to create a new version of the ``confuse`` library
-and publish it on PyPi. The versioning follows semantic versioning principles,
-where the version number is structured as ``MAJOR.MINOR.PATCH``.
+This section outlines how to create a new version of the ``confuse`` library and
+publish it on PyPi. The versioning follows semantic versioning principles, where
+the version number is structured as ``MAJOR.MINOR.PATCH``.
 
 To create a new version, follow these steps:
 
