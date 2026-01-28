@@ -1,14 +1,13 @@
 Changelog
 =========
 
-Unreleased
-----------
-
-- Drop support for Python 3.9.
-
-v2.1.1
+v2.2.0
 ------
 
+- Drop support for Python 3.9.
+- Ship inline type information via a `py.typed` marker for type checkers.
+- Tighten and extend type hints across the public API, templates, and sources.
+- Add strict mypy configuration and align tests/examples with the new typing.
 - Include `docs` and `tests` directory in source distributions.
 
 v2.1.0
