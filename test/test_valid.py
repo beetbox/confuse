@@ -2,6 +2,7 @@ import enum
 import os
 import unittest
 from collections.abc import Mapping, Sequence
+from typing import Any
 
 import pytest
 
@@ -69,29 +70,13 @@ class ValidConfigTest(unittest.TestCase):
         assert valid == 5
 
     def test_nested_dict_template(self):
-        config = _root(
-            {
-                "foo": {"bar": 9},
-            }
-        )
-        valid = config.get(
-            {
-                "foo": {"bar": confuse.Integer()},
-            }
-        )
+        config = _root({"foo": {"bar": 9}})
+        valid = config.get({"foo": {"bar": confuse.Integer()}})
         assert valid["foo"]["bar"] == 9
 
     def test_nested_attribute_access(self):
-        config = _root(
-            {
-                "foo": {"bar": 8},
-            }
-        )
-        valid = config.get(
-            {
-                "foo": {"bar": confuse.Integer()},
-            }
-        )
+        config = _root({"foo": {"bar": 8}})
+        valid = config.get({"foo": {"bar": confuse.Integer()}})
         assert valid.foo.bar == 8
 
 
@@ -132,12 +117,12 @@ class AsTemplateTest(unittest.TestCase):
         assert typ.subtemplates["outer"].subtemplates["inner"].default == 2
 
     def test_list_as_template(self):
-        typ = confuse.as_template(list())
+        typ: confuse.OneOf[Any] = confuse.as_template(list())
         assert isinstance(typ, confuse.OneOf)
         assert typ.default == confuse.REQUIRED
 
     def test_set_as_template(self):
-        typ = confuse.as_template(set())
+        typ: confuse.Choice[Any] = confuse.as_template(set())
         assert isinstance(typ, confuse.Choice)
 
     def test_enum_type_as_template(self):
@@ -275,7 +260,7 @@ class OneOfTest(unittest.TestCase):
 
     def test_validate_good_choice_in_list(self):
         config = _root({"foo": 2})
-        valid = config["foo"].get(
+        valid: str | int = config["foo"].get(
             confuse.OneOf(
                 [
                     confuse.String(),
@@ -287,7 +272,7 @@ class OneOfTest(unittest.TestCase):
 
     def test_validate_first_good_choice_in_list(self):
         config = _root({"foo": 3.14})
-        valid = config["foo"].get(
+        valid: str | int = config["foo"].get(
             confuse.OneOf(
                 [
                     confuse.Integer(),
@@ -314,7 +299,7 @@ class OneOfTest(unittest.TestCase):
             pass
 
         config = _root({})
-        with pytest.raises(confuse.ConfigTemplateError):
+        with pytest.raises(ValueError, match="cannot convert to template"):
             config.get(confuse.OneOf([BadTemplate()]))
         del BadTemplate
 
@@ -416,7 +401,7 @@ class FilenameTest(unittest.TestCase):
     def test_filename_with_file_source(self):
         source = confuse.ConfigSource({"foo": "foo/bar"}, filename="/baz/config.yaml")
         config = _root(source)
-        config.config_dir = lambda: "/config/path"
+        config.config_dir = lambda: "/config/path"  # type: ignore[attr-defined]
         valid = config["foo"].get(confuse.Filename())
         assert valid == os.path.realpath("/config/path/foo/bar")
 
@@ -425,7 +410,7 @@ class FilenameTest(unittest.TestCase):
             {"foo": "foo/bar"}, filename="/baz/config.yaml", default=True
         )
         config = _root(source)
-        config.config_dir = lambda: "/config/path"
+        config.config_dir = lambda: "/config/path"  # type: ignore[attr-defined]
         valid = config["foo"].get(confuse.Filename())
         assert valid == os.path.realpath("/config/path/foo/bar")
 
@@ -434,28 +419,28 @@ class FilenameTest(unittest.TestCase):
             {"foo": "foo/bar"}, filename="/baz/config.yaml", base_for_paths=True
         )
         config = _root(source)
-        config.config_dir = lambda: "/config/path"
+        config.config_dir = lambda: "/config/path"  # type: ignore[attr-defined]
         valid = config["foo"].get(confuse.Filename())
         assert valid == os.path.realpath("/baz/foo/bar")
 
     def test_filename_in_source_dir(self):
         source = confuse.ConfigSource({"foo": "foo/bar"}, filename="/baz/config.yaml")
         config = _root(source)
-        config.config_dir = lambda: "/config/path"
+        config.config_dir = lambda: "/config/path"  # type: ignore[attr-defined]
         valid = config["foo"].get(confuse.Filename(in_source_dir=True))
         assert valid == os.path.realpath("/baz/foo/bar")
 
     def test_filename_in_source_dir_overrides_in_app_dir(self):
         source = confuse.ConfigSource({"foo": "foo/bar"}, filename="/baz/config.yaml")
         config = _root(source)
-        config.config_dir = lambda: "/config/path"
+        config.config_dir = lambda: "/config/path"  # type: ignore[attr-defined]
         valid = config["foo"].get(confuse.Filename(in_source_dir=True, in_app_dir=True))
         assert valid == os.path.realpath("/baz/foo/bar")
 
     def test_filename_in_app_dir_non_file_source(self):
         source = confuse.ConfigSource({"foo": "foo/bar"})
         config = _root(source)
-        config.config_dir = lambda: "/config/path"
+        config.config_dir = lambda: "/config/path"  # type: ignore[attr-defined]
         valid = config["foo"].get(confuse.Filename(in_app_dir=True))
         assert valid == os.path.realpath("/config/path/foo/bar")
 
@@ -464,7 +449,7 @@ class FilenameTest(unittest.TestCase):
             {"foo": "foo/bar"}, filename="/baz/config.yaml", base_for_paths=True
         )
         config = _root(source)
-        config.config_dir = lambda: "/config/path"
+        config.config_dir = lambda: "/config/path"  # type: ignore[attr-defined]
         valid = config["foo"].get(confuse.Filename(in_app_dir=True))
         assert valid == os.path.realpath("/config/path/foo/bar")
 
@@ -503,7 +488,7 @@ class PathTest(unittest.TestCase):
 class BaseTemplateTest(unittest.TestCase):
     def test_base_template_accepts_any_value(self):
         config = _root({"foo": 4.2})
-        valid = config["foo"].get(confuse.Template())
+        valid: float = config["foo"].get(confuse.Template())
         assert valid == 4.2
 
     def test_base_template_required(self):
@@ -576,7 +561,9 @@ class MappingValuesTest(unittest.TestCase):
         config = _root(
             {"foo": {"first": {"bar": 1, "baz": 2}, "second": {"bar": 3, "baz": 4}}}
         )
-        valid = config["foo"].get(confuse.MappingValues({"bar": int, "baz": int}))
+        valid: dict[str, dict[str, int]] = config["foo"].get(
+            confuse.MappingValues({"bar": int, "baz": int})
+        )
         assert valid == {"first": {"bar": 1, "baz": 2}, "second": {"bar": 3, "baz": 4}}
 
     def test_invalid_item(self):
@@ -656,6 +643,7 @@ class OptionalTest(unittest.TestCase):
         config = _root({"foo": {"bar": 5, "baz": "bak"}})
         template = {"bar": confuse.Integer(), "baz": confuse.String()}
         valid = config.get({"foo": confuse.Optional(template)})
+        assert valid["foo"]
         assert valid["foo"]["bar"] == 5
         assert valid["foo"]["baz"] == "bak"
 

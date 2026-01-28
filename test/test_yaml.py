@@ -1,4 +1,5 @@
 import unittest
+from collections import OrderedDict
 
 import pytest
 import yaml
@@ -15,7 +16,7 @@ def load(s):
 class ParseTest(unittest.TestCase):
     def test_dict_parsed_as_ordereddict(self):
         v = load("a: b\nc: d")
-        assert isinstance(v, confuse.OrderedDict)
+        assert isinstance(v, OrderedDict)
         assert list(v) == ["a", "c"]
 
     def test_string_beginning_with_percent(self):

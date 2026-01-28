@@ -40,7 +40,7 @@ class BuiltInValidatorTest(unittest.TestCase):
     def test_as_filename_with_file_source(self):
         source = confuse.ConfigSource({"foo": "foo/bar"}, filename="/baz/config.yaml")
         config = _root(source)
-        config.config_dir = lambda: "/config/path"
+        config.config_dir = lambda: "/config/path"  # type: ignore[attr-defined]
         value = config["foo"].as_filename()
         assert value == os.path.realpath("/config/path/foo/bar")
 
@@ -49,7 +49,7 @@ class BuiltInValidatorTest(unittest.TestCase):
             {"foo": "foo/bar"}, filename="/baz/config.yaml", default=True
         )
         config = _root(source)
-        config.config_dir = lambda: "/config/path"
+        config.config_dir = lambda: "/config/path"  # type: ignore[attr-defined]
         value = config["foo"].as_filename()
         assert value == os.path.realpath("/config/path/foo/bar")
 
@@ -60,7 +60,7 @@ class BuiltInValidatorTest(unittest.TestCase):
 
     def test_as_path(self):
         config = _root({"foo": "foo/bar"})
-        path = os.path.join(os.getcwd(), "foo", "bar")
+        path_str = os.path.join(os.getcwd(), "foo", "bar")
         try:
             import pathlib
         except ImportError:
@@ -68,7 +68,7 @@ class BuiltInValidatorTest(unittest.TestCase):
                 value = config["foo"].as_path()
         else:
             value = config["foo"].as_path()
-            path = pathlib.Path(path)
+            path = pathlib.Path(path_str)
             assert value == path
 
     def test_as_choice_correct(self):

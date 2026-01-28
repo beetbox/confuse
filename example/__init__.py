@@ -24,7 +24,7 @@ template = {
 config = confuse.LazyConfig("ConfuseExample", __name__)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="example Confuse program")
     parser.add_argument(
         "--library",

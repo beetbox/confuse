@@ -1,6 +1,7 @@
 import unittest
 from argparse import Namespace
 from collections import OrderedDict
+from typing import Any
 
 import pytest
 
@@ -20,7 +21,7 @@ class BuildDictTests(unittest.TestCase):
         assert 1 == result["another"]
 
     def test_dot_sep_keys(self):
-        config = {"foo.bar": 1}
+        config: dict[str, Any] = {"foo.bar": 1}
         result = confuse.util.build_dict(config.copy())
         assert 1 == result["foo.bar"]
 
@@ -28,7 +29,7 @@ class BuildDictTests(unittest.TestCase):
         assert 1 == result["foo"]["bar"]
 
     def test_dot_sep_keys_clobber(self):
-        args = [("foo.bar", 1), ("foo.bar.zar", 2)]
+        args: list[tuple[str, Any]] = [("foo.bar", 1), ("foo.bar.zar", 2)]
         config = OrderedDict(args)
         result = confuse.util.build_dict(config.copy(), sep=".")
         assert {"zar": 2} == result["foo"]["bar"]
@@ -42,7 +43,11 @@ class BuildDictTests(unittest.TestCase):
         assert 2 == result["foo"]["bar"]["zar"]
 
     def test_dot_sep_keys_no_clobber(self):
-        args = [("foo.bar", 1), ("foo.far", 2), ("foo.zar.dar", 4)]
+        args: list[tuple[str, Any]] = [
+            ("foo.bar", 1),
+            ("foo.far", 2),
+            ("foo.zar.dar", 4),
+        ]
         config = OrderedDict(args)
         result = confuse.util.build_dict(config.copy(), sep=".")
         assert 1 == result["foo"]["bar"]
@@ -50,7 +55,7 @@ class BuildDictTests(unittest.TestCase):
         assert 4 == result["foo"]["zar"]["dar"]
 
     def test_adjacent_underscores_sep_keys(self):
-        config = {"foo__bar_baz": 1}
+        config: dict[str, Any] = {"foo__bar_baz": 1}
         result = confuse.util.build_dict(config.copy())
         assert 1 == result["foo__bar_baz"]
 

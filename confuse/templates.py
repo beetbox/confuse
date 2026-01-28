@@ -1,18 +1,59 @@
+from __future__ import annotations
+
 import enum
 import os
 import pathlib
 import re
 from collections import abc
+from collections.abc import Hashable, Iterable, Mapping
+from functools import singledispatchmethod
+from typing import TYPE_CHECKING, Any, Generic, NoReturn, overload
+
+from typing_extensions import TypeVar
 
 from . import exceptions, util
 
-REQUIRED = object()
+if TYPE_CHECKING:
+    from .core import ConfigView, Subview
+
+
+T = TypeVar("T")
+T_co = TypeVar("T_co", covariant=True)
+K = TypeVar("K", bound=Hashable, default=str)
+P = TypeVar("P", bound=pathlib.PurePath | str, default=str)
+V = TypeVar("V", default=object)
+ConfigKey = int | str | bytes
+ConfigKeyT = TypeVar("ConfigKeyT", bound=ConfigKey, default=str)
+
+
+class _Required:
+    """Marker class for required sentinel."""
+
+    pass
+
+
+REQUIRED = _Required()
 """A sentinel indicating that there is no default value and an exception
 should be raised when the value is missing.
 """
 
 
-class Template:
+class AttrDict(dict[ConfigKeyT, V]):
+    """A `dict` subclass that can be accessed via attributes (dot
+    notation) for convenience.
+    """
+
+    def __getattr__(self, key: str) -> V:
+        if key in self:
+            return self[key]  # type: ignore[index]
+        else:
+            raise AttributeError(key)
+
+    def __setattr__(self, key: str, value: V) -> None:
+        self[key] = value  # type: ignore[index]
+
+
+class Template(Generic[T_co]):
     """A value template for configuration fields.
 
     The template works like a type and instructs Confuse about how to
@@ -21,22 +62,30 @@ class Template:
     filepath type might expand tildes and check that the file exists.
     """
 
-    def __init__(self, default=REQUIRED):
+    default: T_co | _Required
+
+    @overload
+    def __init__(self: Template[T], default: T) -> None: ...
+    @overload
+    def __init__(self: Template[Any], default: _Required = ...) -> None: ...
+    def __init__(self, default: object = REQUIRED) -> None:
         """Create a template with a given default value.
 
         If `default` is the sentinel `REQUIRED` (as it is by default),
         then an error will be raised when a value is missing. Otherwise,
         missing values will instead return `default`.
         """
-        self.default = default
+        self.default = default  # type: ignore[assignment]
 
-    def __call__(self, view):
+    def __call__(self, view: ConfigView) -> T_co:
         """Invoking a template on a view gets the view's value according
         to the template.
         """
         return self.value(view, self)
 
-    def value(self, view, template=None):
+    def value(
+        self, view: ConfigView, template: Template[T_co] | object | None = None
+    ) -> T_co:
         """Get the value for a `ConfigView`.
 
         May raise a `NotFoundError` if the value is missing (and the
@@ -51,7 +100,7 @@ class Template:
         # Get default value, or raise if required.
         return self.get_default_value(view.name)
 
-    def get_default_value(self, key_name="default"):
+    def get_default_value(self, key_name: str = "default") -> T_co:
         """Get the default value to return when the value is missing.
 
         May raise a `NotFoundError` if the value is required.
@@ -60,9 +109,9 @@ class Template:
             # The value is required. A missing value is an error.
             raise exceptions.NotFoundError(f"{key_name} not found")
         # The value is not required.
-        return self.default
+        return self.default  # type: ignore[return-value]
 
-    def convert(self, value, view):
+    def convert(self, value: Any, view: ConfigView) -> T_co:
         """Convert the YAML-deserialized value to a value of the desired
         type.
 
@@ -70,9 +119,11 @@ class Template:
         May raise a `ConfigValueError` when the configuration is wrong.
         """
         # Default implementation does no conversion.
-        return value
+        return value  # type: ignore[no-any-return]
 
-    def fail(self, message, view, type_error=False):
+    def fail(
+        self, message: str, view: ConfigView, type_error: bool = False
+    ) -> NoReturn:
         """Raise an exception indicating that a value cannot be
         accepted.
 
@@ -85,17 +136,17 @@ class Template:
         )
         raise exc_class(f"{view.name}: {message}")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "{}({})".format(
             type(self).__name__,
             "" if self.default is REQUIRED else repr(self.default),
         )
 
 
-class Integer(Template):
+class Integer(Template[int]):
     """An integer configuration value template."""
 
-    def convert(self, value, view):
+    def convert(self, value: int | float, view: ConfigView) -> int:
         """Check that the value is an integer. Floats are rounded."""
         if isinstance(value, int):
             return value
@@ -105,10 +156,13 @@ class Integer(Template):
             self.fail("must be a number", view, True)
 
 
-class Number(Template):
+Numeric = TypeVar("Numeric", int, float)
+
+
+class Number(Template[Numeric]):
     """A numeric type: either an integer or a floating-point number."""
 
-    def convert(self, value, view):
+    def convert(self, value: Numeric, view: ConfigView) -> Numeric:
         """Check that the value is an int or a float."""
         if isinstance(value, (int, float)):
             return value
@@ -116,57 +170,74 @@ class Number(Template):
             self.fail(f"must be numeric, not {type(value).__name__}", view, True)
 
 
-class MappingTemplate(Template):
+class MappingTemplate(Template[AttrDict[ConfigKeyT, V]]):
     """A template that uses a dictionary to specify other types for the
     values for a set of keys and produce a validated `AttrDict`.
     """
 
-    def __init__(self, mapping):
+    def __init__(self, mapping: Mapping[ConfigKeyT, Template[V] | type[V]]) -> None:
         """Create a template according to a dict (mapping). The
         mapping's values should themselves either be Types or
         convertible to Types.
         """
-        subtemplates = {}
+        subtemplates: dict[ConfigKeyT, Template[V]] = {}
         for key, typ in mapping.items():
             subtemplates[key] = as_template(typ)
         self.subtemplates = subtemplates
 
-    def value(self, view, template=None):
+    def value(
+        self,
+        view: ConfigView,
+        template: Template[AttrDict[ConfigKeyT, V]] | object | None = None,
+    ) -> AttrDict[ConfigKeyT, V]:
         """Get a dict with the same keys as the template and values
         validated according to the value types.
         """
-        out = AttrDict()
-        for key, typ in self.subtemplates.items():
-            out[key] = typ.value(view[key], self)
-        return out
+        return AttrDict(
+            {k: v.value(view[k], self) for k, v in self.subtemplates.items()}
+        )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"MappingTemplate({self.subtemplates!r})"
 
 
-class Sequence(Template):
+class Sequence(Template[list[T]]):
     """A template used to validate lists of similar items,
     based on a given subtemplate.
     """
 
-    def __init__(self, subtemplate):
+    subtemplate: Template[T]
+
+    @overload
+    def __init__(
+        self: Sequence[dict[str, V]], subtemplate: Mapping[str, Template[V] | type[V]]
+    ) -> None: ...
+    @overload
+    def __init__(self, subtemplate: type[T]) -> None: ...
+    @overload
+    def __init__(self, subtemplate: Template[T]) -> None: ...
+
+    def __init__(self, subtemplate: Template[T] | type[T] | Mapping[str, object]):
         """Create a template for a list with items validated
         on a given subtemplate.
         """
-        self.subtemplate = as_template(subtemplate)
+        super().__init__()
+        self.subtemplate = as_template(subtemplate)  # type: ignore[assignment]
 
-    def value(self, view, template=None):
+    def value(
+        self, view: ConfigView, template: Template[list[T]] | object | None = None
+    ) -> list[T]:
         """Get a list of items validated against the template."""
         out = []
         for item in view.sequence():
             out.append(self.subtemplate.value(item, self))
         return out
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Sequence({self.subtemplate!r})"
 
 
-class MappingValues(Template):
+class MappingValues(Template[dict[str, T]]):
     """A template used to validate mappings of similar items,
     based on a given subtemplate applied to the values.
 
@@ -175,13 +246,18 @@ class MappingValues(Template):
     Sequence template but for mappings.
     """
 
-    def __init__(self, subtemplate):
+    subtemplate: Template[T]
+
+    def __init__(self, subtemplate: Template[T] | type[T] | Mapping[str, object]):
         """Create a template for a mapping with variable keys
         and item values validated on a given subtemplate.
         """
-        self.subtemplate = as_template(subtemplate)
+        super().__init__()
+        self.subtemplate = as_template(subtemplate)  # type: ignore[assignment]
 
-    def value(self, view, template=None):
+    def value(
+        self, view: ConfigView, template: Template[dict[str, T]] | object | None = None
+    ) -> dict[str, T]:
         """Get a dict with the same keys as the view and the
         value of each item validated against the subtemplate.
         """
@@ -190,14 +266,19 @@ class MappingValues(Template):
             out[key] = self.subtemplate.value(item, self)
         return out
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"MappingValues({self.subtemplate!r})"
 
 
-class String(Template):
+class String(Template[str]):
     """A string configuration value template."""
 
-    def __init__(self, default=REQUIRED, pattern=None, expand_vars=False):
+    def __init__(
+        self,
+        default: str | _Required = REQUIRED,
+        pattern: str | None = None,
+        expand_vars: bool = False,
+    ):
         """Create a template with the added optional `pattern` argument,
         a regular expression string that the value should match.
         """
@@ -207,7 +288,7 @@ class String(Template):
         if pattern:
             self.regex = re.compile(pattern)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         args = []
 
         if self.default is not REQUIRED:
@@ -218,7 +299,7 @@ class String(Template):
 
         return f"String({', '.join(args)})"
 
-    def convert(self, value, view):
+    def convert(self, value: object, view: ConfigView) -> str:
         """Check that the value is a string and matches the pattern."""
         if not isinstance(value, str):
             self.fail("must be a string", view, True)
@@ -232,14 +313,20 @@ class String(Template):
             return value
 
 
-class Choice(Template):
+class Choice(Template[T], Generic[T, K]):
     """A template that permits values from a sequence of choices.
 
     Sequences, dictionaries and :class:`Enum` types are supported,
     see :meth:`__init__` for usage.
     """
 
-    def __init__(self, choices, default=REQUIRED):
+    choices: abc.Sequence[T] | dict[K, T] | type[T]
+
+    def __init__(
+        self,
+        choices: abc.Sequence[T] | dict[K, T] | type[T],
+        default: T | _Required = REQUIRED,
+    ) -> None:
         """Create a template that validates any of the values from the
         iterable `choices`.
 
@@ -252,43 +339,73 @@ class Choice(Template):
         super().__init__(default)
         self.choices = choices
 
-    def convert(self, value, view):
+    @singledispatchmethod
+    def convert_choices(
+        self, choices: abc.Sequence[T] | dict[K, T] | type[T], value: str
+    ) -> T:
+        raise NotImplementedError
+
+    @convert_choices.register(type)
+    def _(self, choices: type[T], value: str) -> T:
+        return choices(value)  # type: ignore[call-arg]
+
+    @convert_choices.register(dict)
+    def _(self, choices: dict[K, T], value: K) -> T:
+        return choices[value]
+
+    @convert_choices.register(abc.Sequence)
+    def _(self, choices: abc.Sequence[T], value: T) -> T:
+        return choices[choices.index(value)]
+
+    @singledispatchmethod
+    def format_choices(self, choices: abc.Sequence[T] | enum.Enum) -> list[str]:
+        raise NotImplementedError
+
+    @format_choices.register(type)
+    def _(self, choices: type[enum.Enum]) -> list[str]:
+        return [c.value for c in choices]
+
+    @format_choices.register(abc.Sequence)
+    @format_choices.register(Mapping)
+    def _(self, choices: Iterable[T]) -> list[str]:
+        return list(map(str, choices))
+
+    def convert(self, value: object, view: ConfigView) -> T:
         """Ensure that the value is among the choices (and remap if the
         choices are a mapping).
         """
-        if isinstance(self.choices, type) and issubclass(self.choices, enum.Enum):
-            try:
-                return self.choices(value)
-            except ValueError:
-                self.fail(
-                    f"must be one of {[c.value for c in self.choices]!r}, not "
-                    f"{value!r}",
-                    view,
-                )
-
-        if value not in self.choices:
+        try:
+            return self.convert_choices(self.choices, value)
+        except (KeyError, ValueError):
             self.fail(
-                f"must be one of {list(self.choices)!r}, not {value!r}",
+                f"must be one of {self.format_choices(self.choices)!r}, not {value!r}",
                 view,
             )
 
-        if isinstance(self.choices, abc.Mapping):
-            return self.choices[value]
-        else:
-            return value
-
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Choice({self.choices!r})"
 
 
-class OneOf(Template):
-    """A template that permits values complying to one of the given templates."""
+class OneOf(Template[T]):
+    """A template that permits values complying to one of the given templates.
 
-    def __init__(self, allowed, default=REQUIRED):
+    When using templates that produce different types, explicitly specify
+    the type parameter: ``OneOf[bool | str]([bool, String()])``
+    """
+
+    allowed: list[Template[Any]]
+    template: Template[Any] | None
+
+    def __init__(
+        self,
+        allowed: Iterable[Template[Any] | type[Any] | Mapping[str, object] | T],
+        default: T | _Required = REQUIRED,
+    ) -> None:
         super().__init__(default)
-        self.allowed = list(allowed)
+        self.allowed = [as_template(t) for t in allowed]
+        self.template = None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         args = []
 
         if self.allowed is not None:
@@ -299,21 +416,33 @@ class OneOf(Template):
 
         return f"OneOf({', '.join(args)})"
 
-    def value(self, view, template):
-        self.template = template
+    def value(
+        self, view: ConfigView, template: Template[T] | object | None = None
+    ) -> T:
+        self.template = template if isinstance(template, Template) else None
         return super().value(view, template)
 
-    def convert(self, value, view):
+    def convert(self, value: object, view: Subview) -> T:  # type: ignore[override]
         """Ensure that the value follows at least one template."""
         is_mapping = isinstance(self.template, MappingTemplate)
 
         for candidate in self.allowed:
+            result: T
             try:
                 if is_mapping:
-                    next_template = MappingTemplate({view.key: candidate})
-                    return view.parent.get(next_template)[view.key]
+                    assert self.template is not None
+                    from .core import Subview
+
+                    if isinstance(view, Subview):
+                        # Use a new MappingTemplate to check the sibling value
+                        next_template = MappingTemplate({view.key: candidate})
+                        result = view.parent.get(next_template)[view.key]
+                        return result
+                    else:
+                        self.fail("MappingTemplate must be used with a Subview", view)
                 else:
-                    return view.get(candidate)
+                    result = view.get(candidate)
+                    return result
             except exceptions.ConfigTemplateError:
                 raise
             except exceptions.ConfigError:
@@ -324,14 +453,24 @@ class OneOf(Template):
         self.fail(f"must be one of {self.allowed!r}, not {value!r}", view)
 
 
-class StrSeq(Template):
+class BytesToStrMixin:
+    @staticmethod
+    def normalize_bytes(x: str | bytes) -> str:
+        if isinstance(x, bytes):
+            return x.decode("utf-8", "ignore")
+        return x
+
+
+class StrSeq(BytesToStrMixin, Template[list[str]]):
     """A template for values that are lists of strings.
 
     Validates both actual YAML string lists and single strings. Strings
     can optionally be split on whitespace.
     """
 
-    def __init__(self, split=True, default=REQUIRED):
+    def __init__(
+        self, split: bool = True, default: list[str] | _Required = REQUIRED
+    ) -> None:
         """Create a new template.
 
         `split` indicates whether, when the underlying value is a single
@@ -341,32 +480,32 @@ class StrSeq(Template):
         super().__init__(default)
         self.split = split
 
-    def _convert_value(self, x, view):
-        if isinstance(x, str):
-            return x
-        elif isinstance(x, bytes):
-            return x.decode("utf-8", "ignore")
-        else:
+    def _convert_value(self, x: object, view: ConfigView) -> str:
+        if not isinstance(x, (str, bytes)):
             self.fail("must be a list of strings", view, True)
 
-    def convert(self, value, view):
+        return self.normalize_bytes(x)
+
+    def convert(
+        self, value: str | bytes | list[str | bytes], view: ConfigView
+    ) -> list[str]:
         if isinstance(value, bytes):
             value = value.decode("utf-8", "ignore")
 
         if isinstance(value, str):
             if self.split:
-                value = value.split()
+                values: Iterable[object] = value.split()
             else:
-                value = [value]
+                values = [value]
+        elif isinstance(value, Iterable):
+            values = value
         else:
-            try:
-                value = list(value)
-            except TypeError:
-                self.fail("must be a whitespace-separated string or a list", view, True)
-        return [self._convert_value(v, view) for v in value]
+            self.fail("must be a whitespace-separated string or a list", view, True)
+
+        return [self._convert_value(v, view) for v in values]
 
 
-class Pairs(StrSeq):
+class Pairs(BytesToStrMixin, Template[list[tuple[str, V]]]):
     """A template for ordered key-value pairs.
 
     This can either be given with the same syntax as for `StrSeq` (i.e. without
@@ -380,35 +519,59 @@ class Pairs(StrSeq):
     `default_value` will be returned as the second element.
     """
 
-    def __init__(self, default_value=None):
+    default_value: V
+
+    @overload
+    def __init__(
+        self: Pairs[str],
+        default_value: str,
+        default: list[tuple[str, str]] | _Required = REQUIRED,
+    ) -> None: ...
+    @overload
+    def __init__(
+        self: Pairs[None],
+        default_value: None = None,
+        default: list[tuple[str, None]] | _Required = REQUIRED,
+    ) -> None: ...
+    def __init__(
+        self,
+        default_value: str | None = None,
+        default: list[tuple[str, str]] | list[tuple[str, None]] | _Required = REQUIRED,
+    ) -> None:
         """Create a new template.
 
-        `default` is the dictionary value returned for items that are not
+        `default_value` is the dictionary value returned for items that are not
         a mapping, but a single string.
         """
-        super().__init__(split=True)
-        self.default_value = default_value
+        super().__init__(default)  # type: ignore[arg-type]
+        self.default_value = default_value  # type: ignore[assignment]
 
-    def _convert_value(self, x, view):
-        try:
-            return (super()._convert_value(x, view), self.default_value)
-        except exceptions.ConfigTypeError:
-            if isinstance(x, abc.Mapping):
-                if len(x) != 1:
-                    self.fail("must be a single-element mapping", view, True)
-                k, v = util.iter_first(x.items())
-            elif isinstance(x, abc.Sequence):
-                if len(x) != 2:
-                    self.fail("must be a two-element list", view, True)
-                k, v = x
-            else:
-                # Is this even possible? -> Likely, if some !directive cause
-                # YAML to parse this to some custom type.
-                self.fail(f"must be a single string, mapping, or a list{x}", view, True)
-            return (super()._convert_value(k, view), super()._convert_value(v, view))
+    def _convert_value(self, x: object, view: ConfigView) -> tuple[str, V]:
+        if isinstance(x, (str, bytes)):
+            return self.normalize_bytes(x), self.default_value
+
+        if isinstance(x, Mapping):
+            if len(x) != 1:
+                self.fail("must be a single-element mapping", view, True)
+            k, v = util.iter_first(x.items())
+        elif isinstance(x, abc.Sequence):
+            if len(x) != 2:
+                self.fail("must be a two-element list", view, True)
+            k, v = x
+        else:
+            # Is this even possible? -> Likely, if some !directive cause
+            # YAML to parse this to some custom type.
+            self.fail(f"must be a single string, mapping, or a list{x}", view, True)
+
+        return self.normalize_bytes(k), self.normalize_bytes(v)  # type: ignore[return-value]
+
+    def convert(
+        self, value: list[abc.Sequence[str] | Mapping[str, str]], view: ConfigView
+    ) -> list[tuple[str, V]]:
+        return [self._convert_value(v, view) for v in value]
 
 
-class Filename(Template):
+class Filename(Template[P]):
     """A template that validates strings as filenames.
 
     Filenames are returned as absolute, tilde-free paths.
@@ -425,12 +588,12 @@ class Filename(Template):
 
     def __init__(
         self,
-        default=REQUIRED,
-        cwd=None,
-        relative_to=None,
-        in_app_dir=False,
-        in_source_dir=False,
-    ):
+        default: P | str | None | _Required = REQUIRED,
+        cwd: str | None = None,
+        relative_to: str | None = None,
+        in_app_dir: bool = False,
+        in_source_dir: bool = False,
+    ) -> None:
         """`relative_to` is the name of a sibling value that is
         being validated at the same time.
 
@@ -442,13 +605,16 @@ class Filename(Template):
         relative to the directory containing the source file, if there is
         one, taking precedence over the application's config directory.
         """
-        super().__init__(default)
+        if default is None:
+            self.default: P | _Required = default  # type: ignore[assignment]
+        else:
+            super().__init__(default)  # type: ignore[arg-type]
         self.cwd = cwd
         self.relative_to = relative_to
         self.in_app_dir = in_app_dir
         self.in_source_dir = in_source_dir
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         args = []
 
         if self.default is not REQUIRED:
@@ -468,8 +634,10 @@ class Filename(Template):
 
         return f"Filename({', '.join(args)})"
 
-    def resolve_relative_to(self, view, template):
-        if not isinstance(template, (abc.Mapping, MappingTemplate)):
+    def resolve_relative_to(
+        self, view: Subview, template: MappingTemplate | Mapping[str, Any] | None
+    ) -> str:
+        if not isinstance(template, (Mapping, MappingTemplate)):
             # disallow config.get(Filename(relative_to='foo'))
             raise exceptions.ConfigTemplateError(
                 "relative_to may only be used when getting multiple values."
@@ -485,12 +653,18 @@ class Filename(Template):
                 view,
             )
 
-        old_template = {}
-        old_template.update(template.subtemplates)
+        # Use a safe way to access subtemplates
+        if isinstance(template, MappingTemplate):
+            subtemplates = template.subtemplates
+        else:
+            # template is a Mapping
+            subtemplates = {k: as_template(v) for k, v in template.items()}
+
+        old_template = dict(subtemplates)
 
         # save time by skipping MappingTemplate's init loop
         next_template = MappingTemplate({})
-        next_relative = self.relative_to
+        next_relative: str | None = self.relative_to
 
         # gather all the needed templates and nothing else
         while next_relative is not None:
@@ -499,7 +673,7 @@ class Filename(Template):
                 # relative paths
                 rel_to_template = old_template.pop(next_relative)
             except KeyError:
-                if next_relative in template.subtemplates:
+                if next_relative in subtemplates:
                     # we encountered this config key previously
                     raise exceptions.ConfigTemplateError(
                         f"{view.name} and {self.relative_to} are recursively relative"
@@ -511,61 +685,70 @@ class Filename(Template):
                     )
 
             next_template.subtemplates[next_relative] = rel_to_template
-            next_relative = rel_to_template.relative_to
+            next_relative_val = getattr(rel_to_template, "relative_to", None)
+            next_relative = (
+                next_relative_val if isinstance(next_relative_val, str) else None
+            )
 
-        return view.parent.get(next_template)[self.relative_to]
+        return view.parent.get(next_template)[self.relative_to]  # type: ignore[return-value]
 
-    def value(self, view, template=None):
+    def value(
+        self, view: ConfigView, template: Template[T] | object | None = None
+    ) -> P:
         try:
             path, source = view.first()
         except exceptions.NotFoundError:
             return self.get_default_value(view.name)
 
-        if not isinstance(path, str):
+        if not isinstance(path, (str, bytes)):
             self.fail(f"must be a filename, not {type(path).__name__}", view, True)
-        path = os.path.expanduser(str(path))
 
-        if not os.path.isabs(path):
+        if isinstance(path, bytes):
+            path_str = path.decode("utf-8", "ignore")
+        else:
+            path_str = path
+
+        path_str = os.path.expanduser(path_str)
+
+        if not os.path.isabs(path_str):
             if self.cwd is not None:
                 # relative to the template's argument
-                path = os.path.join(self.cwd, path)
+                path_str = os.path.join(self.cwd, path_str)
 
             elif self.relative_to is not None:
-                path = os.path.join(
+                path_str = os.path.join(
                     self.resolve_relative_to(view, template),
-                    path,
+                    path_str,
                 )
 
             elif (source.filename and self.in_source_dir) or (
                 source.base_for_paths and not self.in_app_dir
             ):
                 # relative to the directory the source file is in.
-                path = os.path.join(os.path.dirname(source.filename), path)
+                path_str = os.path.join(os.path.dirname(source.filename), path_str)
 
             elif source.filename or self.in_app_dir:
                 # From defaults: relative to the app's directory.
-                path = os.path.join(view.root().config_dir(), path)
+                path_str = os.path.join(view.root().config_dir(), path_str)
 
-        return os.path.abspath(path)
+        return os.path.abspath(path_str)
 
 
-class Path(Filename):
+class Path(Filename[pathlib.PurePath]):
     """A template that validates strings as `pathlib.Path` objects.
 
     Filenames are parsed equivalent to the `Filename` template and then
     converted to `pathlib.Path` objects.
     """
 
-    def value(self, view, template=None):
-        value = super().value(view, template)
-        if value is None:
-            return
-        import pathlib
-
-        return pathlib.Path(value)
+    def value(
+        self, view: ConfigView, template: Template[pathlib.Path] | object | None = None
+    ) -> pathlib.Path:
+        val = super().value(view, template)
+        return pathlib.Path(val) if val is not None else None
 
 
-class Optional(Template):
+class Optional(Template[T | None]):
     """A template that makes a subtemplate optional.
 
     If the value is present and not null, it must validate against the
@@ -574,8 +757,40 @@ class Optional(Template):
     the template will not allow missing values while still permitting null.
     """
 
-    def __init__(self, subtemplate, default=None, allow_missing=True):
-        self.subtemplate = as_template(subtemplate)
+    subtemplate: Template[T]
+    default: T | None
+
+    @overload
+    def __init__(
+        self,
+        subtemplate: type[T],
+        default: T | None = None,
+        allow_missing: bool = True,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self,
+        subtemplate: Template[T],
+        default: T | None = None,
+        allow_missing: bool = True,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self,
+        subtemplate: Mapping[str, object],
+        default: Mapping[str, Any] | None = None,
+        allow_missing: bool = True,
+    ) -> None: ...
+
+    def __init__(
+        self,
+        subtemplate: Template[T] | type[T] | Mapping[str, object],
+        default: T | Mapping[str, Any] | None = None,
+        allow_missing: bool = True,
+    ) -> None:
+        self.subtemplate: Template[T] = as_template(subtemplate)  # type: ignore[assignment]
         if default is None:
             # When no default is passed, try to use the subtemplate's
             # default value as the default for this template
@@ -583,10 +798,12 @@ class Optional(Template):
                 default = self.subtemplate.get_default_value()
             except exceptions.NotFoundError:
                 pass
-        self.default = default
+        self.default = default  # type: ignore[assignment]
         self.allow_missing = allow_missing
 
-    def value(self, view, template=None):
+    def value(
+        self, view: ConfigView, template: Template[T | None] | object | None = None
+    ) -> T | None:
         try:
             value, _ = view.first()
         except exceptions.NotFoundError:
@@ -601,51 +818,55 @@ class Optional(Template):
             return self.default
         return self.subtemplate.value(view, self)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"Optional({self.subtemplate!r}, {self.default!r}, "
             f"allow_missing={self.allow_missing})"
         )
 
 
-class TypeTemplate(Template):
+class TypeTemplate(Template[T]):
     """A simple template that checks that a value is an instance of a
     desired Python type.
     """
 
-    def __init__(self, typ, default=REQUIRED):
+    def __init__(self, typ: type[T], default: T | _Required = REQUIRED) -> None:
         """Create a template that checks that the value is an instance
         of `typ`.
         """
         super().__init__(default)
         self.typ = typ
 
-    def convert(self, value, view):
-        if not isinstance(value, self.typ):
-            self.fail(
-                f"must be a {self.typ.__name__}, not {type(value).__name__}",
-                view,
-                True,
-            )
-        return value
+    def convert(self, value: Any, view: ConfigView) -> T:
+        if isinstance(value, self.typ):
+            return value
+
+        self.fail(
+            f"must be a {self.typ.__name__}, not {type(value).__name__}",
+            view,
+            True,
+        )
 
 
-class AttrDict(dict[str, object]):
-    """A `dict` subclass that can be accessed via attributes (dot
-    notation) for convenience.
-    """
+@overload
+def as_template(value: Template[T]) -> Template[T]: ...
+@overload
+def as_template(value: type[T]) -> Template[T]: ...
+@overload
+def as_template(value: Mapping[str, object]) -> MappingTemplate: ...
+@overload
+def as_template(value: set[T]) -> Choice[T, T]: ...
+@overload
+def as_template(value: list[T]) -> OneOf[T]: ...
+@overload
+def as_template(value: pathlib.PurePath) -> Path: ...
+@overload
+def as_template(value: None) -> Template[None]: ...
+@overload
+def as_template(value: T) -> Template[T]: ...
 
-    def __getattr__(self, key):
-        if key in self:
-            return self[key]
-        else:
-            raise AttributeError(key)
 
-    def __setattr__(self, key, value):
-        self[key] = value
-
-
-def as_template(value):
+def as_template(value: Any) -> Template[Any]:
     """Convert a simple "shorthand" Python value to a `Template`."""
     if isinstance(value, Template):
         # If it's already a Template, pass it through.
