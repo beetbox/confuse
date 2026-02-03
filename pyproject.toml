@@ -18,6 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "pyyaml",
+    "typing_extensions >= 4.4; python_version < '3.13'",
 ]
 
 [dependency-groups]
