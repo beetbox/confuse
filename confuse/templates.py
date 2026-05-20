@@ -4,12 +4,16 @@ import enum
 import os
 import pathlib
 import re
+import sys
 from collections import abc
 from collections.abc import Hashable, Iterable, Mapping
 from functools import singledispatchmethod
 from typing import TYPE_CHECKING, Any, Generic, NoReturn, overload
 
-from typing_extensions import TypeVar
+if sys.version_info < (3, 13):
+    from typing_extensions import TypeVar
+else:
+    from typing import TypeVar
 
 from . import exceptions, util
 

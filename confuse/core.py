@@ -30,11 +30,16 @@ __all__ = [
 
 import errno
 import os
+import sys
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
+if sys.version_info < (3, 11):
+    from typing_extensions import Self
+else:
+    from typing import Self
+
 import yaml
-from typing_extensions import Self
 
 from . import templates, util, yaml_util
 from .exceptions import ConfigError, ConfigTypeError, NotFoundError
