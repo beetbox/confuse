@@ -2,10 +2,10 @@ Changelog
 =========
 
 Unreleased
------------
-- Require `typing_extensions` on older Python versions (and use `typing`
-  on newer versions). [#189](https://github.com/beetbox/confuse/issues/189)
+----------
 
+- Require `typing_extensions` on older Python versions (and use `typing` on
+  newer versions). [#189](https://github.com/beetbox/confuse/issues/189)
 
 v2.2.0
 ------
