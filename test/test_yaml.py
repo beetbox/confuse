@@ -5,6 +5,7 @@ import pytest
 import yaml
 
 import confuse
+from confuse.yaml_util import restore_yaml_comments
 
 from . import TempDir
 
@@ -114,3 +115,30 @@ class ParseAsScalarTest(unittest.TestCase):
     def test_invalid_yaml_string_unchanged(self):
         v = confuse.yaml_util.parse_as_scalar("!", confuse.Loader)
         assert v == "!"
+
+
+class RestoreYamlCommentsTest(unittest.TestCase):
+    def test_trailing_comment_does_not_raise(self):
+        """restore_yaml_comments must not raise StopIteration when
+        default_data ends with a comment line (issue #148)."""
+        default_data = "key1: value1\n# trailing comment\n"
+        data = "key1: value1\n"
+        # Must complete without raising StopIteration
+        result = restore_yaml_comments(data, default_data)
+        assert "key1: value1" in result
+
+    def test_trailing_blank_line_does_not_raise(self):
+        """restore_yaml_comments must not raise StopIteration when
+        default_data ends with a blank line (issue #148)."""
+        default_data = "key1: value1\n\n"
+        data = "key1: value1\n"
+        result = restore_yaml_comments(data, default_data)
+        assert "key1: value1" in result
+
+    def test_comments_still_restored_before_key(self):
+        """Comments before a key in default_data are prepended to that key
+        in the output."""
+        default_data = "# Comment for key1\nkey1: value1\n"
+        data = "key1: value1\n"
+        result = restore_yaml_comments(data, default_data)
+        assert result == "# Comment for key1\nkey1: value1\n"
