@@ -4,6 +4,9 @@ Changelog
 Unreleased
 ----------
 
+- Fix ``restore_yaml_comments`` crashing when default data ends with a comment
+  or blank line. [#148](https://github.com/beetbox/confuse/issues/148)
+
 v2.2.1
 ------
 
