@@ -6,6 +6,10 @@ Unreleased
 
 - Require `typing_extensions` on older Python versions (and use `typing` on
   newer versions). [#189](https://github.com/beetbox/confuse/issues/189)
+- Narrow `Path` template shorthand handling to concrete `pathlib.Path` values
+  for more accurate type checking.
+- Fix `confuse.Path` which now points to `confuse.templates.Path` instead of
+  `pathlib.Path`.
 
 v2.2.0
 ------

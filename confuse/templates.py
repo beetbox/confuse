@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
 K = TypeVar("K", bound=Hashable, default=str)
-P = TypeVar("P", bound=pathlib.PurePath | str, default=str)
+P = TypeVar("P", bound=pathlib.Path | str, default=str)
 V = TypeVar("V", default=object)
 ConfigKey = int | str | bytes
 ConfigKeyT = TypeVar("ConfigKeyT", bound=ConfigKey, default=str)
@@ -738,7 +738,7 @@ class Filename(Template[P]):
         return os.path.abspath(path_str)
 
 
-class Path(Filename[pathlib.PurePath]):
+class Path(Filename[pathlib.Path]):
     """A template that validates strings as `pathlib.Path` objects.
 
     Filenames are parsed equivalent to the `Filename` template and then
@@ -863,7 +863,7 @@ def as_template(value: set[T]) -> Choice[T, T]: ...
 @overload
 def as_template(value: list[T]) -> OneOf[T]: ...
 @overload
-def as_template(value: pathlib.PurePath) -> Path: ...
+def as_template(value: pathlib.Path) -> Path: ...
 @overload
 def as_template(value: None) -> Template[None]: ...
 @overload
@@ -897,7 +897,7 @@ def as_template(value: Any) -> Template[Any]:
         return Number()
     elif isinstance(value, float):
         return Number(value)
-    elif isinstance(value, pathlib.PurePath):
+    elif isinstance(value, pathlib.Path):
         return Path(value)
     elif value is None:
         return Template(None)

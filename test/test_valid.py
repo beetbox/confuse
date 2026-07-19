@@ -1,10 +1,16 @@
 import enum
 import os
+import pathlib
 import unittest
 from collections.abc import Mapping, Sequence
 from typing import Any
 
 import pytest
+
+try:
+    from typing import assert_type  # type: ignore[attr-defined]
+except ImportError:  # Python < 3.11
+    from typing_extensions import assert_type
 
 import confuse
 
@@ -461,18 +467,19 @@ class FilenameTest(unittest.TestCase):
 
 class PathTest(unittest.TestCase):
     def test_path_value(self):
-        import pathlib
-
         config = _root({"foo": "foo/bar"})
         valid = config["foo"].get(confuse.Path())
         assert valid == pathlib.Path(os.path.abspath("foo/bar"))
 
     def test_default_value(self):
-        import pathlib
-
         config = _root({})
         valid = config["foo"].get(confuse.Path("foo/bar"))
         assert valid == pathlib.Path("foo/bar")
+
+    def test_optional_value_type(self):
+        config = _root({"foo": "foo/bar"})
+        valid = config["foo"].get(confuse.Optional(confuse.Path()))
+        assert_type(valid, pathlib.Path | None)
 
     def test_default_none(self):
         config = _root({})
