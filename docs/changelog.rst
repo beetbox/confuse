@@ -4,6 +4,9 @@ Changelog
 Unreleased
 ----------
 
+v2.2.1
+------
+
 - Require `typing_extensions` on older Python versions (and use `typing` on
   newer versions). [#189](https://github.com/beetbox/confuse/issues/189)
 - Narrow `Path` template shorthand handling to concrete `pathlib.Path` values
