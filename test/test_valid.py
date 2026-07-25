@@ -257,6 +257,26 @@ class ChoiceTest(unittest.TestCase):
         with pytest.raises(confuse.ConfigValueError):
             config["foo"].get(confuse.Choice({2: "two", 4: "four"}))
 
+    def test_validate_good_choice_in_set(self):
+        config = _root({"foo": 2})
+        valid = config["foo"].get(confuse.Choice({1, 2, 4, 8, 16}))
+        assert valid == 2
+
+    def test_validate_bad_choice_in_set(self):
+        config = _root({"foo": 3})
+        with pytest.raises(confuse.ConfigValueError):
+            config["foo"].get(confuse.Choice({1, 2, 4, 8, 16}))
+
+    def test_validate_good_choice_in_frozenset(self):
+        config = _root({"foo": 2})
+        valid = config["foo"].get(confuse.Choice(frozenset({1, 2, 4, 8, 16})))
+        assert valid == 2
+
+    def test_validate_bad_choice_in_frozenset(self):
+        config = _root({"foo": 3})
+        with pytest.raises(confuse.ConfigValueError):
+            config["foo"].get(confuse.Choice(frozenset({1, 2, 4, 8, 16})))
+
 
 class OneOfTest(unittest.TestCase):
     def test_default_value(self):
