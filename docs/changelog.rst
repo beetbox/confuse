@@ -4,6 +4,10 @@ Changelog
 Unreleased
 ----------
 
+- Fix setting a value at a list index, which replaced the containing list with
+  an integer-keyed mapping.
+  [#169](https://github.com/beetbox/confuse/issues/169)
+
 v2.2.1
 ------
 

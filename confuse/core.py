@@ -156,7 +156,7 @@ class ConfigView:
         """Create an overlay source to assign a given key under this
         view.
         """
-        self.set({key: value})
+        self[key].set(value)
 
     def __contains__(self, key: ConfigKey) -> bool:
         return self[key].exists()
@@ -486,6 +486,20 @@ class Subview(ConfigView):
             yield value, source
 
     def set(self, value: Any) -> None:
+        if isinstance(self.key, int):
+            # The parent is (or may be) a list. Overriding it with a
+            # dict of {index: value} would replace the whole sequence
+            # with an integer-keyed mapping, so rebuild the list
+            # instead, with only this index replaced.
+            for collection, _ in self.parent.resolve():
+                if isinstance(collection, list) and -len(collection) <= self.key < len(
+                    collection
+                ):
+                    new_collection = list(collection)
+                    new_collection[self.key] = value
+                    self.parent.set(new_collection)
+                    return
+                break
         self.parent.set({self.key: value})
 
     def add(self, value: Any) -> None:
