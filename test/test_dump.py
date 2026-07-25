@@ -63,6 +63,17 @@ class PrettyDumpTest(unittest.TestCase):
         yaml = config.dump(full=False).strip()
         assert yaml == "baz: qux"
 
+    def test_dump_follows_default_key_order(self):
+        config = confuse.Configuration("myapp", read=False)
+        config.add({"foo": "bar", "baz": "qux"})
+        config.sources[0].default = True
+        # A higher-priority source that lists the keys in a different order
+        # and only overrides the second one.
+        config.set({"baz": "override"})
+
+        yaml = config.dump().strip()
+        assert yaml == "foo: bar\nbaz: override"
+
 
 class RedactTest(unittest.TestCase):
     def test_no_redaction(self):
