@@ -276,3 +276,13 @@ class SetTest(unittest.TestCase):
         config = _root({"foo": ["a", "b", "c"]})
         config["foo"][1] = "bar"
         assert config["foo"][1].get() == "bar"
+
+    def test_override_list_index_keeps_list(self):
+        config = _root({"foo": ["a", "b", "c"]})
+        config["foo"][1] = "bar"
+        assert config["foo"].get() == ["a", "bar", "c"]
+
+    def test_override_nested_list_index_keeps_list(self):
+        config = _root({"foo": [{"name": "a"}, {"name": "b"}]})
+        config["foo"][0]["name"] = "bar"
+        assert config["foo"].get() == [{"name": "bar"}, {"name": "b"}]
