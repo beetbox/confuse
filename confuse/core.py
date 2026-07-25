@@ -676,6 +676,24 @@ class Configuration(RootView):
             temp_root.redactions = self.redactions
             out_dict = temp_root.flatten(redact=redact)
 
+        # `keys()` enumerates the sources in priority order, so keys that
+        # only appear in a lower-priority source (such as the defaults) are
+        # listed after every key of the highest-priority source. Restore the
+        # documented ordering by putting the keys of the default source
+        # first, in the order they appear there.
+        default_keys = [
+            key for source in self.sources if source.default for key in source.keys()
+        ]
+        if default_keys:
+            ordered = OrderedDict()
+            for key in default_keys:
+                if key in out_dict:
+                    ordered[key] = out_dict[key]
+            for key, value in out_dict.items():
+                if key not in ordered:
+                    ordered[key] = value
+            out_dict = ordered
+
         yaml_out = yaml.dump(
             out_dict,
             Dumper=yaml_util.Dumper,
