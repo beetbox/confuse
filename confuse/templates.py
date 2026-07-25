@@ -387,7 +387,12 @@ class Choice(Template[T], Generic[T, K]):
             )
 
     def __repr__(self) -> str:
-        return f"Choice({self.choices!r})"
+        args = [repr(self.choices)]
+
+        if self.default is not REQUIRED:
+            args.append(repr(self.default))
+
+        return f"Choice({', '.join(args)})"
 
 
 class OneOf(Template[T]):
