@@ -4,6 +4,10 @@ Changelog
 Unreleased
 ----------
 
+- Fix `Choice` rejecting `set` and `frozenset` choices with `NotImplementedError`,
+  which regressed in v2.2.0.
+  [#192](https://github.com/beetbox/confuse/issues/192)
+
 v2.2.1
 ------
 

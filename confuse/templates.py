@@ -324,11 +324,11 @@ class Choice(Template[T], Generic[T, K]):
     see :meth:`__init__` for usage.
     """
 
-    choices: abc.Sequence[T] | dict[K, T] | type[T]
+    choices: abc.Sequence[T] | abc.Set[T] | dict[K, T] | type[T]
 
     def __init__(
         self,
-        choices: abc.Sequence[T] | dict[K, T] | type[T],
+        choices: abc.Sequence[T] | abc.Set[T] | dict[K, T] | type[T],
         default: T | _Required = REQUIRED,
     ) -> None:
         """Create a template that validates any of the values from the
@@ -345,7 +345,9 @@ class Choice(Template[T], Generic[T, K]):
 
     @singledispatchmethod
     def convert_choices(
-        self, choices: abc.Sequence[T] | dict[K, T] | type[T], value: str
+        self,
+        choices: abc.Sequence[T] | abc.Set[T] | dict[K, T] | type[T],
+        value: str,
     ) -> T:
         raise NotImplementedError
 
@@ -361,8 +363,16 @@ class Choice(Template[T], Generic[T, K]):
     def _(self, choices: abc.Sequence[T], value: T) -> T:
         return choices[choices.index(value)]
 
+    @convert_choices.register(abc.Set)
+    def _(self, choices: abc.Set[T], value: T) -> T:
+        if value not in choices:
+            raise ValueError(value)
+        return value
+
     @singledispatchmethod
-    def format_choices(self, choices: abc.Sequence[T] | enum.Enum) -> list[str]:
+    def format_choices(
+        self, choices: abc.Sequence[T] | abc.Set[T] | enum.Enum
+    ) -> list[str]:
         raise NotImplementedError
 
     @format_choices.register(type)
@@ -370,6 +380,7 @@ class Choice(Template[T], Generic[T, K]):
         return [c.value for c in choices]
 
     @format_choices.register(abc.Sequence)
+    @format_choices.register(abc.Set)
     @format_choices.register(Mapping)
     def _(self, choices: Iterable[T]) -> list[str]:
         return list(map(str, choices))
