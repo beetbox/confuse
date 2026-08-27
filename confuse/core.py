@@ -331,6 +331,10 @@ class ConfigView:
         """Get the value as a `pathlib.Path` object. Equivalent to `get(Path())`."""
         return self.get(templates.Path())
 
+    def as_optional_path(self) -> Path | None:
+        """Get the value as a `pathlib.Path` object or `None`."""
+        return self.get(templates.Optional(templates.Path()))
+
     def as_choice(self, choices: Sequence[R] | dict[str, R] | type[R]) -> R:
         """Get the value from a list of choices. Equivalent to
         `get(Choice(choices))`.
