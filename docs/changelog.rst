@@ -4,6 +4,8 @@ Changelog
 Unreleased
 ----------
 
+- Add an ``as_optional_path`` accessor for optional path configuration values.
+
 v2.2.1
 ------
 
