@@ -4,6 +4,7 @@ Changelog
 Unreleased
 ----------
 
+- Fix `Configuration.dump` to preserve the default-config key order. [#200](https://github.com/beetbox/confuse/issues/200)
 v2.2.1
 ------
 
