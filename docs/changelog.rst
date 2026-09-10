@@ -4,6 +4,7 @@ Changelog
 Unreleased
 ----------
 
+- Include the default value in the `Choice` template repr. [#201](https://github.com/beetbox/confuse/issues/201)
 v2.2.1
 ------
 

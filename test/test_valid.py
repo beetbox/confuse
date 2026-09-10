@@ -257,6 +257,12 @@ class ChoiceTest(unittest.TestCase):
         with pytest.raises(confuse.ConfigValueError):
             config["foo"].get(confuse.Choice({2: "two", 4: "four"}))
 
+    def test_repr_without_default(self):
+        assert repr(confuse.Choice([1, 2])) == "Choice([1, 2])"
+
+    def test_repr_includes_default(self):
+        assert repr(confuse.Choice([1, 2], 2)) == "Choice([1, 2], 2)"
+
 
 class OneOfTest(unittest.TestCase):
     def test_default_value(self):
