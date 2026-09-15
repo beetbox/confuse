@@ -183,7 +183,7 @@ argparse script:
 This will allow the user to override the configured value for key ``foo`` by
 passing ``--foo <something>`` on the command line.
 
-Overriding nested values can be accomplished by passing `dots=True` and have
+Overriding nested values can be accomplished by passing ``dots=True`` and have
 dot-delimited properties on the incoming object.
 
 .. code-block:: python
@@ -193,7 +193,7 @@ dot-delimited properties on the incoming object.
     config.set_args(args, dots=True)
     print(config["foo"]["bar"].get())
 
-`set_args` works with generic dictionaries too.
+``set_args`` works with generic dictionaries too.
 
 .. code-block:: python
 
@@ -325,8 +325,8 @@ Here are the default search paths for each platform:
 
 - macOS: ``~/.config/app`` and ``~/Library/Application Support/app``
 - Other Unix: ``~/.config/app`` and ``/etc/app``
-- Windows: ``%APPDATA%\app`` where the `APPDATA` environment variable falls back
-  to ``%HOME%\AppData\Roaming`` if undefined
+- Windows: ``%APPDATA%\app`` where the ``APPDATA`` environment variable falls
+  back to ``%HOME%\AppData\Roaming`` if undefined
 
 Both macOS and other Unix operating sytems also try to use the
 ``XDG_CONFIG_HOME`` and ``XDG_CONFIG_DIRS`` environment variables if set then
@@ -357,7 +357,7 @@ also allows changing how relative paths in the file will be resolved:
     config.set_file("subdirectory/default_config.yaml")
     # Add config items from a second file. If some items were already defined,
     # they will be overwritten (new file precedes the previous ones). With
-    # `base_for_paths` set to True, relative path values in this file will be
+    # ``base_for_paths`` set to True, relative path values in this file will be
     # resolved relative to the config file's directory (i.e., 'subdirectory').
     config.set_file("subdirectory/local_config.yaml", base_for_paths=True)
 
@@ -439,15 +439,15 @@ tricks to preserve comments and spacing in the original file.
 Custom YAML Loaders
 ~~~~~~~~~~~~~~~~~~~
 
-You can also specify your own PyYAML_ `Loader` object to parse YAML files.
-Supply the `loader` parameter to a `Configuration` constructor, like this:
+You can also specify your own PyYAML_ ``Loader`` object to parse YAML files.
+Supply the ``loader`` parameter to a ``Configuration`` constructor, like this:
 
 .. code-block:: python
 
     config = confuse.Configuration("name", loader=yaml.Loaded)
 
 To imbue a loader with Confuse's special parser overrides, use its
-`add_constructors` method:
+``add_constructors`` method:
 
 .. code-block:: python
 
@@ -467,7 +467,7 @@ values from component to component. You quickly end up with monstrous function
 signatures with dozens of keyword arguments, decreasing code legibility and
 testability.
 
-In such systems, one option is to pass a single `Configuration` object through
+In such systems, one option is to pass a single ``Configuration`` object through
 to each component. To avoid even this, however, it's sometimes appropriate to
 use a little bit of shared global state. As evil as shared global state usually
 is, configuration is (in my opinion) one valid use: since configuration is
@@ -478,7 +478,7 @@ explicitly pass configuration from call to call.
 
 To use global configuration, consider creating a configuration object in a
 well-known module (say, the root of a package). But since this object will be
-initialized at module load time, Confuse provides a `LazyConfig` object that
+initialized at module load time, Confuse provides a ``LazyConfig`` object that
 loads your configuration files on demand instead of when the object is
 constructed. (Doing complicated stuff like parsing YAML at module load time is
 generally considered a Bad Idea.)
@@ -506,7 +506,7 @@ Redaction
 ---------
 
 You can also mark certain configuration values as "sensitive" and avoid
-including them in output. Just set the `redact` flag:
+including them in output. Just set the ``redact`` flag:
 
 .. code-block:: python
 

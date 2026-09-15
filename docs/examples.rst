@@ -471,13 +471,13 @@ using the ``Optional`` template with ``Filename`` as the subtemplate:
 ...         return sys.stderr
 ...     return output
 >>> config = confuse.RootView([])
->>> config.set({"log": "/tmp/log.txt"})  # `log` set to a filename
+>>> config.set({"log": "/tmp/log.txt"})  # ``log`` set to a filename
 >>> get_log_output(config)
 '/tmp/log.txt'
->>> config.set({"log": None})  # `log` set to None (ie, null in YAML)
+>>> config.set({"log": None})  # ``log`` set to None (ie, null in YAML)
 >>> get_log_output(config)
 <_io.TextIOWrapper name='<stderr>' mode='w' encoding='UTF-8'>
->>> config.clear()  # Clear config so that `log` is missing
+>>> config.clear()  # Clear config so that ``log`` is missing
 >>> get_log_output(config)
 <_io.TextIOWrapper name='<stderr>' mode='w' encoding='UTF-8'>
 
@@ -512,10 +512,10 @@ the ``Optional`` template:
 ...     if output is None:
 ...         return sys.stderr
 ...     return output
->>> config.set({"log": None})  # `log` set to None is still OK...
+>>> config.set({"log": None})  # ``log`` set to None is still OK...
 >>> get_log_output_no_missing(config)
 <_io.TextIOWrapper name='<stderr>' mode='w' encoding='UTF-8'>
->>> config.clear()  # but `log` missing now raises an error
+>>> config.clear()  # but ``log`` missing now raises an error
 >>> try:
 ...     get_log_output_no_missing(config)
 ... except confuse.ConfigError as err:
