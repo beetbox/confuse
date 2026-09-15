@@ -209,6 +209,8 @@ to ``MappingValues``, then an error will be raised:
 ...     print(err)
 categories.no_description.description not found
 
+.. _filename-template:
+
 Filename
 --------
 
@@ -253,7 +255,7 @@ resolved as follows:
 - ``log``: a filename that follows the default ``Filename`` template behavior
 
 The initial user config file will be at ``~/.config/ExampleApp/config.yaml``,
-where it will be discovered automatically using the :ref:`Search Paths`, and has
+where it will be discovered automatically using the :ref:`search-paths`, and has
 the following contents:
 
 .. code-block:: yaml

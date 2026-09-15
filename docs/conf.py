@@ -18,7 +18,6 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
-    "sphinx.ext.autosectionlabel",
     "sphinx_rtd_theme",
 ]
 source_suffix = ".rst"
