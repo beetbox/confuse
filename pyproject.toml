@@ -37,6 +37,10 @@ lint = [
 [project.optional-dependencies]
 docs = ["sphinx >= 7.4.7", "sphinx-rtd-theme >= 3.0.2"]
 
+[tool.poetry.group.release.dependencies]
+click = ">=8.1.7"
+tomli = ">=2.0.1"
+
 [project.urls]
 Homepage = "https://github.com/beetbox/confuse"
 Repository = "https://github.com/beetbox/confuse"
@@ -55,6 +59,15 @@ include = [
     { path = "docs", format = "sdist" },
     { path = "test", format = "sdist" },
 ]
+
+[tool.poe.tasks.bump]
+help = "Bump project version and update relevant files"
+cmd = "python ./extra/release.py bump $version"
+args = { version = { help = "The new version to set", positional = true, required = true } }
+
+[tool.poe.tasks.changelog]
+help = "Print the latest version's changelog in Markdown"
+cmd = "python ./extra/release.py changelog"
 
 [tool.poe.tasks.check-docs-links]
 help = "Check the documentation for broken URLs"
