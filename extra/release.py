@@ -19,7 +19,7 @@ import tomli
 from packaging.version import Version, parse
 from sphinx.ext import intersphinx
 
-from docs.conf import rst_epilog
+from docs import conf
 
 BASE = Path(__file__).parent.parent.absolute()
 PYPROJECT = BASE / "pyproject.toml"
@@ -108,15 +108,11 @@ def create_rst_replacements() -> list[Replacement]:
         else:
             return rf"`{name or ref.name} <{ref.url}>`_"
 
-    commands = "|".join(r.split("-")[0] for r in refs if r.endswith("-cmd"))
-    plugins = "|".join(
-        r.split("/")[-1] for r in refs if r.startswith("plugins/")
-    )
     explicit_replacements = dict(
         line.removeprefix(".. ").split(" replace:: ")
-        for line in filter(None, rst_epilog.splitlines())
+        for line in filter(None, getattr(conf, "rst_epilog", "").splitlines())
     )
-    return [
+    replacements: list[Replacement] = [
         # Replace explicitly defined substitutions from rst_epilog
         #    |BeetsPlugin| -> :class:`beets.plugins.BeetsPlugin`
         (r"\|\w[^ ]*\|", lambda m: explicit_replacements.get(m[0], m[0])),
@@ -127,20 +123,28 @@ def create_rst_replacements() -> list[Replacement]:
             r":(?:ref|doc|class|conf):`+~?(?:([^`<]+)<)?/?([\w.:/_-]+)>?`+",
             lambda m: make_ref_link(m[2], m[1]),
         ),
-        # Convert command references to documentation URLs
-        #   `beet move` or `move` command -> [move command](DOCS/reference/cli.html#move-cmd)  # noqa: E501
-        (
-            rf"`+beet ({commands})`+|`+({commands})`+(?= command)",
-            lambda m: make_ref_link(f"{m[1] or m[2]}-cmd"),
-        ),
-        # Convert plugin references to documentation URLs
-        #   `fetchart` plugin -> [fetchart](DOCS/plugins/fetchart.html)
-        (rf"`+({plugins})`+", lambda m: make_ref_link(f"plugins/{m[1]}")),
         # Convert bug references to GitHub issue links
         (r":bug:`(\d+)`", r":bug: (#\1)"),
         # Convert user references to GitHub @mentions
         (r":user:`(\w+)`", r"\@\1"),
     ]
+    if commands := "|".join(r.split("-")[0] for r in refs if r.endswith("-cmd")):
+        replacements.append(
+            (
+                # Convert command references to documentation URLs
+                #   `beet move` or `move` command -> [move command](DOCS/reference/cli.html#move-cmd)  # noqa: E501
+                rf"`+beet ({commands})`+|`+({commands})`+(?= command)",
+                lambda m: make_ref_link(f"{m[1] or m[2]}-cmd"),
+            )
+        )
+    if plugins := "|".join(r.split("/")[-1] for r in refs if r.startswith("plugins/")):
+        replacements.append(
+            # Convert plugin references to documentation URLs
+            #   `fetchart` plugin -> [fetchart](DOCS/plugins/fetchart.html)
+            (rf"`+({plugins})`+", lambda m: make_ref_link(f"plugins/{m[1]}")),
+        )
+
+    return replacements
 
 
 order_bullet_points = partial(
@@ -195,9 +199,7 @@ FILENAME_AND_UPDATE_TEXT: list[tuple[Path, UpdateVersionCallable]] = [
     ),
     (
         BASE / "beets" / "__init__.py",
-        lambda text, new: re.sub(
-            r"(?<=__version__ = )[^\n]+", f'"{new}"', text
-        ),
+        lambda text, new: re.sub(r"(?<=__version__ = )[^\n]+", f'"{new}"', text),
     ),
     (CHANGELOG, update_changelog),
     (BASE / "docs" / "conf.py", update_docs_config),
