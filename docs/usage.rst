@@ -17,7 +17,7 @@ application's config settings:
 
 The first parameter is required; it's the name of your application, which will
 be used to search the system for a config file named ``config.yaml``. See
-:ref:`Search Paths` for the specific locations searched.
+:ref:`search-paths` for the specific locations searched.
 
 The second parameter is optional: it's the name of a module that will guide the
 search for a *defaults* file. Use this if you want to include a
@@ -93,7 +93,7 @@ granularity you want config files to override each other.
     configuration at once. However, this will return only the *highest-priority*
     configuration source, masking any lower-priority values for keys that are
     not present in the top source. This pitfall is especially likely when using
-    :ref:`Command-Line Options` or :ref:`Environment Variables`, which may place
+    :ref:`command-line-options` or :ref:`environment-variables`, which may place
     an empty configuration at the top of the stack. A subsequent call to
     ``config.get()`` might then return no configuration at all.
 
@@ -112,11 +112,11 @@ that perform fancier validation or even conversion:
   default the filename is relative to the application's config directory
   (``Configuration.config_dir()``, as described below). However, if the config
   file was loaded with the ``base_for_paths`` parameter set to ``True`` (see
-  :ref:`Manually Specifying Config Files`), then a relative path refers to the
+  :ref:`manually-specifying-config-files`), then a relative path refers to the
   directory containing the config file. A relative path from any other source
   (e.g., command-line options) is relative to the working directory. For full
   control over relative path resolution, use the ``Filename`` template directly
-  (see :ref:`Filename`).
+  (see :ref:`filename-template`).
 - ``as_choice(choices)``: Check that a value is one of the provided choices. The
   argument should be a sequence of possible values. If the sequence is a
   ``dict``, then this method returns the associated value instead of the key.
@@ -137,6 +137,8 @@ For example, ``config['path'].as_filename()`` ensures that you get a reasonable
 filename string from the configuration. And calling
 ``config['direction'].as_choice(['up', 'down'])`` will raise a
 ``ConfigValueError`` unless the ``direction`` value is either "up" or "down".
+
+.. _command-line-options:
 
 Command-Line Options
 --------------------
@@ -211,6 +213,8 @@ argparse or optparse setup. This way, Confuse can use other configuration
 sources---possibly your ``config_default.yaml``---to fill in values for
 unspecified command-line switches. Otherwise, the argparse/optparse default
 value will hide options configured elsewhere.
+
+.. _environment-variables:
 
 Environment Variables
 ---------------------
@@ -306,6 +310,8 @@ If you use config overlays from both command-line args and environment
 variables, the order of calls to ``set_args`` and ``set_env`` will determine the
 precedence, with the last call having the highest precedence.
 
+.. _search-paths:
+
 Search Paths
 ------------
 
@@ -331,10 +337,12 @@ variable. The variable name is the application name in capitals with "DIR"
 appended: for an application named ``AppName``, the environment variable is
 ``APPNAMEDIR``.
 
+.. _manually-specifying-config-files:
+
 Manually Specifying Config Files
 --------------------------------
 
-You may want to leverage Confuse's features without :ref:`Search Paths`. This
+You may want to leverage Confuse's features without :ref:`search-paths`. This
 can be done by manually specifying the YAML files you want to include, which
 also allows changing how relative paths in the file will be resolved:
 
