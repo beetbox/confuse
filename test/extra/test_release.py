@@ -25,12 +25,9 @@ Unreleased
 New features
 ~~~~~~~~~~~~
 
-- :doc:`/plugins/substitute`: Some substitute
+- Some substitute
   multi-line change.
   :bug:`5467`
-- :ref:`list-cmd` Update.
-- |BeetsPlugin| Some plugin change.
-- See :class:`~beetsplug._utils.musicbrainz.MusicBrainzAPI` for documentation.
 - See :class:`~nonexisting_ref` for non-existing reference.
 - See :ref:`Nice title <nonexisting_ref>` for non-existing named reference.
 
@@ -90,12 +87,9 @@ def md_changelog():
 
 ## New features
 
-- [beets.plugins.BeetsPlugin](https://beets.readthedocs.io/en/stable/api/generated/beets.plugins.BeetsPlugin.html#beets.plugins.BeetsPlugin) Some plugin change.
-- [list command](https://beets.readthedocs.io/en/stable/reference/cli.html#list-cmd) Update.
-- [Substitute Plugin](https://beets.readthedocs.io/en/stable/plugins/substitute.html): Some substitute multi-line change. :bug: (#5467)
-- See [beetsplug.\_utils.musicbrainz.MusicBrainzAPI](https://beets.readthedocs.io/en/stable/api/generated/beetsplug._utils.musicbrainz.MusicBrainzAPI.html#beetsplug._utils.musicbrainz.MusicBrainzAPI) for documentation.
 - See `Nice title` for non-existing named reference.
 - See `nonexisting_ref` for non-existing reference.
+- Some substitute multi-line change. :bug: (#5467)
 
 You can do something with this command:
 
