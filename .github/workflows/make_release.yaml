@@ -25,8 +25,11 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: poetry
 
+      - name: Install dependencies
+        run: poetry install --with=release --extras=docs
+
       - name: Bump project version
-        run: poetry version "${{ env.NEW_VERSION }}"
+        run: poe bump "${{ env.NEW_VERSION }}"
 
       - uses: EndBug/add-and-commit@v9
         id: commit_and_tag
@@ -36,9 +39,11 @@ jobs:
           tag: "${{ env.NEW_TAG }} --force"
 
   build:
-    name: Build the distribution package
+    name: Get changelog and build the distribution package
     runs-on: ubuntu-latest
     needs: increment-version
+    outputs:
+      changelog: ${{ steps.generate_changelog.outputs.changelog }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -50,6 +55,22 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: poetry
+
+      - name: Install dependencies
+        run: poetry install --with=release --extras=docs
+
+      - name: Install pandoc
+        run: sudo apt update && sudo apt install pandoc -y
+
+      - name: Obtain the changelog
+        id: generate_changelog
+        run: |
+          poe docs
+          {
+            echo 'changelog<<EOF'
+            poe --quiet changelog
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
 
       - name: Build a binary wheel and a source tarball
         run: poetry build
