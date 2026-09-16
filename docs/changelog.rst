@@ -9,8 +9,8 @@ below!
 Unreleased
 ----------
 
-v2.2.1
-------
+2.2.1 (January 28, 2026)
+------------------------
 
 - Narrow ``Path`` template shorthand handling to concrete ``pathlib.Path``
   values for more accurate type checking.
