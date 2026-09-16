@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""A utility script for automating the beets release process."""
+"""A utility script for automating the beetbox package release process."""
 
 from __future__ import annotations
 
@@ -23,8 +23,10 @@ from docs import conf
 
 BASE = Path(__file__).parent.parent.absolute()
 PYPROJECT = BASE / "pyproject.toml"
+with PYPROJECT.open("rb") as f:
+    PYPROJECT_CONTENTS = tomli.load(f)
 CHANGELOG = BASE / "docs" / "changelog.rst"
-DOCS = "https://beets.readthedocs.io/en/stable"
+PACKAGE_NAME = PYPROJECT_CONTENTS["project"]["name"]
 
 VERSION_HEADER = r"\d+\.\d+\.\d+ \([^)]+\)"
 RST_LATEST_CHANGES = re.compile(
@@ -67,7 +69,7 @@ class Ref(NamedTuple):
     @property
     def url(self) -> str:
         """Full documentation URL."""
-        return f"{DOCS}/{self.path}"
+        return f"https://{PACKAGE_NAME}.readthedocs.io/en/stable/{self.path}"
 
     @property
     def name(self) -> str:
@@ -114,7 +116,7 @@ def create_rst_replacements() -> list[Replacement]:
     )
     replacements: list[Replacement] = [
         # Replace explicitly defined substitutions from rst_epilog
-        #    |BeetsPlugin| -> :class:`beets.plugins.BeetsPlugin`
+        #    |MyClass| -> :class:`some.module.MyClass`
         (r"\|\w[^ ]*\|", lambda m: explicit_replacements.get(m[0], m[0])),
         # Replace Sphinx directives by documentation URLs, e.g.,
         #   :ref:`/plugins/autobpm` -> [AutoBPM Plugin](DOCS/plugins/autobpm.html)  # noqa: E501
@@ -198,7 +200,7 @@ FILENAME_AND_UPDATE_TEXT: list[tuple[Path, UpdateVersionCallable]] = [
         lambda text, new: re.sub(r"(?<=\nversion = )[^\n]+", f'"{new}"', text),
     ),
     (
-        BASE / "beets" / "__init__.py",
+        BASE / PACKAGE_NAME / "__init__.py",
         lambda text, new: re.sub(r"(?<=__version__ = )[^\n]+", f'"{new}"', text),
     ),
     (CHANGELOG, update_changelog),
@@ -210,8 +212,7 @@ def validate_new_version(
     ctx: click.Context, param: click.Argument, value: Version
 ) -> Version:
     """Validate the version is newer than the current one."""
-    with PYPROJECT.open("rb") as f:
-        current = parse(tomli.load(f)["project"]["version"])
+    current = parse(PYPROJECT_CONTENTS["project"]["version"])
 
     if not value > current:
         msg = f"version must be newer than {current}"
