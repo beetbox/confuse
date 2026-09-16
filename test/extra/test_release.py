@@ -3,8 +3,10 @@
 import os
 import shutil
 import sys
+from datetime import datetime, timezone
 
 import pytest
+from packaging.version import Version
 
 release = pytest.importorskip("extra.release")
 
@@ -124,3 +126,75 @@ def test_convert_rst_to_md(rst_changelog, md_changelog):
     actual = release.changelog_as_markdown(rst_changelog)
 
     assert actual == md_changelog
+
+
+def test_bump_version_applies_sequential_changelog_updates(tmp_path, monkeypatch):
+    changelog = tmp_path / "changelog.rst"
+    changelog.write_text(
+        """
+Unreleased
+----------
+
+..
+    New features
+    ~~~~~~~~~~~~
+
+Bug fixes
+~~~~~~~~~
+
+- Fixed a bug.
+
+..
+    Other changes
+    ~~~~~~~~~~~~~
+
+2.2.1 (January 01, 2025)
+------------------------
+"""
+    )
+    monkeypatch.setattr(
+        release,
+        "FILENAME_AND_UPDATE_TEXT",
+        [
+            (changelog, release.remove_unused_headers),
+            (changelog, release.update_changelog),
+        ],
+    )
+
+    release.bump_version(Version("2.3.0"))
+
+    today = datetime.now(timezone.utc).date()
+    assert (
+        changelog.read_text()
+        == f"""
+Unreleased
+----------
+
+..
+    New features
+    ~~~~~~~~~~~~
+
+..
+    Bug fixes
+    ~~~~~~~~~
+
+..
+    For plugin developers
+    ~~~~~~~~~~~~~~~~~~~~~
+
+..
+    Other changes
+    ~~~~~~~~~~~~~
+
+2.3.0 ({today:%B %d, %Y})
+--------------------------
+
+Bug fixes
+~~~~~~~~~
+
+- Fixed a bug.
+
+2.2.1 (January 01, 2025)
+------------------------
+"""
+    )

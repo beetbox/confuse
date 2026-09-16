@@ -32,6 +32,8 @@ VERSION_HEADER = r"\d+\.\d+\.\d+ \([^)]+\)"
 RST_LATEST_CHANGES = re.compile(
     rf"{VERSION_HEADER}\n--+\s+(.+?)\n\n+{VERSION_HEADER}", re.DOTALL
 )
+HEADING_NAMES = ["New features", "Bug fixes", "For plugin developers", "Other changes"]
+HEADINGS = [f"..\n    {name}\n    {'~' * len(name)}\n" for name in HEADING_NAMES]
 
 Replacement: TypeAlias = "tuple[str, str | Callable[[re.Match[str]], str]]"
 
@@ -161,8 +163,13 @@ def update_docs_config(text: str, new: Version) -> str:
     return re.sub(r"(?<=release = )[^\n]+", f'"{new}"', text)
 
 
+def remove_unused_headers(text: str, _: Version) -> str:
+    return re.sub(rf"({'|'.join(HEADINGS)})\n", "", text)
+
+
 def update_changelog(text: str, new: Version) -> str:
     new_header = f"{new} ({datetime.now(timezone.utc).date():%B %d, %Y})"
+    headings_block = "\n".join(HEADINGS)
     return re.sub(
         # do not match if the new version is already present
         r"\nUnreleased\n--+\n",
@@ -170,22 +177,7 @@ def update_changelog(text: str, new: Version) -> str:
 Unreleased
 ----------
 
-..
-    New features
-    ~~~~~~~~~~~~
-
-..
-    Bug fixes
-    ~~~~~~~~~
-
-..
-    For plugin developers
-    ~~~~~~~~~~~~~~~~~~~~~
-
-..
-    Other changes
-    ~~~~~~~~~~~~~
-
+{headings_block}
 {new_header}
 {"-" * len(new_header)}
 """,
@@ -203,6 +195,7 @@ FILENAME_AND_UPDATE_TEXT: list[tuple[Path, UpdateVersionCallable]] = [
         BASE / PACKAGE_NAME / "__init__.py",
         lambda text, new: re.sub(r"(?<=__version__ = )[^\n]+", f'"{new}"', text),
     ),
+    (CHANGELOG, remove_unused_headers),
     (CHANGELOG, update_changelog),
     (BASE / "docs" / "conf.py", update_docs_config),
 ]
