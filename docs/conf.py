@@ -1,16 +1,9 @@
 import datetime as dt
 import os
-import re
 import sys
-from pathlib import Path
 
-MATCH_VERSION_LINE = re.compile(r"version = \W((\d+\.\d+)\.\d.*?)\W").fullmatch
-
-pyproject = Path(__file__).parent.parent / "pyproject.toml"
-version_line_match = next(
-    filter(None, map(MATCH_VERSION_LINE, pyproject.read_text().splitlines()))
-)
-release, version = version_line_match.groups()
+version = "2.2"
+release = "2.2.1"
 
 sys.path.insert(0, os.path.abspath(".."))
 
@@ -18,7 +11,6 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
-    "sphinx.ext.autosectionlabel",
     "sphinx_rtd_theme",
 ]
 source_suffix = ".rst"
