@@ -342,8 +342,8 @@ also allows changing how relative paths in the file will be resolved:
 
     import confuse
 
-    # Instantiates config. Confuse searches for a config_default.yaml
-    config = confuse.Configuration("MyGreatApp", __name__)
+    # Disable automatic loading of user and default configuration files.
+    config = confuse.Configuration("MyGreatApp", __name__, read=False)
     # Add config items from specified file. Relative path values within the
     # file are resolved relative to the application's configuration directory.
     config.set_file("subdirectory/default_config.yaml")
