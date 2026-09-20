@@ -4,6 +4,8 @@ Changelog
 Unreleased
 ----------
 
+- Fix the manual configuration example to disable automatic file loading.
+
 v2.2.1
 ------
 
