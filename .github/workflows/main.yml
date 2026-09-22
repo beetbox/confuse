@@ -27,9 +27,16 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: poetry
 
+      - name: Install system dependencies on Ubuntu
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install --yes --no-install-recommends pandoc
+
       - name: Test
         run: |-
-          poetry install
+          poetry install --extras=docs
+          poe docs
           poe test-with-coverage
 
       - name: Upload test results to Codecov
