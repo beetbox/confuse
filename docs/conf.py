@@ -2,8 +2,8 @@ import datetime as dt
 import os
 import sys
 
-version = "2.2"
-release = "2.2.1"
+version = "2.3"
+release = "2.3.0"
 
 sys.path.insert(0, os.path.abspath(".."))
 

@@ -8,5 +8,5 @@ from .templates import Path as Path
 from .util import *  # type: ignore[no-redef] # noqa: F403
 from .yaml_util import *  # noqa: F403
 
-__version__ = "2.2.1"
+__version__ = "2.3.0"
 __author__ = "Adrian Sampson <adrian@radbox.org>"

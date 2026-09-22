@@ -9,6 +9,25 @@ below!
 Unreleased
 ----------
 
+..
+    New features
+    ~~~~~~~~~~~~
+
+..
+    Bug fixes
+    ~~~~~~~~~
+
+..
+    For plugin developers
+    ~~~~~~~~~~~~~~~~~~~~~
+
+..
+    Other changes
+    ~~~~~~~~~~~~~
+
+2.3.0 (September 22, 2026)
+--------------------------
+
 - Add an ``as_optional_path`` accessor for optional path configuration values.
 
 2.2.1 (January 28, 2026)
