@@ -138,3 +138,8 @@ ignore = [
 
 [tool.ruff.format]
 quote-style = "double"
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+mark-parentheses = false
+parametrize-names-type = "csv"
