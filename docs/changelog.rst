@@ -13,9 +13,12 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- Preserve the surrounding mapping template when validating an ``Optional``
+  value, allowing wrapped ``Filename`` and ``Path`` templates to resolve
+  ``relative_to`` siblings.
 
 ..
     For plugin developers
