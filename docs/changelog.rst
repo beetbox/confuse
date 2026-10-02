@@ -13,9 +13,11 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- Reject non-finite floats in integer templates with ``ConfigValueError`` so
+  ``OneOf`` can continue trying its remaining templates.
 
 ..
     For plugin developers

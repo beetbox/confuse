@@ -155,7 +155,10 @@ class Integer(Template[int]):
         if isinstance(value, int):
             return value
         elif isinstance(value, float):
-            return int(value)
+            try:
+                return int(value)
+            except (OverflowError, ValueError):
+                self.fail("must be a finite number", view)
         else:
             self.fail("must be a number", view, True)
 
