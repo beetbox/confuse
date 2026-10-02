@@ -13,9 +13,11 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- Restore whitespace-separated string and bytes inputs to ``Pairs`` and
+  ``as_pairs()``, and report non-iterable inputs as configuration type errors.
 
 ..
     For plugin developers

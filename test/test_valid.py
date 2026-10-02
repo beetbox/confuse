@@ -337,6 +337,76 @@ class StrSeqTest(unittest.TestCase):
             config["foo"].get(confuse.StrSeq())
 
 
+class TestPairs:
+    @pytest.mark.parametrize("default_value", [None, "*"])
+    @pytest.mark.parametrize(
+        "value,expected_keys",
+        [
+            ("filesystem", ["filesystem"]),
+            ("  filesystem\tcoverart\nitunes  ", ["filesystem", "coverart", "itunes"]),
+            (b"filesystem coverart", ["filesystem", "coverart"]),
+            ("café thé".encode(), ["café", "thé"]),
+            (b"filesystem\xff coverart", ["filesystem", "coverart"]),
+            ("", []),
+            (" \t\n", []),
+            (b"", []),
+        ],
+    )
+    def test_whitespace_separated_string(self, value, expected_keys, default_value):
+        config = _root({"sources": value})
+        expected = [(key, default_value) for key in expected_keys]
+        assert config["sources"].get(confuse.Pairs(default_value)) == expected
+        assert config["sources"].as_pairs(default_value) == expected
+
+    @pytest.mark.parametrize("value", [None, True, 42, 3.5])
+    def test_invalid_type(self, value):
+        config = _root({"sources": value})
+        with pytest.raises(
+            confuse.ConfigTypeError,
+            match="sources: must be a whitespace-separated string or a list",
+        ):
+            config["sources"].as_pairs()
+
+    @pytest.mark.parametrize("collection_type", [list, tuple, iter])
+    def test_mixed_sequence(self, collection_type):
+        config = _root(
+            {
+                "sources": collection_type(
+                    ["filesystem", {"coverart": "release"}, ["a b", "c"]]
+                )
+            }
+        )
+        assert config["sources"].as_pairs("*") == [
+            ("filesystem", "*"),
+            ("coverart", "release"),
+            ("a b", "c"),
+        ]
+
+    def test_oneof_falls_back_after_invalid_type(self):
+        config = _root({"sources": 42})
+        assert config["sources"].get(confuse.OneOf([confuse.Pairs(), int])) == 42
+
+    def test_sequence_protocol(self):
+        class IndexedSequence:
+            def __getitem__(self, index):
+                return ["filesystem", "coverart"][index]
+
+        config = _root({"sources": IndexedSequence()})
+        assert config["sources"].as_pairs() == [
+            ("filesystem", None),
+            ("coverart", None),
+        ]
+
+    def test_default_value(self):
+        config = _root({})
+        assert config["sources"].get(confuse.Pairs(default=[])) == []
+
+    def test_missing_required_value(self):
+        config = _root({})
+        with pytest.raises(confuse.NotFoundError):
+            config["sources"].get(confuse.Pairs())
+
+
 class FilenameTest(unittest.TestCase):
     def test_default_value(self):
         config = _root({})
