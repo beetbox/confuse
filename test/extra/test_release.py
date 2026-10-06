@@ -4,6 +4,7 @@ import os
 import shutil
 import sys
 from datetime import datetime, timezone
+from unittest.mock import Mock
 
 import pytest
 from packaging.version import Version
@@ -128,7 +129,22 @@ def test_convert_rst_to_md(rst_changelog, md_changelog):
     assert actual == md_changelog
 
 
-def test_bump_version_applies_sequential_changelog_updates(tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    "month, expected_header",
+    [
+        (5, "2.3.0 (May 06, 2026)\n--------------------"),
+        (9, "2.3.0 (September 06, 2026)\n--------------------------"),
+        (10, "2.3.0 (October 06, 2026)\n------------------------"),
+    ],
+    ids=["may", "september", "october"],
+)
+def test_bump_version_applies_sequential_changelog_updates(
+    tmp_path, monkeypatch, month, expected_header
+):
+    mock_datetime = Mock(wraps=datetime)
+    mock_datetime.now.return_value = datetime(2026, month, 6, tzinfo=timezone.utc)
+    monkeypatch.setattr(release, "datetime", mock_datetime)
+
     changelog = tmp_path / "changelog.rst"
     changelog.write_text(
         """
@@ -163,7 +179,6 @@ Bug fixes
 
     release.bump_version(Version("2.3.0"))
 
-    today = datetime.now(timezone.utc).date()
     assert (
         changelog.read_text()
         == f"""
@@ -186,8 +201,7 @@ Unreleased
     Other changes
     ~~~~~~~~~~~~~
 
-2.3.0 ({today:%B %d, %Y})
---------------------------
+{expected_header}
 
 Bug fixes
 ~~~~~~~~~
