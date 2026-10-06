@@ -695,3 +695,86 @@ class OptionalTest(unittest.TestCase):
         template = {"bar": confuse.Integer(), "baz": confuse.String()}
         valid = config.get({"foo": confuse.Optional(template, allow_missing=False)})
         assert valid["foo"] is None
+
+
+class TestOneOfRelativePaths:
+    @pytest.mark.parametrize("path_type", [confuse.Filename, confuse.Path])
+    @pytest.mark.parametrize("nested", [False, True])
+    def test_relative_to_sibling(self, tmp_path, path_type, nested):
+        config = _root({"base": str(tmp_path), "output": "reports"})
+        candidate = confuse.OneOf([bool, path_type(relative_to="base")])
+        if nested:
+            candidate = confuse.OneOf([candidate])
+        valid = config.get({"base": path_type(), "output": candidate})
+        expected = tmp_path / "reports"
+        assert valid.output == (
+            expected if path_type is confuse.Path else str(expected)
+        )
+
+    def test_relative_path_chain(self, tmp_path):
+        config = _root({"base": str(tmp_path), "folder": "reports", "file": "a.txt"})
+        valid = config.get(
+            {
+                "base": confuse.Filename(),
+                "folder": confuse.Filename(relative_to="base"),
+                "file": confuse.OneOf([bool, confuse.Filename(relative_to="folder")]),
+            }
+        )
+        assert valid.file == str(tmp_path / "reports" / "a.txt")
+
+    def test_mapping_inside_sequence(self, tmp_path):
+        config = _root({"jobs": [{"base": str(tmp_path), "output": "reports"}]})
+        valid = config["jobs"].get(
+            confuse.Sequence(
+                {
+                    "base": confuse.Filename(),
+                    "output": confuse.OneOf(
+                        [bool, confuse.Filename(relative_to="base")]
+                    ),
+                }
+            )
+        )
+        assert valid[0]["output"] == str(tmp_path / "reports")
+
+    def test_first_candidate_keeps_priority(self, tmp_path):
+        config = _root({"base": str(tmp_path), "output": False})
+        valid = config.get(
+            {
+                "base": confuse.Filename(),
+                "output": confuse.OneOf([bool, confuse.Filename(relative_to="base")]),
+            }
+        )
+        assert valid.output is False
+
+    def test_does_not_validate_unrelated_siblings(self):
+        class CountingTemplate(confuse.Template[str]):
+            calls = 0
+
+            def convert(self, value: str, view: confuse.ConfigView) -> str:
+                self.calls += 1
+                return value
+
+        sibling = CountingTemplate()
+        config = _root({"output": False, "sibling": "value"})
+        valid = config.get({"output": confuse.OneOf([bool]), "sibling": sibling})
+        assert valid.output is False
+        assert sibling.calls == 1
+
+    def test_cyclic_relative_paths_raise_template_error(self):
+        config = _root({"base": "a", "output": "b"})
+        with pytest.raises(confuse.ConfigTemplateError, match="recursively relative"):
+            config.get(
+                {
+                    "output": confuse.OneOf([confuse.Filename(relative_to="base")]),
+                    "base": confuse.Filename(relative_to="output"),
+                }
+            )
+
+    def test_missing_sibling_template_still_raises(self):
+        config = _root({"base": "/tmp", "output": "reports"})
+        with pytest.raises(
+            confuse.ConfigTemplateError, match="missing template for base"
+        ):
+            config.get(
+                {"output": confuse.OneOf([confuse.Filename(relative_to="base")])}
+            )
