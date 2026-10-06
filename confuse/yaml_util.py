@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from _typeshed import SupportsItems
 
 from .exceptions import ConfigReadError
+from .templates import AttrDict
 
 # YAML loading.
 
@@ -206,6 +207,7 @@ class Dumper(yaml.SafeDumper):
 
 
 Dumper.add_representer(OrderedDict, Dumper.represent_dict)
+Dumper.add_representer(AttrDict, Dumper.represent_dict)
 Dumper.add_representer(bool, Dumper.represent_bool)
 Dumper.add_representer(type(None), Dumper.represent_none)
 Dumper.add_representer(list, Dumper.represent_list)

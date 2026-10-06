@@ -13,9 +13,11 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- Fix dumping validated mappings nested inside lists, including values returned
+  by ``Sequence``. `#137 <https://github.com/beetbox/confuse/issues/137>`_
 
 ..
     For plugin developers
