@@ -13,9 +13,11 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- Preserve empty mappings when parsing environment variables as YAML documents
+  with list handling enabled.
 
 ..
     For plugin developers

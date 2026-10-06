@@ -192,6 +192,35 @@ class EnvSourceTest(unittest.TestCase):
         config = _root(confuse.EnvSource("TEST_", parse_yaml_docs=True))
         assert config["foo"].get() == {"bar": "a", "baz": "b"}
 
+    def test_parse_yaml_docs_empty_dict(self):
+        os.environ["TEST_FOO"] = "{}"
+        config = _root(confuse.EnvSource("TEST_", parse_yaml_docs=True))
+        assert config["foo"].get() == {}
+        assert config["foo"].get(confuse.MappingValues(str)) == {}
+
+    def test_parse_yaml_docs_nested_empty_dict(self):
+        os.environ["TEST_FOO"] = "{bar: {}, baz: []}"
+        config = _root(confuse.EnvSource("TEST_", parse_yaml_docs=True))
+        assert config["foo"].get() == {"bar": {}, "baz": []}
+
+    def test_parse_yaml_docs_empty_dict_in_indexed_list(self):
+        os.environ["TEST_FOO__0"] = "{}"
+        os.environ["TEST_FOO__1"] = "{bar: {}}"
+        config = _root(confuse.EnvSource("TEST_", parse_yaml_docs=True))
+        assert config["foo"].get() == [{}, {"bar": {}}]
+
+    def test_parse_yaml_docs_empty_dict_without_list_handling(self):
+        os.environ["TEST_FOO"] = "{}"
+        config = _root(
+            confuse.EnvSource("TEST_", parse_yaml_docs=True, handle_lists=False)
+        )
+        assert config["foo"].get() == {}
+
+    def test_parse_yaml_docs_empty_list(self):
+        os.environ["TEST_FOO"] = "[]"
+        config = _root(confuse.EnvSource("TEST_", parse_yaml_docs=True))
+        assert config["foo"].get() == []
+
     def test_parse_yaml_docs_nested(self):
         os.environ["TEST_FOO"] = "{bar: [a, b], baz: {qux: c}}"
         config = _root(confuse.EnvSource("TEST_", parse_yaml_docs=True))

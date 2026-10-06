@@ -186,8 +186,8 @@ class EnvSource(ConfigSource):
         """Recursively search for dicts where all of the keys are integers
         from 0 to the length of the dict, and convert them to lists.
         """
-        # We only deal with dictionaries
-        if not isinstance(obj, dict):
+        # An empty mapping has no indexes indicating a list; preserve its type.
+        if not isinstance(obj, dict) or not obj:
             return obj
 
         # Recursively search values for additional dicts to convert to lists
