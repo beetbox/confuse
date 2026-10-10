@@ -548,9 +548,9 @@ class Configuration(RootView):
     def user_config_path(self) -> str:
         """Points to the location of the user configuration.
 
-        The file may not exist.
+        The file and its parent directory may not exist. Neither is created.
         """
-        return os.path.join(self.config_dir(), CONFIG_FILENAME)
+        return os.path.join(self._config_dir(), CONFIG_FILENAME)
 
     def _add_user_source(self) -> None:
         """Add the configuration options from the YAML file in the
@@ -585,17 +585,8 @@ class Configuration(RootView):
         if defaults:
             self._add_default_source()
 
-    def config_dir(self) -> str:
-        """Get the path to the user configuration directory. The
-        directory is guaranteed to exist as a postcondition (one may be
-        created if none exist).
-
-        If the application's ``...DIR`` environment variable is set, it
-        is used as the configuration directory. Otherwise,
-        platform-specific standard configuration locations are searched
-        for a ``config.yaml`` file. If no configuration file is found, a
-        fallback path is used.
-        """
+    def _config_dir(self) -> str:
+        """Find the user configuration directory without creating it."""
         # If environment variable is set, use it.
         if self._env_var in os.environ:
             appdir = os.environ[self._env_var]
@@ -613,6 +604,21 @@ class Configuration(RootView):
                     break
             else:
                 appdir = os.path.join(configdirs[0], self.appname)
+
+        return appdir
+
+    def config_dir(self) -> str:
+        """Get the path to the user configuration directory. The
+        directory is guaranteed to exist as a postcondition (one may be
+        created if none exist).
+
+        If the application's ``...DIR`` environment variable is set, it
+        is used as the configuration directory. Otherwise,
+        platform-specific standard configuration locations are searched
+        for a ``config.yaml`` file. If no configuration file is found, a
+        fallback path is used.
+        """
+        appdir = self._config_dir()
 
         # Ensure that the directory exists.
         try:
