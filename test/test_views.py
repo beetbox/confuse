@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import unittest
 from typing import TYPE_CHECKING
 
@@ -7,7 +8,7 @@ import pytest
 
 import confuse
 
-from . import _root
+from . import TempDir, _root
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -286,3 +287,51 @@ class SetTest(unittest.TestCase):
         config = _root({"foo": [{"name": "a"}, {"name": "b"}]})
         config["foo"][0]["name"] = "bar"
         assert config["foo"].get() == [{"name": "bar"}, {"name": "b"}]
+
+    def test_override_list_index_keeps_source_for_untouched(self):
+        # Rebuilding the list must not re-attribute the untouched entries
+        # to a fresh, metadata-less overlay source: their Filename/Path
+        # resolution should still use the YAML file's directory.
+        for setter in ("set", "item"):
+            for template_name in ("Filename", "Path"):
+                for source_opt in ("base_for_paths", "in_source_dir"):
+                    with self.subTest(setter=setter, template=template_name,
+                                      source_opt=source_opt):
+                        with TempDir() as source_dir, TempDir() as work_dir:
+                            config_path = source_dir.sub(
+                                "config.yaml",
+                                b"files: [first.txt, second.txt]\n",
+                            )
+                            config = confuse.Configuration("test", read=False)
+                            config.set_file(
+                                config_path,
+                                base_for_paths=(source_opt == "base_for_paths"),
+                            )
+                            old_cwd = os.getcwd()
+                            os.chdir(work_dir.path)
+                            try:
+                                if setter == "set":
+                                    config["files"][0].set("replacement.txt")
+                                else:
+                                    config["files"][0] = "replacement.txt"
+                                if template_name == "Filename":
+                                    template = confuse.Filename(
+                                        in_source_dir=(
+                                            source_opt == "in_source_dir"
+                                        )
+                                    )
+                                else:
+                                    template = confuse.Path(
+                                        in_source_dir=(
+                                            source_opt == "in_source_dir"
+                                        )
+                                    )
+                                assert str(config["files"][1].get(template)) == (
+                                    os.path.join(source_dir.path, "second.txt")
+                                )
+                                assert config["files"].get() == [
+                                    "replacement.txt",
+                                    "second.txt",
+                                ]
+                            finally:
+                                os.chdir(old_cwd)

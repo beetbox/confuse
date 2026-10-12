@@ -491,13 +491,21 @@ class Subview(ConfigView):
             # dict of {index: value} would replace the whole sequence
             # with an integer-keyed mapping, so rebuild the list
             # instead, with only this index replaced.
-            for collection, _ in self.parent.resolve():
+            for collection, source in self.parent.resolve():
                 if isinstance(collection, list) and -len(collection) <= self.key < len(
                     collection
                 ):
                     new_collection = list(collection)
                     new_collection[self.key] = value
                     self.parent.set(new_collection)
+                    # The rebuilt list lands in a fresh overlay source with
+                    # no provenance. Carry the original source's filename
+                    # and base_for_paths over so the untouched entries keep
+                    # resolving paths relative to their real source instead
+                    # of the working directory.
+                    new_source = self.root().sources[0]
+                    new_source.filename = source.filename
+                    new_source.base_for_paths = source.base_for_paths
                     return
                 break
         self.parent.set({self.key: value})
