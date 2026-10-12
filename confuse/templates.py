@@ -365,7 +365,12 @@ class Choice(Template[T], Generic[T, K]):
 
     @convert_choices.register(abc.Set)
     def _(self, choices: abc.Set[T], value: T) -> T:
-        if value not in choices:
+        try:
+            found = value in choices
+        except TypeError:
+            # Unhashable values (e.g. lists, dicts) can't be set members.
+            found = False
+        if not found:
             raise ValueError(value)
         return value
 
