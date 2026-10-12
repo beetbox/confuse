@@ -13,9 +13,11 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- Treat ``True`` and ``False`` template defaults as booleans instead of integers,
+  rejecting numeric configuration values rather than returning them as integers.
 
 ..
     For plugin developers

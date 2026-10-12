@@ -878,6 +878,9 @@ def as_template(value: Any) -> Template[Any]:
     elif isinstance(value, abc.Mapping):
         # Dictionaries work as templates.
         return MappingTemplate(value)
+    elif isinstance(value, bool):
+        # Booleans are integers too, but their defaults require boolean values.
+        return TypeTemplate(bool, value)
     elif value is int:
         return Integer()
     elif isinstance(value, int):

@@ -183,6 +183,30 @@ class AsTemplateTest(unittest.TestCase):
         assert typ.default == confuse.REQUIRED
 
 
+class TestBooleanTemplateShorthand:
+    @pytest.mark.parametrize("default", [False, True])
+    def test_template_type(self, default):
+        template = confuse.as_template(default)
+        assert isinstance(template, confuse.TypeTemplate)
+        assert template.typ is bool
+        assert template.default is default
+
+    @pytest.mark.parametrize("default", [False, True])
+    def test_missing_value(self, default):
+        assert _root({}).get({"enabled": default})["enabled"] is default
+
+    @pytest.mark.parametrize("default", [False, True])
+    @pytest.mark.parametrize("value", [False, True])
+    def test_boolean_value(self, default, value):
+        assert _root({"enabled": value}).get({"enabled": default})["enabled"] is value
+
+    @pytest.mark.parametrize("default", [False, True])
+    @pytest.mark.parametrize("value", [0, 1, -1, 0.5, "true", None])
+    def test_rejects_non_boolean(self, default, value):
+        with pytest.raises(confuse.ConfigTypeError, match="enabled"):
+            _root({"enabled": value}).get({"enabled": default})
+
+
 class StringTemplateTest(unittest.TestCase):
     def test_validate_string(self):
         config = _root({"foo": "bar"})
