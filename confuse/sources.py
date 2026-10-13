@@ -98,9 +98,12 @@ class YamlSource(ConfigSource):
         elif self.filename is None:
             raise TypeError("filename is required for YamlSource")
         else:
-            value = yaml_util.load_yaml(self.filename, loader=self.loader) or {}
+            value = yaml_util.load_yaml(self.filename, loader=self.loader)
+            if value is None:
+                value = {}
 
         if isinstance(value, dict):
+            self.clear()
             self.update(value)
         else:
             # We enforce that the loaded YAML is a mapping (dict)

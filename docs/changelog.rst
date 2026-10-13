@@ -13,9 +13,11 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- Remove stale keys when reloading YAML sources, allowing deleted overrides to
+  fall back to lower-priority sources.
 
 ..
     For plugin developers
