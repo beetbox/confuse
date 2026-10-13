@@ -6,6 +6,7 @@ import shutil
 import tempfile
 import unittest
 from typing import ClassVar
+from unittest.mock import patch
 
 import confuse
 import confuse.yaml_util
@@ -33,10 +34,20 @@ class FakeHome(unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.home = tempfile.mkdtemp()
-        os.environ["HOME"] = self.home
-        os.environ["USERPROFILE"] = self.home
+        self.environment = patch.dict(
+            "os.environ",
+            {
+                "HOME": self.home,
+                "USERPROFILE": self.home,
+                "XDG_CONFIG_HOME": os.path.join(self.home, "xdgconfig"),
+                "XDG_CONFIG_DIRS": os.path.join(self.home, "system"),
+            },
+            clear=True,
+        )
+        self.environment.start()
 
     def tearDown(self):
+        self.environment.stop()
         super().tearDown()
         shutil.rmtree(self.home)
 
@@ -63,8 +74,8 @@ class LinuxTestCases(FakeSystem):
 
     def test_both_xdg_and_fallback_dirs(self):
         assert confuse.config_dirs() == [
-            "/home/test/.config",
             "/home/test/xdgconfig",
+            "/home/test/.config",
             "/etc/xdg",
             "/etc",
         ]
@@ -80,8 +91,8 @@ class LinuxTestCases(FakeSystem):
     def test_xdg_config_dirs(self):
         os.environ["XDG_CONFIG_DIRS"] = "/usr/local/etc/xdg:/etc/xdg"
         assert confuse.config_dirs() == [
-            "/home/test/.config",
             "/home/test/xdgconfig",
+            "/home/test/.config",
             "/usr/local/etc/xdg",
             "/etc/xdg",
             "/etc",
@@ -182,7 +193,7 @@ class PrimaryConfigDirTest(FakeHome, FakeSystem):
         self.config = confuse.Configuration("test", read=False)
 
     def test_create_dir_if_none_exists(self):
-        path = os.path.join(self.home, ".config", "test")
+        path = os.path.join(self.home, "xdgconfig", "test")
         assert not os.path.exists(path)
 
         assert self.config.config_dir() == path

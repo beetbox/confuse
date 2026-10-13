@@ -169,17 +169,20 @@ def config_dirs() -> list[str]:
     configuration directories on the system.
 
     The candidates are in order of priority, from highest to lowest. The
-    last element is the "fallback" location to be used when no
-    higher-priority config file exists.
+    first element is the "fallback" location to be used when no
+    configuration file exists in any candidate directory.
     """
     paths = []
+    system = platform.system()
+    if system != "Windows" and (config_home := os.environ.get("XDG_CONFIG_HOME")):
+        paths.append(config_home)
 
-    if platform.system() == "Darwin":
+    if system == "Darwin":
         paths.append(UNIX_DIR_FALLBACK)
         paths.append(MAC_DIR)
         paths.extend(xdg_config_dirs())
 
-    elif platform.system() == "Windows":
+    elif system == "Windows":
         paths.append(WINDOWS_DIR_FALLBACK)
         if WINDOWS_DIR_VAR in os.environ:
             paths.append(os.environ[WINDOWS_DIR_VAR])
