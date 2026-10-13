@@ -136,7 +136,9 @@ class TestYamlReload:
         assert config["added"].get() == "new"
         assert config["memory"].get() == "preserved"
 
-    @pytest.mark.parametrize("contents", ["", "{}", "# Empty configuration\n"])
+    @pytest.mark.parametrize(
+        "contents", ["", "{}", "# Empty configuration\n", "null", "~"]
+    )
     def test_empty_file_clears_source(self, tmp_path, contents):
         path = tmp_path / "config.yaml"
         path.write_text("foo: bar\n")
@@ -161,7 +163,16 @@ class TestYamlReload:
         assert source == {"new": "value"}
 
     @pytest.mark.parametrize(
-        "contents, error", [("foo: [", confuse.ConfigReadError), ("- item", TypeError)]
+        "contents, error",
+        [
+            ("foo: [", confuse.ConfigReadError),
+            ("- item", TypeError),
+            ("[]", TypeError),
+            ("false", TypeError),
+            ("0", TypeError),
+            ("0.0", TypeError),
+            ('""', TypeError),
+        ],
     )
     def test_failed_reload_preserves_source(self, tmp_path, contents, error):
         path = tmp_path / "config.yaml"
