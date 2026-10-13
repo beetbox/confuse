@@ -13,9 +13,13 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- Give nonempty ``XDG_CONFIG_HOME`` priority over legacy configuration paths on
+  Unix and macOS, including the fallback for new configurations. Preserve the
+  remaining search paths and Windows behavior. `#98
+  <https://github.com/beetbox/confuse/issues/98>`_
 
 ..
     For plugin developers

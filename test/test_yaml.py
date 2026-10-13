@@ -41,7 +41,7 @@ class FileParseTest(unittest.TestCase):
     def test_reload_conf(self):
         with TempDir() as temp:
             path = temp.sub("test_config.yaml", b"foo: bar")
-            config = confuse.Configuration("test", __name__)
+            config = confuse.Configuration("test", __name__, read=False)
             config.set_file(filename=path)
             assert config["foo"].get() == "bar"
             temp.sub("test_config.yaml", b"foo: bar2\ntest: hello world")
