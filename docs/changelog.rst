@@ -13,9 +13,11 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- Report unhashable values passed to dictionary-backed ``Choice`` templates as
+  configuration errors, allowing ``OneOf`` to try its remaining templates.
 
 ..
     For plugin developers

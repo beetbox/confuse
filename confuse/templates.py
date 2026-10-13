@@ -355,7 +355,11 @@ class Choice(Template[T], Generic[T, K]):
 
     @convert_choices.register(dict)
     def _(self, choices: dict[K, T], value: K) -> T:
-        return choices[value]
+        try:
+            return choices[value]
+        except TypeError as exc:
+            # Normalize invalid lookups for Choice's error handling.
+            raise ValueError(value) from exc
 
     @convert_choices.register(abc.Sequence)
     def _(self, choices: abc.Sequence[T], value: T) -> T:
