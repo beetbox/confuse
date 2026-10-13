@@ -112,7 +112,7 @@ def build_dict(
                         save_to = save_to[child_key]
 
         # Save
-        if key in save_to:
+        if isinstance(save_to.get(key), dict) and isinstance(result, dict):
             save_to[key].update(result)
         else:
             save_to[key] = result
