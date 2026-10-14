@@ -138,6 +138,60 @@ filename string from the configuration. And calling
 ``config['direction'].as_choice(['up', 'down'])`` will raise a
 ``ConfigValueError`` unless the ``direction`` value is either "up" or "down".
 
+Validating Mappings at Once
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can also pass a dictionary template to ``get()`` to validate several
+settings in one call. Each key in the template is resolved separately, so values
+can come from different configuration sources. The result contains only the keys
+in the template, with nested mappings validated recursively.
+
+For example, this configuration has a user-provided server address and a default
+retry interval:
+
+.. code-block:: python
+
+    import confuse
+
+    config = confuse.Configuration("MyGreatApp", read=False)
+    config.set({"upload": {"server": "uploads.example.org"}})
+    template = {
+        "upload": {
+            "server": str,
+            "interval": 3,
+        },
+    }
+    settings = config.get(template)
+    print(settings.upload.server)  # uploads.example.org
+    print(settings.upload.interval)  # 3
+
+Here, ``str`` requires a string value and has no default: a missing ``server``
+raises ``confuse.NotFoundError``. The value ``3`` requires an integer and
+supplies that default when ``interval`` is missing. An explicitly provided value
+of the wrong type raises ``confuse.ConfigTypeError``; defaults do not replace
+invalid values.
+
+Mapping templates return :class:`~confuse.templates.AttrDict` objects, which
+support both dictionary access (``settings["upload"]["server"]``) and attribute
+access (``settings.upload.server``). Use dictionary access for keys that are not
+valid Python identifiers or that conflict with dictionary methods, such as
+``settings["items"]``. This attribute access applies to the validated result,
+not to configuration views such as ``config``.
+
+The result is not a live configuration view. If you add an override later, call
+``get(template)`` again to validate and retrieve the new values:
+
+.. code-block:: python
+
+    config["upload"]["interval"].set(10)
+    print(settings.upload.interval)  # 3
+    settings = config.get(template)
+    print(settings.upload.interval)  # 10
+
+To validate just one part of the configuration, use a view and the corresponding
+part of the template, for example ``config["upload"].get(template["upload"])``.
+This lets each part of a larger application validate its own settings.
+
 .. _command-line-options:
 
 Command-Line Options
