@@ -323,17 +323,56 @@ class ConfigView:
 
     # Shortcuts for common templates.
 
-    def as_filename(self) -> str:
-        """Get the value as a path. Equivalent to `get(Filename())`."""
-        return self.get(templates.Filename())
+    def as_filename(
+        self,
+        *,
+        cwd: str | None = None,
+        in_app_dir: bool = False,
+        in_source_dir: bool = False,
+    ) -> str:
+        """Get the value as a filename string.
 
-    def as_path(self) -> Path:
-        """Get the value as a `pathlib.Path` object. Equivalent to `get(Path())`."""
-        return self.get(templates.Path())
+        Path resolution options are passed to the `Filename` template.
+        """
+        return self.get(
+            templates.Filename(
+                cwd=cwd, in_app_dir=in_app_dir, in_source_dir=in_source_dir
+            )
+        )
 
-    def as_optional_path(self) -> Path | None:
-        """Get the value as a `pathlib.Path` object or `None`."""
-        return self.get(templates.Optional(templates.Path()))
+    def as_path(
+        self,
+        *,
+        cwd: str | None = None,
+        in_app_dir: bool = False,
+        in_source_dir: bool = False,
+    ) -> Path:
+        """Get the value as a `pathlib.Path` object.
+
+        Path resolution options are passed to the `Filename` template.
+        """
+        return self.get(
+            templates.Path(cwd=cwd, in_app_dir=in_app_dir, in_source_dir=in_source_dir)
+        )
+
+    def as_optional_path(
+        self,
+        *,
+        cwd: str | None = None,
+        in_app_dir: bool = False,
+        in_source_dir: bool = False,
+    ) -> Path | None:
+        """Get the value as a `pathlib.Path` object or `None`.
+
+        Path resolution options are passed to the `Filename` template.
+        """
+        return self.get(
+            templates.Optional(
+                templates.Path(
+                    cwd=cwd, in_app_dir=in_app_dir, in_source_dir=in_source_dir
+                )
+            )
+        )
 
     def as_choice(self, choices: Sequence[R] | dict[str, R] | type[R]) -> R:
         """Get the value from a list of choices. Equivalent to
