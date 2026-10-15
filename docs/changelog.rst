@@ -9,9 +9,11 @@ below!
 Unreleased
 ----------
 
-..
-    New features
-    ~~~~~~~~~~~~
+New features
+~~~~~~~~~~~~
+
+- Add ``cwd``, ``in_app_dir``, and ``in_source_dir`` keyword arguments to
+  ``as_filename()``, ``as_path()``, and ``as_optional_path()``.
 
 ..
     Bug fixes
