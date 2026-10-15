@@ -179,6 +179,7 @@ class EnvSource(ConfigSource):
         if self.handle_lists:
             for k, v in config_vars.items():
                 config_vars[k] = self._convert_dict_lists(v)
+        self.clear()
         self.update(config_vars)
 
     @classmethod
