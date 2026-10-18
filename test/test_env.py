@@ -298,6 +298,29 @@ def test_reload_removes_deleted_environment_values(sep, parse_yaml_docs):
         assert config["port"].get() == 5434
 
 
+@pytest.mark.parametrize("parse_yaml_docs", [False, True])
+def test_retained_view_follows_environment_reload(parse_yaml_docs):
+    with patch.dict(os.environ, {"TEST_DATABASE__PORT": "4001"}, clear=True):
+        source = confuse.EnvSource("TEST_", parse_yaml_docs=parse_yaml_docs)
+        config = _root(source, {"database": {"port": 4000}})
+        retained = config["database"]["port"]
+        assert retained.get(int) == 4001
+
+        del os.environ["TEST_DATABASE__PORT"]
+        source.load()
+
+        assert retained.get(int) == 4000
+        assert config["database"]["port"].get(int) == 4000
+        assert config.sources[0] is source
+
+        os.environ["TEST_DATABASE__PORT"] = "4002"
+        source.load()
+
+        assert retained.get(int) == 4002
+        assert config["database"]["port"].get(int) == 4002
+        assert config.sources[0] is source
+
+
 def test_reload_preserves_environment_key_order():
     with patch.dict(os.environ, {"TEST_FIRST": "1", "TEST_SECOND": "2"}, clear=True):
         source = confuse.EnvSource("TEST_", sep="")
