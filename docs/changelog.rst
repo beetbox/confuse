@@ -13,9 +13,12 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- Fix ``Configuration.dump()`` raising ``StopIteration`` when the default
+  configuration ends with a comment or blank line (`#148
+  <https://github.com/beetbox/confuse/issues/148>`_).
 
 ..
     For plugin developers

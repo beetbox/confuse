@@ -114,3 +114,39 @@ class ParseAsScalarTest(unittest.TestCase):
     def test_invalid_yaml_string_unchanged(self):
         v = confuse.yaml_util.parse_as_scalar("!", confuse.Loader)
         assert v == "!"
+
+
+@pytest.mark.parametrize(
+    "suffix", ["# trailing", "# trailing\n", "\n", "\n\n", "\n# trailing\n\n"]
+)
+def test_restore_comments_at_eof(suffix):
+    default_data = "# before foo\nfoo: 42\n" + suffix
+    data = "foo: 43\n"
+    assert confuse.yaml_util.restore_yaml_comments(data, default_data) == (
+        "# before foo\nfoo: 43\n"
+    )
+
+
+@pytest.mark.parametrize(
+    "default_data", ["", "\n", "# comment", "# comment\n\n# another\n"]
+)
+def test_restore_comments_without_keys(default_data):
+    data = "foo: 42\n"
+    assert confuse.yaml_util.restore_yaml_comments(data, default_data) == data
+
+
+@pytest.mark.parametrize("style", ["|", ">"])
+def test_restore_comments_preserves_block_scalar(style):
+    default_data = f"text: {style}\n  # scalar content\n  value\nother: 1\n"
+    expected = load(default_data)
+    data = yaml.dump(expected, Dumper=confuse.Dumper)
+    restored = confuse.yaml_util.restore_yaml_comments(data, default_data)
+    assert load(restored) == expected
+
+
+def test_restore_comments_before_reordered_keys():
+    default_data = "# foo comment\nfoo: 42\n\n# bar comment\nbar: 1\n"
+    data = "bar: 2\nfoo: 43\n"
+    assert confuse.yaml_util.restore_yaml_comments(data, default_data) == (
+        "\n# bar comment\nbar: 2\n# foo comment\nfoo: 43\n"
+    )
