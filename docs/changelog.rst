@@ -13,9 +13,11 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- Remove stale values when reloading an environment source after variables have
+  been deleted.
 
 ..
     For plugin developers

@@ -270,3 +270,91 @@ class ConfigEnvTest(unittest.TestCase):
     def test_with_prefix_and_sep(self):
         self.config.set_env(prefix="MYAPP_", sep="_sep_")
         assert self.config.get() == {"qux": {"nested": "d"}}
+
+
+@pytest.mark.parametrize("sep", ["", "__"])
+@pytest.mark.parametrize("parse_yaml_docs", [False, True])
+def test_reload_removes_deleted_environment_values(sep, parse_yaml_docs):
+    with patch.dict(
+        os.environ, {"TEST_PORT": "5433", "TEST_ONLY": "value"}, clear=True
+    ):
+        source = confuse.EnvSource("TEST_", sep=sep, parse_yaml_docs=parse_yaml_docs)
+        config = _root(source, {"port": 5432})
+        del os.environ["TEST_PORT"]
+        del os.environ["TEST_ONLY"]
+
+        source.load()
+
+        assert source == {}
+        assert config["port"].get() == 5432
+        assert not config["only"].exists()
+        assert config.sources[0] is source
+        assert source.prefix == "TEST_"
+        assert source.sep == sep
+        assert source.parse_yaml_docs == parse_yaml_docs
+
+        os.environ["TEST_PORT"] = "5434"
+        source.load()
+        assert config["port"].get() == 5434
+
+
+@pytest.mark.parametrize("parse_yaml_docs", [False, True])
+def test_retained_view_follows_environment_reload(parse_yaml_docs):
+    with patch.dict(os.environ, {"TEST_DATABASE__PORT": "4001"}, clear=True):
+        source = confuse.EnvSource("TEST_", parse_yaml_docs=parse_yaml_docs)
+        config = _root(source, {"database": {"port": 4000}})
+        retained = config["database"]["port"]
+        assert retained.get(int) == 4001
+
+        del os.environ["TEST_DATABASE__PORT"]
+        source.load()
+
+        assert retained.get(int) == 4000
+        assert config["database"]["port"].get(int) == 4000
+        assert config.sources[0] is source
+
+        os.environ["TEST_DATABASE__PORT"] = "4002"
+        source.load()
+
+        assert retained.get(int) == 4002
+        assert config["database"]["port"].get(int) == 4002
+        assert config.sources[0] is source
+
+
+def test_reload_preserves_environment_key_order():
+    with patch.dict(os.environ, {"TEST_FIRST": "1", "TEST_SECOND": "2"}, clear=True):
+        source = confuse.EnvSource("TEST_", sep="")
+        del os.environ["TEST_FIRST"]
+        os.environ["TEST_FIRST"] = "3"
+
+        source.load()
+
+        assert list(source.items()) == [("second", 2), ("first", 3)]
+
+
+def test_failed_environment_reload_preserves_source():
+    with patch.dict(os.environ, {"TEST_PORT": "5433"}, clear=True):
+        source = confuse.EnvSource("TEST_", parse_yaml_docs=True)
+        os.environ["TEST_PORT"] = "5434"
+        os.environ["TEST_INVALID"] = "["
+
+        with pytest.raises(confuse.ConfigReadError):
+            source.load()
+
+        assert source == {"port": 5433}
+
+
+def test_reload_replaces_nested_environment_values():
+    with patch.dict(
+        os.environ,
+        {"TEST_DATABASE__HOST": "localhost", "TEST_DATABASE__PORT": "5433"},
+        clear=True,
+    ):
+        source = confuse.EnvSource("TEST_")
+        del os.environ["TEST_DATABASE__PORT"]
+        source.load()
+        assert source == {"database": {"host": "localhost"}}
+
+        del os.environ["TEST_DATABASE__HOST"]
+        source.load()
+        assert source == {}
