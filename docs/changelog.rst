@@ -13,11 +13,9 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-Bug fixes
-~~~~~~~~~
-
-- Return ``None`` for empty strings in ``as_optional_path()``, while preserving
-  support for bytes paths and filename validation errors for invalid types.
+..
+    Bug fixes
+    ~~~~~~~~~
 
 ..
     For plugin developers
@@ -26,6 +24,15 @@ Bug fixes
 ..
     Other changes
     ~~~~~~~~~~~~~
+
+2.3.1 (November 01, 2026)
+-------------------------
+
+Bug fixes
+~~~~~~~~~
+
+- Return ``None`` for empty strings in ``as_optional_path()``, while preserving
+  support for bytes paths and filename validation errors for invalid types.
 
 2.3.0 (September 22, 2026)
 --------------------------

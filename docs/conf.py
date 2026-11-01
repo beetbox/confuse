@@ -3,7 +3,7 @@ import os
 import sys
 
 version = "2.3"
-release = "2.3.0"
+release = "2.3.1"
 
 sys.path.insert(0, os.path.abspath(".."))
 

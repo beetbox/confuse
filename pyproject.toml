@@ -1,6 +1,6 @@
 [project]
 name = "confuse"
-version = "2.3.0"
+version = "2.3.1"
 description = "Painless YAML config files"
 authors = [{ name = "Adrian Sampson", email = "adrian@radbox.org" }]
 readme = "README.rst"
