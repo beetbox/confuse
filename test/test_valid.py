@@ -1,4 +1,5 @@
 import enum
+import math
 import os
 import pathlib
 import unittest
@@ -215,6 +216,42 @@ class StringTemplateTest(unittest.TestCase):
         config = _root({"foo": 5})
         with pytest.raises(confuse.ConfigTypeError):
             config.get({"foo": confuse.String()})
+
+
+class TestInteger:
+    @pytest.mark.parametrize("yaml_value", [".inf", "-.inf", ".nan"])
+    def test_non_finite_float_raises_config_value_error(self, yaml_value):
+        config = _root(confuse.yaml_util.load_yaml_string(f"foo: {yaml_value}", "test"))
+
+        with pytest.raises(
+            confuse.ConfigValueError, match="foo: must be a finite number"
+        ):
+            config["foo"].get(int)
+
+    @pytest.mark.parametrize("yaml_value", [".inf", "-.inf", ".nan"])
+    def test_one_of_can_fall_back_to_number(self, yaml_value):
+        config = _root(confuse.yaml_util.load_yaml_string(f"foo: {yaml_value}", "test"))
+        expected = config["foo"].get(float)
+
+        value = config["foo"].get(confuse.OneOf[int | float]([int, float]))
+
+        if math.isnan(expected):
+            assert math.isnan(value)
+        else:
+            assert value == expected
+
+    @pytest.mark.parametrize("yaml_value", [".inf", "-.inf", ".nan"])
+    def test_one_of_rejects_non_finite_float_as_invalid_value(self, yaml_value):
+        config = _root(confuse.yaml_util.load_yaml_string(f"foo: {yaml_value}", "test"))
+
+        with pytest.raises(confuse.ConfigValueError, match="foo: must be one of"):
+            config["foo"].get(confuse.OneOf([int, str]))
+
+    @pytest.mark.parametrize(
+        "value, expected", [(0.0, 0), (3.8, 3), (-3.8, -3), (10**400, 10**400)]
+    )
+    def test_finite_numbers(self, value, expected):
+        assert _root({"foo": value})["foo"].get(int) == expected
 
 
 class NumberTest(unittest.TestCase):
