@@ -13,9 +13,11 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- Preserve sibling templates when validating ``OneOf`` candidates so that
+  relative filenames and paths can resolve their ``relative_to`` values.
 
 ..
     For plugin developers

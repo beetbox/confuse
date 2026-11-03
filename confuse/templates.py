@@ -434,13 +434,15 @@ class OneOf(Template[T]):
             result: T
             try:
                 if is_mapping:
-                    assert self.template is not None
+                    assert isinstance(self.template, MappingTemplate)
                     from .core import Subview
 
                     if isinstance(view, Subview):
-                        # Use a new MappingTemplate to check the sibling value
-                        next_template = MappingTemplate({view.key: candidate})
-                        result = view.parent.get(next_template)[view.key]
+                        # Preserve sibling templates for relative path resolution
+                        next_template = MappingTemplate(
+                            {**self.template.subtemplates, view.key: candidate}
+                        )
+                        result = candidate.value(view, next_template)
                         return result
                     else:
                         self.fail("MappingTemplate must be used with a Subview", view)
