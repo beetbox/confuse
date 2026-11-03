@@ -2,6 +2,9 @@ import textwrap
 import unittest
 from collections import OrderedDict
 
+import pytest
+import yaml
+
 import confuse
 
 from . import _root
@@ -106,3 +109,25 @@ class RedactTest(unittest.TestCase):
 
         yaml = config.dump(redact=True, full=False).strip()
         assert yaml == "baz: REDACTED"
+
+
+@pytest.mark.parametrize(
+    "suffix", ["# trailing", "# trailing\n", "\n", "\n# trailing\n\n"]
+)
+def test_dump_defaults_with_trailing_comments(tmp_path, suffix):
+    path = tmp_path / "config_default.yaml"
+    path.write_text("# foo comment\nfoo: 42\n" + suffix, encoding="utf-8")
+    config = confuse.Configuration("myapp", read=False)
+    config.add(confuse.YamlSource(str(path), default=True))
+    config.set({"foo": 43})
+    assert config.dump() == "# foo comment\nfoo: 43\n"
+
+
+@pytest.mark.parametrize("style", ["|", ">"])
+def test_dump_defaults_preserves_block_scalar(tmp_path, style):
+    default_data = f"text: {style}\n  # scalar content\n  value\nother: 1\n"
+    path = tmp_path / "config_default.yaml"
+    path.write_text(default_data, encoding="utf-8")
+    config = confuse.Configuration("myapp", read=False)
+    config.add(confuse.YamlSource(str(path), default=True))
+    assert yaml.safe_load(config.dump()) == yaml.safe_load(default_data)

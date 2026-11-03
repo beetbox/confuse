@@ -226,11 +226,13 @@ def restore_yaml_comments(data: str, default_data: str) -> str:
             comment = f"{line}\n"
         else:
             continue
-        while True:
-            line = next(default_lines)
+        for line in default_lines:
             if line and not line.startswith("#"):
                 break
             comment += f"{line}\n"
+        else:
+            # No following key: discard trailing comments and blank lines.
+            break
         key = line.split(":")[0].strip()
         comment_map[key] = comment
     out_lines = iter(data.splitlines())
