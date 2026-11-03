@@ -591,6 +591,39 @@ class MappingValuesTest(unittest.TestCase):
         assert valid == {}
 
 
+class TestOptionalRelativePaths:
+    @pytest.mark.parametrize("path_template", [confuse.Filename, confuse.Path])
+    @pytest.mark.parametrize("nested", [False, True])
+    def test_relative_to_sibling(self, path_template, nested):
+        config = _root({"base": "/", "file": "example.txt"})
+        template = {
+            "base": path_template(),
+            "file": confuse.Optional(path_template(relative_to="base")),
+        }
+        if nested:
+            config = _root({"section": config.get()})
+            valid = config.get({"section": confuse.Optional(template)})["section"]
+        else:
+            valid = config.get(template)
+
+        expected: str | pathlib.Path = os.path.abspath("/example.txt")
+        if path_template is confuse.Path:
+            expected = pathlib.Path(expected)
+        assert valid["file"] == expected
+
+    def test_nested_optional_relative_to_sibling(self):
+        config = _root({"base": "/", "file": "example.txt"})
+        valid = config.get(
+            {
+                "base": confuse.Filename(),
+                "file": confuse.Optional(
+                    confuse.Optional(confuse.Filename(relative_to="base"))
+                ),
+            }
+        )
+        assert valid["file"] == os.path.abspath("/example.txt")
+
+
 class OptionalTest(unittest.TestCase):
     def test_optional_string_valid_type(self):
         config = _root({"foo": "bar"})

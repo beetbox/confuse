@@ -820,7 +820,7 @@ class Optional(Template[T | None]):
         if value is None:
             # None (ie, null) is always a valid value
             return self.default
-        return self.subtemplate.value(view, self)
+        return self.subtemplate.value(view, template)
 
     def __repr__(self) -> str:
         return (
