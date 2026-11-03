@@ -257,6 +257,73 @@ class ChoiceTest(unittest.TestCase):
         with pytest.raises(confuse.ConfigValueError):
             config["foo"].get(confuse.Choice({2: "two", 4: "four"}))
 
+    def test_unhashable_value_in_dict(self):
+        for value in (["red"], {"red": 1}, {"red"}):
+            with self.subTest(value=value):
+                config = _root({"foo": value})
+                with pytest.raises(confuse.ConfigValueError, match="foo:"):
+                    config["foo"].get(confuse.Choice({"red": 1}))
+
+    def test_tuple_key_in_dict(self):
+        config = _root({"foo": ("red", "green")})
+        assert config["foo"].get(confuse.Choice({("red", "green"): "mixed"})) == "mixed"
+
+    def test_custom_hashable_key_in_dict(self):
+        class Key:
+            def __hash__(self):
+                return 123
+
+            def __eq__(self, other):
+                return isinstance(other, Key)
+
+        config = _root({"foo": Key()})
+        assert config["foo"].get(confuse.Choice({Key(): "custom"})) == "custom"
+
+    def test_dict_subclass_missing_value(self):
+        class Defaults(dict[str, int | str]):
+            def __missing__(self, key):
+                return "defaulted"
+
+        config = _root({"foo": "blue"})
+        assert config["foo"].get(confuse.Choice(Defaults(red=1))) == "defaulted"
+
+    def test_dict_subclass_unhashable_lookup(self):
+        class ListAware(dict[str, int | str]):
+            def __getitem__(self, key):
+                if isinstance(key, list):
+                    return "list accepted"
+                return super().__getitem__(key)
+
+        config = _root({"foo": ["red"]})
+        assert config["foo"].get(confuse.Choice(ListAware(red=1))) == "list accepted"
+
+    def test_sequence_conversion_type_error_propagates(self):
+        class BrokenSequence(list[str]):
+            def index(self, value, *args):
+                raise TypeError("sequence conversion failed")
+
+        config = _root({"foo": "red"})
+        choice = confuse.Choice(BrokenSequence(["red"]))
+        with pytest.raises(TypeError, match="sequence conversion failed"):
+            config["foo"].get(choice)
+        with pytest.raises(TypeError, match="sequence conversion failed"):
+            config["foo"].get(confuse.OneOf[str]([choice, str]))
+
+    def test_enum_conversion_type_error_propagates(self):
+        class BrokenEnum(enum.Enum):
+            BLUE = "blue"
+
+            @classmethod
+            def _missing_(cls, value):
+                raise TypeError("enum conversion failed")
+
+        config = _root({"foo": "red"})
+        choice = confuse.Choice(BrokenEnum)
+        with pytest.raises(TypeError, match="enum conversion failed"):
+            config["foo"].get(choice)
+        with pytest.raises(TypeError, match="enum conversion failed"):
+            config["foo"].get(confuse.OneOf[BrokenEnum | str]([choice, str]))
+
 
 class OneOfTest(unittest.TestCase):
     def test_default_value(self):
@@ -308,6 +375,33 @@ class OneOfTest(unittest.TestCase):
         with pytest.raises(ValueError, match="cannot convert to template"):
             config.get(confuse.OneOf([BadTemplate()]))
         del BadTemplate
+
+    def test_dict_choice_falls_back_to_sequence(self):
+        config = _root({"foo": ["red"]})
+        template = confuse.OneOf[int | list[str]](
+            [confuse.Choice({"red": 1}), confuse.Sequence(str)]
+        )
+        assert config["foo"].get(template) == ["red"]
+
+    def test_dict_choice_falls_back_to_mapping(self):
+        config = _root({"foo": {"red": 1}})
+        template = confuse.OneOf[int | dict[str, int]](
+            [confuse.Choice({"red": 1}), confuse.MappingValues(int)]
+        )
+        assert config["foo"].get(template) == {"red": 1}
+
+    def test_dict_choice_fallback_in_mapping_template(self):
+        config = _root({"foo": ["red"]})
+        valid = config.get(
+            {"foo": confuse.OneOf([confuse.Choice({"red": 1}), confuse.Sequence(str)])}
+        )
+        assert valid["foo"] == ["red"]
+
+    def test_unhashable_dict_choice_without_valid_fallback(self):
+        config = _root({"foo": ["red"]})
+        template = confuse.OneOf[int]([confuse.Choice({"red": 1}), confuse.Integer()])
+        with pytest.raises(confuse.ConfigValueError, match="foo:"):
+            config["foo"].get(template)
 
 
 class StrSeqTest(unittest.TestCase):
