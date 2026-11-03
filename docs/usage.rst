@@ -321,16 +321,19 @@ list of directories in which it looks for a directory named after the
 application. For example, the first search location on Unix-y systems is
 ``$XDG_CONFIG_HOME/AppName`` for an application called ``AppName``.
 
-Here are the default search paths for each platform:
+Here are the default user-specific search paths for each platform:
 
 - macOS: ``~/.config/app`` and ``~/Library/Application Support/app``
-- Other Unix: ``~/.config/app`` and ``/etc/app``
+- Other Unix: ``~/.config/app``
 - Windows: ``%APPDATA%\app`` where the ``APPDATA`` environment variable falls
   back to ``%HOME%\AppData\Roaming`` if undefined
 
-Both macOS and other Unix operating sytems also try to use the
-``XDG_CONFIG_HOME`` and ``XDG_CONFIG_DIRS`` environment variables if set then
-search those directories as well.
+On macOS and other Unix operating systems, a nonempty ``XDG_CONFIG_HOME`` is
+searched before the default paths above. Those default locations remain in the
+search path, followed by the directories in ``XDG_CONFIG_DIRS`` (or ``/etc/xdg``
+if unset) and ``/etc``. If no configuration file exists in any of these
+locations, the first directory is used for a new configuration. Windows does not
+use the XDG environment variables.
 
 Users can also add an override configuration directory with an environment
 variable. The variable name is the application name in capitals with "DIR"
