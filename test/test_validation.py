@@ -70,6 +70,7 @@ class TestBuiltInValidator:
         "config, expected_value",
         [
             ({"foo": "foo/bar"}, pathlib.Path(os.getcwd(), "foo", "bar")),
+            ({"foo": ""}, None),
             ({"foo": None}, None),
             ({}, None),
         ],
@@ -78,6 +79,15 @@ class TestBuiltInValidator:
         config = _root(config)
         value = config["foo"].as_optional_path()
         assert value == expected_value
+
+    @pytest.mark.parametrize("value", [0, False, [], {}, 42])
+    def test_as_optional_path_wrong_type(self, value):
+        config = _root({"foo": value})
+        with pytest.raises(
+            confuse.ConfigTypeError,
+            match=f"^foo: must be a filename, not {type(value).__name__}$",
+        ):
+            config["foo"].as_optional_path()
 
     def test_as_choice_correct(self):
         config = _root({"foo": "bar"})
@@ -178,9 +188,9 @@ def test_path_accessor_resolution_options(tmp_path, monkeypatch, accessor, optio
     assert result == (str(expected) if accessor == "as_filename" else expected)
 
 
-@pytest.mark.parametrize("value", [None, {}])
-def test_optional_path_options_preserve_missing_and_null(value, tmp_path):
-    config = _root({"path": value} if value is None else {})
+@pytest.mark.parametrize("value", [None, "", {}])
+def test_optional_path_options_preserve_missing_null_and_empty(value, tmp_path):
+    config = _root({} if value == {} else {"path": value})
     assert config["path"].as_optional_path(cwd=str(tmp_path)) is None
 
 

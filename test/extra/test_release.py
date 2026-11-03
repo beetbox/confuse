@@ -164,6 +164,7 @@ Bug fixes
     release.bump_version(Version("2.3.0"))
 
     today = datetime.now(timezone.utc).date()
+    formatted_date = f"{today:%B %d, %Y}"
     assert (
         changelog.read_text()
         == f"""
@@ -186,8 +187,8 @@ Unreleased
     Other changes
     ~~~~~~~~~~~~~
 
-2.3.0 ({today:%B %d, %Y})
---------------------------
+2.3.0 ({formatted_date})
+-------{"-" * len(formatted_date)}-
 
 Bug fixes
 ~~~~~~~~~

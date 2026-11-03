@@ -364,8 +364,12 @@ class ConfigView:
     ) -> Path | None:
         """Get the value as a `pathlib.Path` object or `None`.
 
+        If the value is an empty string or `None`, then `None` is returned.
         Path resolution options are passed to the `Filename` template.
         """
+        if self.get(templates.Template(default=None)) == "":
+            return None
+
         return self.get(
             templates.Optional(
                 templates.Path(
