@@ -1,3 +1,4 @@
+import errno
 import ntpath
 import os
 import platform
@@ -6,6 +7,9 @@ import shutil
 import tempfile
 import unittest
 from typing import ClassVar
+from unittest.mock import Mock
+
+import pytest
 
 import confuse
 import confuse.yaml_util
@@ -205,3 +209,103 @@ class PrimaryConfigDirTest(FakeHome, FakeSystem):
         assert self.config.config_dir() == path2
         assert not os.path.isdir(path1)
         assert os.path.isdir(path2)
+
+
+@pytest.mark.parametrize("error", [errno.EACCES, errno.EROFS])
+@pytest.mark.parametrize("read_mode", ["explicit", "automatic", "lazy"])
+def test_missing_user_config_reads_defaults_without_creating_directory(
+    tmp_path, monkeypatch, error, read_mode
+):
+    user_dir = tmp_path / "missing" / "myapp"
+    package = tmp_path / "package"
+    package.mkdir()
+    (package / confuse.DEFAULT_FILENAME).write_text("answer: 42\n")
+    monkeypatch.delenv("MYAPPDIR", raising=False)
+    monkeypatch.setattr(confuse.util, "config_dirs", lambda: [str(user_dir.parent)])
+    monkeypatch.setattr(confuse.util, "find_package_path", lambda _: str(package))
+    makedirs = Mock(side_effect=OSError(error, os.strerror(error)))
+    monkeypatch.setattr(os, "makedirs", makedirs)
+
+    config: confuse.Configuration
+    if read_mode == "lazy":
+        config = confuse.LazyConfig("myapp", "package")
+    else:
+        config = confuse.Configuration(
+            "myapp", "package", read=read_mode == "automatic"
+        )
+        if read_mode == "explicit":
+            config.read()
+
+    assert config["answer"].get(int) == 42
+    assert config.user_config_path() == str(user_dir / confuse.CONFIG_FILENAME)
+    assert not user_dir.exists()
+    makedirs.assert_not_called()
+
+
+@pytest.mark.parametrize("error", [errno.EACCES, errno.EROFS])
+def test_explicit_config_dir_still_raises(tmp_path, monkeypatch, error):
+    user_dir = tmp_path / "myapp"
+    monkeypatch.setenv("MYAPPDIR", str(user_dir))
+    config = confuse.Configuration("myapp", read=False)
+    makedirs = Mock(side_effect=OSError(error, os.strerror(error)))
+    monkeypatch.setattr(os, "makedirs", makedirs)
+
+    with pytest.raises(OSError, match=os.strerror(error)) as exc_info:
+        config.config_dir()
+
+    assert exc_info.value.errno == error
+    makedirs.assert_called_once_with(str(user_dir))
+
+
+@pytest.mark.parametrize("selection", ["environment", "first", "second", "fallback"])
+def test_user_config_path_preserves_discovery_order(tmp_path, monkeypatch, selection):
+    dirs = [tmp_path / "first", tmp_path / "second"]
+    monkeypatch.delenv("MYAPPDIR", raising=False)
+    monkeypatch.setattr(confuse.util, "config_dirs", lambda: list(map(str, dirs)))
+    for index, directory in enumerate(dirs):
+        if selection != "fallback" and (index == 1 or selection != "second"):
+            appdir = directory / "myapp"
+            appdir.mkdir(parents=True)
+            (appdir / confuse.CONFIG_FILENAME).write_text("value: user\n")
+    expected = dirs[1 if selection == "second" else 0] / "myapp"
+    if selection == "environment":
+        monkeypatch.setenv("HOME", str(tmp_path))
+        monkeypatch.setenv("USERPROFILE", str(tmp_path))
+        monkeypatch.setenv("MYAPPDIR", "~/override")
+        expected = tmp_path / "override"
+    config = confuse.Configuration("myapp", read=False)
+    makedirs = Mock()
+    monkeypatch.setattr(os, "makedirs", makedirs)
+
+    assert config.user_config_path() == str(expected / confuse.CONFIG_FILENAME)
+    makedirs.assert_not_called()
+    assert config.config_dir() == str(expected)
+    makedirs.assert_called_once_with(str(expected))
+
+
+def test_user_config_path_rejects_environment_file(tmp_path, monkeypatch):
+    filename = tmp_path / "file"
+    filename.touch()
+    monkeypatch.setenv("MYAPPDIR", str(filename))
+    config = confuse.Configuration("myapp", read=False)
+
+    with pytest.raises(confuse.ConfigError, match="MYAPPDIR must be a directory"):
+        config.user_config_path()
+
+
+@pytest.mark.parametrize("error", [errno.EACCES, errno.EIO])
+def test_existing_user_config_read_errors_propagate(tmp_path, monkeypatch, error):
+    filename = tmp_path / confuse.CONFIG_FILENAME
+    filename.write_text("answer: 42\n")
+    monkeypatch.setenv("MYAPPDIR", str(tmp_path))
+    config = confuse.Configuration("myapp", read=False)
+    monkeypatch.setattr(
+        "builtins.open", Mock(side_effect=OSError(error, os.strerror(error)))
+    )
+
+    with pytest.raises(confuse.ConfigReadError, match=r"config\.yaml") as exc_info:
+        config.read()
+
+    assert exc_info.value.name == str(filename)
+    assert isinstance(exc_info.value.reason, OSError)
+    assert exc_info.value.reason.errno == error

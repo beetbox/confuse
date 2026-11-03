@@ -13,9 +13,12 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- Read configuration files and locate the user configuration path without
+  creating directories, allowing defaults to load on read-only filesystems.
+  Explicit calls to ``config_dir()`` still create the directory if needed.
 
 ..
     For plugin developers
