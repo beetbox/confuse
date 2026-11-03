@@ -2,6 +2,9 @@ import textwrap
 import unittest
 from collections import OrderedDict
 
+import pytest
+import yaml
+
 import confuse
 
 from . import _root
@@ -62,6 +65,85 @@ class PrettyDumpTest(unittest.TestCase):
 
         yaml = config.dump(full=False).strip()
         assert yaml == "baz: qux"
+
+
+@pytest.mark.parametrize("full", [True, False])
+def test_dump_validated_sequence(full):
+    config = confuse.Configuration("myapp", read=False)
+    config.add(
+        confuse.ConfigSource(
+            {
+                "servers": [
+                    {"host": "one.example.com"},
+                    {"host": "two.example.com", "port": 8000},
+                ],
+                "default_only": "retained",
+            },
+            default=True,
+        )
+    )
+    valid = config.get(
+        {"servers": confuse.Sequence({"host": str, "port": confuse.Integer(80)})}
+    )
+    config.set(
+        {"servers": [*valid.servers, {"host": "three.example.com", "port": 8080}]}
+    )
+
+    dumped = yaml.safe_load(config.dump(full=full))
+
+    expected: dict[str, object] = {
+        "servers": [
+            {"host": "one.example.com", "port": 80},
+            {"host": "two.example.com", "port": 8000},
+            {"host": "three.example.com", "port": 8080},
+        ]
+    }
+    if full:
+        expected["default_only"] = "retained"
+    assert dumped == expected
+    assert list(dumped["servers"][0]) == ["host", "port"]
+    assert isinstance(valid.servers[0], confuse.AttrDict)
+    assert valid.servers[0].port == 80
+
+
+@pytest.mark.parametrize("full", [True, False])
+def test_dump_nested_validated_mappings(full):
+    config = confuse.Configuration("myapp", read=False)
+    config.set(
+        {"groups": [{"name": "first", "servers": [{"host": "one.example.com"}]}]}
+    )
+    valid = config.get(
+        {
+            "groups": confuse.Sequence(
+                {
+                    "name": str,
+                    "servers": confuse.Sequence(
+                        {
+                            "host": str,
+                            "options": confuse.MappingTemplate(
+                                {"port": confuse.Integer(80)}
+                            ),
+                        }
+                    ),
+                }
+            )
+        }
+    )
+    config.set(valid)
+
+    dumped = yaml.safe_load(config.dump(full=full))
+
+    assert dumped == {
+        "groups": [
+            {
+                "name": "first",
+                "servers": [{"host": "one.example.com", "options": {"port": 80}}],
+            }
+        ]
+    }
+    assert isinstance(valid.groups[0], confuse.AttrDict)
+    assert isinstance(valid.groups[0].servers[0].options, confuse.AttrDict)
+    assert valid.groups[0].servers[0].options.port == 80
 
 
 class RedactTest(unittest.TestCase):
