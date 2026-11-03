@@ -270,3 +270,34 @@ class ConfigEnvTest(unittest.TestCase):
     def test_with_prefix_and_sep(self):
         self.config.set_env(prefix="MYAPP_", sep="_sep_")
         assert self.config.get() == {"qux": {"nested": "d"}}
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+@pytest.mark.parametrize(
+    "original",
+    ["5432", "localhost", "[5432, 5434]", "null", "{fallback: 5432}"],
+)
+@pytest.mark.parametrize(
+    "override, expected",
+    [
+        ("5433", 5433),
+        ("remote", "remote"),
+        ("[5433, 5435]", [5433, 5435]),
+        ("null", None),
+        ("{primary: 5433}", {"primary": 5433}),
+    ],
+)
+def test_yaml_nested_leaf_override(original, override, expected, reverse):
+    entries = [
+        ("TEST_DATABASE", f"{{host: localhost, port: {original}}}"),
+        ("TEST_DATABASE__PORT", override),
+    ]
+    if reverse:
+        entries.reverse()
+    environment = dict(entries)
+    with patch.dict("os.environ", environment, clear=True):
+        source = confuse.EnvSource("TEST_", parse_yaml_docs=True)
+        assert dict(os.environ) == environment
+    if original == "{fallback: 5432}" and isinstance(expected, dict):
+        expected = {"fallback": 5432, **expected}
+    assert source["database"] == {"host": "localhost", "port": expected}

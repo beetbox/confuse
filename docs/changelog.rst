@@ -13,9 +13,13 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- Fix nested environment and command-line overrides colliding with values in
+  parent mappings. More-specific values replace scalar, list, or null values;
+  mappings continue to merge. `#215
+  <https://github.com/beetbox/confuse/issues/215>`_
 
 ..
     For plugin developers
