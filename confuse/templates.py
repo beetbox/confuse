@@ -570,9 +570,20 @@ class Pairs(BytesToStrMixin, Template[list[tuple[str, V]]]):
         return self.normalize_bytes(k), self.normalize_bytes(v)  # type: ignore[return-value]
 
     def convert(
-        self, value: list[abc.Sequence[str] | Mapping[str, str]], view: ConfigView
+        self, value: str | bytes | Iterable[object], view: ConfigView
     ) -> list[tuple[str, V]]:
-        return [self._convert_value(v, view) for v in value]
+        if isinstance(value, bytes):
+            value = self.normalize_bytes(value)
+
+        if isinstance(value, str):
+            value = value.split()
+
+        try:
+            values = iter(value)
+        except TypeError:
+            self.fail("must be a whitespace-separated string or a list", view, True)
+
+        return [self._convert_value(v, view) for v in values]
 
 
 class Filename(Template[P]):
