@@ -114,9 +114,16 @@ that perform fancier validation or even conversion:
   file was loaded with the ``base_for_paths`` parameter set to ``True`` (see
   :ref:`manually-specifying-config-files`), then a relative path refers to the
   directory containing the config file. A relative path from any other source
-  (e.g., command-line options) is relative to the working directory. For full
-  control over relative path resolution, use the ``Filename`` template directly
-  (see :ref:`filename-template`).
+  (e.g., command-line options) is relative to the working directory. Pass
+  ``cwd``, ``in_app_dir``, or ``in_source_dir`` as keyword arguments to override
+  this behavior, as with the ``Filename`` template (see
+  :ref:`filename-template`). For example,
+  ``config['path'].as_filename(in_source_dir=True)`` resolves a relative path
+  against the directory containing its source config file.
+- ``as_path()``: Like ``as_filename()``, but returns a ``pathlib.Path`` object.
+  Accepts the same path resolution keyword arguments.
+- ``as_optional_path()``: Like ``as_path()``, but returns ``None`` for missing
+  or null values. Accepts the same path resolution keyword arguments.
 - ``as_choice(choices)``: Check that a value is one of the provided choices. The
   argument should be a sequence of possible values. If the sequence is a
   ``dict``, then this method returns the associated value instead of the key.
@@ -130,6 +137,10 @@ that perform fancier validation or even conversion:
   strings. A single string is split on whitespace.
 - ``as_str_expanded()``: Expand any environment variables contained in a string
   using `os.path.expandvars()`_.
+
+The ``relative_to`` option needs a mapping template containing the sibling
+values being validated. Use ``get()`` with a mapping of ``Filename`` or ``Path``
+templates for this option instead of a single-value accessor.
 
 .. _os.path.expandvars(): https://docs.python.org/3/library/os.path.html#os.path.expandvars
 
