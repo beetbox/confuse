@@ -182,6 +182,12 @@ class EnvSourceTest(unittest.TestCase):
         config = _root(confuse.EnvSource("TEST_", parse_yaml_docs=True))
         assert config["foo"].get() == "a"
 
+    def test_nested_env_var_overrides_yaml_mapping_leaf(self):
+        os.environ["TEST_DATABASE"] = "{host: localhost, port: 5432}"
+        os.environ["TEST_DATABASE__PORT"] = "5433"
+        config = _root(confuse.EnvSource("TEST_", parse_yaml_docs=True))
+        assert {"host": "localhost", "port": 5433} == config["database"].get(dict)
+
     def test_parse_yaml_docs_list(self):
         os.environ["TEST_FOO"] = "[a, b]"
         config = _root(confuse.EnvSource("TEST_", parse_yaml_docs=True))
