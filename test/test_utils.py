@@ -54,6 +54,19 @@ class BuildDictTests(unittest.TestCase):
         assert 2 == result["foo"]["far"]
         assert 4 == result["foo"]["zar"]["dar"]
 
+    def test_nested_key_overrides_scalar_in_existing_mapping(self):
+        config = {
+            "database": {"host": "localhost", "port": 5432},
+            "database.port": 5433,
+        }
+        result = confuse.util.build_dict(config, sep=".")
+        assert {"host": "localhost", "port": 5433} == result["database"]
+
+    def test_nested_key_overrides_list_in_existing_mapping(self):
+        config = {"foo": {"bar": [1, 2]}, "foo.bar": 3}
+        result = confuse.util.build_dict(config, sep=".")
+        assert 3 == result["foo"]["bar"]
+
     def test_adjacent_underscores_sep_keys(self):
         config: dict[str, Any] = {"foo__bar_baz": 1}
         result = confuse.util.build_dict(config.copy())

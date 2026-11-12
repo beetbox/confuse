@@ -13,9 +13,12 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- A more specific nested key (for example ``APP_DATABASE__PORT`` or a dotted
+  ``set_args`` key) no longer raises when it overrides a non-mapping value
+  inside an existing mapping; the more specific value now wins.
 
 ..
     For plugin developers
