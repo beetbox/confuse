@@ -13,9 +13,10 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- Fix the manual configuration example to disable automatic file loading.
 
 ..
     For plugin developers
