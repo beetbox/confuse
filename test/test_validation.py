@@ -1,5 +1,6 @@
 import enum
 import os
+import pathlib
 import unittest
 
 import pytest
@@ -31,7 +32,7 @@ class TypeCheckTest(unittest.TestCase):
             config["foo"].get(int)
 
 
-class BuiltInValidatorTest(unittest.TestCase):
+class TestBuiltInValidator:
     def test_as_filename_with_non_file_source(self):
         config = _root({"foo": "foo/bar"})
         value = config["foo"].as_filename()
@@ -61,15 +62,32 @@ class BuiltInValidatorTest(unittest.TestCase):
     def test_as_path(self):
         config = _root({"foo": "foo/bar"})
         path_str = os.path.join(os.getcwd(), "foo", "bar")
-        try:
-            import pathlib
-        except ImportError:
-            with pytest.raises(ImportError):
-                value = config["foo"].as_path()
-        else:
-            value = config["foo"].as_path()
-            path = pathlib.Path(path_str)
-            assert value == path
+        value = config["foo"].as_path()
+        path = pathlib.Path(path_str)
+        assert value == path
+
+    @pytest.mark.parametrize(
+        "config, expected_value",
+        [
+            ({"foo": "foo/bar"}, pathlib.Path(os.getcwd(), "foo", "bar")),
+            ({"foo": ""}, None),
+            ({"foo": None}, None),
+            ({}, None),
+        ],
+    )
+    def test_as_optional_path(self, config, expected_value):
+        config = _root(config)
+        value = config["foo"].as_optional_path()
+        assert value == expected_value
+
+    @pytest.mark.parametrize("value", [0, False, [], {}, 42])
+    def test_as_optional_path_wrong_type(self, value):
+        config = _root({"foo": value})
+        with pytest.raises(
+            confuse.ConfigTypeError,
+            match=f"^foo: must be a filename, not {type(value).__name__}$",
+        ):
+            config["foo"].as_optional_path()
 
     def test_as_choice_correct(self):
         config = _root({"foo": "bar"})

@@ -17,7 +17,7 @@ application's config settings:
 
 The first parameter is required; it's the name of your application, which will
 be used to search the system for a config file named ``config.yaml``. See
-:ref:`Search Paths` for the specific locations searched.
+:ref:`search-paths` for the specific locations searched.
 
 The second parameter is optional: it's the name of a module that will guide the
 search for a *defaults* file. Use this if you want to include a
@@ -93,7 +93,7 @@ granularity you want config files to override each other.
     configuration at once. However, this will return only the *highest-priority*
     configuration source, masking any lower-priority values for keys that are
     not present in the top source. This pitfall is especially likely when using
-    :ref:`Command-Line Options` or :ref:`Environment Variables`, which may place
+    :ref:`command-line-options` or :ref:`environment-variables`, which may place
     an empty configuration at the top of the stack. A subsequent call to
     ``config.get()`` might then return no configuration at all.
 
@@ -112,11 +112,11 @@ that perform fancier validation or even conversion:
   default the filename is relative to the application's config directory
   (``Configuration.config_dir()``, as described below). However, if the config
   file was loaded with the ``base_for_paths`` parameter set to ``True`` (see
-  :ref:`Manually Specifying Config Files`), then a relative path refers to the
+  :ref:`manually-specifying-config-files`), then a relative path refers to the
   directory containing the config file. A relative path from any other source
   (e.g., command-line options) is relative to the working directory. For full
   control over relative path resolution, use the ``Filename`` template directly
-  (see :ref:`Filename`).
+  (see :ref:`filename-template`).
 - ``as_choice(choices)``: Check that a value is one of the provided choices. The
   argument should be a sequence of possible values. If the sequence is a
   ``dict``, then this method returns the associated value instead of the key.
@@ -137,6 +137,8 @@ For example, ``config['path'].as_filename()`` ensures that you get a reasonable
 filename string from the configuration. And calling
 ``config['direction'].as_choice(['up', 'down'])`` will raise a
 ``ConfigValueError`` unless the ``direction`` value is either "up" or "down".
+
+.. _command-line-options:
 
 Command-Line Options
 --------------------
@@ -181,7 +183,7 @@ argparse script:
 This will allow the user to override the configured value for key ``foo`` by
 passing ``--foo <something>`` on the command line.
 
-Overriding nested values can be accomplished by passing `dots=True` and have
+Overriding nested values can be accomplished by passing ``dots=True`` and have
 dot-delimited properties on the incoming object.
 
 .. code-block:: python
@@ -191,7 +193,7 @@ dot-delimited properties on the incoming object.
     config.set_args(args, dots=True)
     print(config["foo"]["bar"].get())
 
-`set_args` works with generic dictionaries too.
+``set_args`` works with generic dictionaries too.
 
 .. code-block:: python
 
@@ -211,6 +213,8 @@ argparse or optparse setup. This way, Confuse can use other configuration
 sources---possibly your ``config_default.yaml``---to fill in values for
 unspecified command-line switches. Otherwise, the argparse/optparse default
 value will hide options configured elsewhere.
+
+.. _environment-variables:
 
 Environment Variables
 ---------------------
@@ -306,6 +310,8 @@ If you use config overlays from both command-line args and environment
 variables, the order of calls to ``set_args`` and ``set_env`` will determine the
 precedence, with the last call having the highest precedence.
 
+.. _search-paths:
+
 Search Paths
 ------------
 
@@ -319,8 +325,8 @@ Here are the default search paths for each platform:
 
 - macOS: ``~/.config/app`` and ``~/Library/Application Support/app``
 - Other Unix: ``~/.config/app`` and ``/etc/app``
-- Windows: ``%APPDATA%\app`` where the `APPDATA` environment variable falls back
-  to ``%HOME%\AppData\Roaming`` if undefined
+- Windows: ``%APPDATA%\app`` where the ``APPDATA`` environment variable falls
+  back to ``%HOME%\AppData\Roaming`` if undefined
 
 Both macOS and other Unix operating sytems also try to use the
 ``XDG_CONFIG_HOME`` and ``XDG_CONFIG_DIRS`` environment variables if set then
@@ -331,10 +337,12 @@ variable. The variable name is the application name in capitals with "DIR"
 appended: for an application named ``AppName``, the environment variable is
 ``APPNAMEDIR``.
 
+.. _manually-specifying-config-files:
+
 Manually Specifying Config Files
 --------------------------------
 
-You may want to leverage Confuse's features without :ref:`Search Paths`. This
+You may want to leverage Confuse's features without :ref:`search-paths`. This
 can be done by manually specifying the YAML files you want to include, which
 also allows changing how relative paths in the file will be resolved:
 
@@ -349,7 +357,7 @@ also allows changing how relative paths in the file will be resolved:
     config.set_file("subdirectory/default_config.yaml")
     # Add config items from a second file. If some items were already defined,
     # they will be overwritten (new file precedes the previous ones). With
-    # `base_for_paths` set to True, relative path values in this file will be
+    # ``base_for_paths`` set to True, relative path values in this file will be
     # resolved relative to the config file's directory (i.e., 'subdirectory').
     config.set_file("subdirectory/local_config.yaml", base_for_paths=True)
 
@@ -431,15 +439,15 @@ tricks to preserve comments and spacing in the original file.
 Custom YAML Loaders
 ~~~~~~~~~~~~~~~~~~~
 
-You can also specify your own PyYAML_ `Loader` object to parse YAML files.
-Supply the `loader` parameter to a `Configuration` constructor, like this:
+You can also specify your own PyYAML_ ``Loader`` object to parse YAML files.
+Supply the ``loader`` parameter to a ``Configuration`` constructor, like this:
 
 .. code-block:: python
 
     config = confuse.Configuration("name", loader=yaml.Loaded)
 
 To imbue a loader with Confuse's special parser overrides, use its
-`add_constructors` method:
+``add_constructors`` method:
 
 .. code-block:: python
 
@@ -459,7 +467,7 @@ values from component to component. You quickly end up with monstrous function
 signatures with dozens of keyword arguments, decreasing code legibility and
 testability.
 
-In such systems, one option is to pass a single `Configuration` object through
+In such systems, one option is to pass a single ``Configuration`` object through
 to each component. To avoid even this, however, it's sometimes appropriate to
 use a little bit of shared global state. As evil as shared global state usually
 is, configuration is (in my opinion) one valid use: since configuration is
@@ -470,7 +478,7 @@ explicitly pass configuration from call to call.
 
 To use global configuration, consider creating a configuration object in a
 well-known module (say, the root of a package). But since this object will be
-initialized at module load time, Confuse provides a `LazyConfig` object that
+initialized at module load time, Confuse provides a ``LazyConfig`` object that
 loads your configuration files on demand instead of when the object is
 constructed. (Doing complicated stuff like parsing YAML at module load time is
 generally considered a Bad Idea.)
@@ -498,7 +506,7 @@ Redaction
 ---------
 
 You can also mark certain configuration values as "sensitive" and avoid
-including them in output. Just set the `redact` flag:
+including them in output. Just set the ``redact`` flag:
 
 .. code-block:: python
 
