@@ -9,9 +9,12 @@ below!
 Unreleased
 ----------
 
-..
-    New features
-    ~~~~~~~~~~~~
+New features
+~~~~~~~~~~~~
+
+- Allow ``Configuration.dump(default_flow_style=False)`` to keep lists in block
+  style, including short lists of long strings (`#119
+  <https://github.com/beetbox/confuse/issues/119>`_).
 
 ..
     Bug fixes

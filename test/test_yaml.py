@@ -13,6 +13,32 @@ def load(s):
     return yaml.load(s, Loader=confuse.Loader)
 
 
+@pytest.mark.parametrize("flow_style", [None, False, True])
+def test_dump_configurable_flow_style(flow_style):
+    config = confuse.Configuration("test", read=False)
+    values = {"patterns": ["first pattern", "second pattern"]}
+    config.set(values)
+    result = config.dump(default_flow_style=flow_style)
+    assert load(result) == values
+    if flow_style is False:
+        assert "- first pattern" in result
+        assert "[" not in result
+    else:
+        assert "[first pattern, second pattern]" in result
+    if flow_style is None:
+        assert result == config.dump()
+
+
+def test_dump_block_lists_with_partial_redacted_config():
+    config = confuse.Configuration("test", read=False)
+    config.add(confuse.ConfigSource({"default": [1, 2]}, default=True))
+    config.set({"patterns": ["first", "second"], "password": "secret"})
+    config["password"].redact = True
+    result = config.dump(full=False, redact=True, default_flow_style=False)
+    assert load(result) == {"patterns": ["first", "second"], "password": "REDACTED"}
+    assert "- first" in result
+
+
 class ParseTest(unittest.TestCase):
     def test_dict_parsed_as_ordereddict(self):
         v = load("a: b\nc: d")

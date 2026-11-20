@@ -436,6 +436,11 @@ To produce a YAML string reflecting a configuration, just call
 ``config.dump()``. This does not cleanly round-trip YAML, but it does play some
 tricks to preserve comments and spacing in the original file.
 
+By default, short lists are written inline. To put each list item on its own
+line, use ``config.dump(default_flow_style=False)``. This is useful for lists of
+long strings such as regular expressions. Set ``default_flow_style=True`` to use
+inline flow style for all collections.
+
 Custom YAML Loaders
 ~~~~~~~~~~~~~~~~~~~
 
