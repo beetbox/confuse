@@ -218,6 +218,7 @@ def restore_yaml_comments(data: str, default_data: str) -> str:
     not next to a yaml mapping.
     """
     comment_map = dict()
+    footer = ""
     default_lines = iter(default_data.splitlines())
     for line in default_lines:
         if not line:
@@ -226,11 +227,13 @@ def restore_yaml_comments(data: str, default_data: str) -> str:
             comment = f"{line}\n"
         else:
             continue
-        while True:
-            line = next(default_lines)
+        for line in default_lines:
             if line and not line.startswith("#"):
                 break
             comment += f"{line}\n"
+        else:
+            footer = comment
+            break
         key = line.split(":")[0].strip()
         comment_map[key] = comment
     out_lines = iter(data.splitlines())
@@ -240,4 +243,4 @@ def restore_yaml_comments(data: str, default_data: str) -> str:
         if key in comment_map:
             out_data += comment_map[key]
         out_data += f"{line}\n"
-    return out_data
+    return out_data + footer

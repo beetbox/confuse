@@ -13,9 +13,12 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- Preserve trailing comments and blank lines from the default configuration when
+  dumping YAML, instead of raising ``StopIteration`` (`#148
+  <https://github.com/beetbox/confuse/issues/148>`_).
 
 ..
     For plugin developers
