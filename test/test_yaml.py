@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import unittest
 from collections import OrderedDict
+from typing import TYPE_CHECKING
 
 import pytest
 import yaml
@@ -8,9 +11,35 @@ import confuse
 
 from . import TempDir
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 
 def load(s):
     return yaml.load(s, Loader=confuse.Loader)
+
+
+@pytest.mark.parametrize("full", [True, False])
+@pytest.mark.parametrize("footer", ["", "\n", "# Footer\n", "\n# Footer\n\n"])
+def test_dump_with_trailing_default_comments(
+    tmp_path: Path, full: bool, footer: str
+) -> None:
+    defaults = tmp_path / "config_default.yaml"
+    defaults.write_text("# Header\nfoo: 42\n" + footer, encoding="utf-8")
+    config = confuse.Configuration("test", read=False)
+    config.add(confuse.YamlSource(str(defaults), default=True))
+    config["foo"].set(84)
+
+    result = config.dump(full=full)
+    assert result == "# Header\nfoo: 84\n" + footer
+    assert load(result) == {"foo": 84}
+
+
+@pytest.mark.parametrize("defaults", ["# Footer\n", "\n", "# First\n\n# Last\n"])
+def test_restore_comment_only_defaults(defaults):
+    assert confuse.yaml_util.restore_yaml_comments("foo: 1\n", defaults) == (
+        "foo: 1\n" + defaults
+    )
 
 
 class ParseTest(unittest.TestCase):
