@@ -665,7 +665,13 @@ class Configuration(RootView):
             prefix = f"{self.appname.upper()}_"
         self.set(EnvSource(prefix, sep=sep, loader=self.loader))
 
-    def dump(self, full: bool = True, redact: bool = False) -> str:
+    def dump(
+        self,
+        full: bool = True,
+        redact: bool = False,
+        *,
+        default_flow_style: bool | None = None,
+    ) -> str:
         """Dump the Configuration object to a YAML file.
 
         The order of the keys is determined from the default
@@ -676,6 +682,9 @@ class Configuration(RootView):
                           as well
         :param redact:    Remove sensitive information (views with the `redact`
                           flag set) from the output
+        :param default_flow_style: Use block style for collections when ``False``
+                          or flow style when ``True``. The default, ``None``,
+                          selects a style automatically, inlining short lists.
         """
         if full:
             out_dict = self.flatten(redact=redact)
@@ -689,7 +698,7 @@ class Configuration(RootView):
         yaml_out = yaml.dump(
             out_dict,
             Dumper=yaml_util.Dumper,
-            default_flow_style=None,
+            default_flow_style=default_flow_style,
             indent=4,
             width=1000,
         )
