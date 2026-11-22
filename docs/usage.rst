@@ -519,3 +519,39 @@ Then flatten or dump the configuration like so:
     config.dump(redact=True)
 
 The resulting YAML will contain "key: REDACTED" instead of the original data.
+
+Time-Like Strings and YAML Versions
+-----------------------------------
+
+Confuse's default loader inherits PyYAML's YAML 1.1 scalar resolution rules.
+An unquoted value such as ``21:00`` is a base-60 integer under those rules,
+so it becomes ``1260`` before a template sees it. YAML 1.2 removed this
+interpretation; a formatter using YAML 1.2 may therefore remove quotes that
+Confuse needs to preserve a time as text.
+
+Quote time-like strings in configuration files:
+
+.. code-block:: yaml
+
+    start_time: "21:00"
+
+The explicit YAML string tag, ``start_time: !!str 21:00``, is another option.
+Configure any formatter in the pipeline to preserve these string semantics.
+Validate the value as a string before parsing it as a time:
+
+>>> import datetime
+>>> import confuse
+>>> import yaml
+>>> config = confuse.Configuration("TimeExample", read=False)
+>>> config.set(yaml.load('start_time: "21:00"', Loader=confuse.Loader))
+>>> datetime.datetime.strptime(config["start_time"].get(str), "%H:%M").time()
+datetime.time(21, 0)
+>>> yaml.load("start_time: !!str 21:00", Loader=confuse.Loader)["start_time"]
+'21:00'
+>>> yaml.load("start_time: 21:00", Loader=confuse.Loader)["start_time"]
+1260
+
+Converting the already-loaded integer to a string produces ``"1260"``;
+it cannot recover the original spelling. Quoting the source value avoids
+that loss. This guidance concerns the default loader, not full YAML 1.2
+support.
