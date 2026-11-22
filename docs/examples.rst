@@ -4,6 +4,36 @@ Template Examples
 These examples demonstrate how the confuse templates work to validate
 configuration values.
 
+OneOf and Choice
+----------------
+
+``OneOf`` accepts a value when it matches any of its alternative templates.
+Use ``Choice`` when an alternative should permit only specific values. For
+example, a setting that accepts a boolean or either ``"ask"`` or ``"skip"``
+can be validated like this:
+
+>>> import confuse
+>>> template = {
+...     "import_write": confuse.OneOf([bool, confuse.Choice(["ask", "skip"])]),
+... }
+>>> config = confuse.RootView([confuse.ConfigSource.of({"import_write": "ask"})])
+>>> config.get(template).import_write
+'ask'
+>>> config["import_write"].set(False)
+>>> config.get(template).import_write
+False
+>>> config["import_write"].set("unexpected")
+>>> try:
+...     config.get(template)
+... except confuse.ConfigValueError:
+...     print("Invalid import_write value")
+Invalid import_write value
+
+Writing ``OneOf([bool, "ask", "skip"])`` instead would accept any string:
+each plain string is shorthand for a ``String`` template with that default
+value, rather than a literal match. Use ``Choice(["ask", "skip"])`` alone
+when booleans should not be accepted either.
+
 Sequence
 --------
 

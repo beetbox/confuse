@@ -393,6 +393,10 @@ class Choice(Template[T], Generic[T, K]):
 class OneOf(Template[T]):
     """A template that permits values complying to one of the given templates.
 
+    Each alternative is converted with :func:`as_template`. A plain string
+    therefore accepts any string and supplies a default; use :class:`Choice`
+    to restrict an alternative to specific values.
+
     When using templates that produce different types, explicitly specify
     the type parameter: ``OneOf[bool | str]([bool, String()])``
     """
