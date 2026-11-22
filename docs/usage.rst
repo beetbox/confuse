@@ -33,7 +33,7 @@ consisting of nested dicts and lists—except that you need to call the method
     value = config["foo"][2]["bar"].get()
 
 Under the hood, accessing items in your configuration tree builds up a *view*
-into your app's configuration. Then, ``get()`` flattens this view into a value,
+into your app's configuration. Then, ``get()`` resolves this view to a value,
 performing a search through each configuration data source to find an answer.
 (More on views later.)
 
@@ -98,6 +98,42 @@ granularity you want config files to override each other.
     ``config.get()`` might then return no configuration at all.
 
 .. _xpath: https://www.w3.org/TR/xpath/
+
+Retrieving a Merged Mapping
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To retrieve all mapping keys across sources, use ``flatten()`` on the root or
+on a mapping view. It recursively resolves mapping entries, including keys that
+are absent from the highest-priority source. This is useful after applying a
+partial environment-variable or command-line override:
+
+.. code-block:: python
+
+    import confuse
+
+    config = confuse.Configuration("MyGreatApp", read=False)
+    config.add({"server": {"host": "localhost", "port": 8000}})
+    config.set({"server": {"host": "example.org"}})
+
+    assert config["server"].get() == {"host": "example.org"}
+    assert config["server"].flatten() == {"host": "example.org", "port": 8000}
+    assert config.flatten() == {
+        "server": {"host": "example.org", "port": 8000}
+    }
+
+``flatten()`` returns nested ordered dictionaries without validating values.
+Sequences are retrieved as values: items from lower-priority lists are not
+appended. To resolve and validate a known set of keys instead, pass a mapping
+template to ``get()``:
+
+.. code-block:: python
+
+    server = config["server"].get({"host": str, "port": int})
+    assert server == {"host": "example.org", "port": 8000}
+
+Both results are retrieved values rather than live views; retrieve them again
+after changing the configuration. Passing ``dict`` to ``get(dict)`` only checks
+the type of the highest-priority value and does not merge its keys.
 
 Validation
 ----------
