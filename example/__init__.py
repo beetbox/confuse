@@ -6,7 +6,7 @@ import confuse
 
 template = {
     "library": confuse.Filename(),
-    "import_write": confuse.OneOf([bool, "ask", "skip"]),
+    "import_write": confuse.OneOf([bool, confuse.Choice(["ask", "skip"])]),
     "ignore": confuse.StrSeq(),
     "plugins": list,
     "paths": {
