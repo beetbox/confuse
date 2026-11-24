@@ -139,8 +139,8 @@ def parse_as_scalar(value: object, loader: type[yaml.SafeLoader] = Loader) -> ob
         tag = loader_instance.resolve(yaml.ScalarNode, value, (True, False))
         node = yaml.ScalarNode(tag, value)
         return loader_instance.construct_object(node)
-    except yaml.error.YAMLError:
-        # Fallback to returning the value unchanged
+    except (yaml.error.YAMLError, ValueError):
+        # Scalar constructors can also raise ValueError for invalid dates.
         return value
 
 
