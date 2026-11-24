@@ -1,5 +1,6 @@
 import os
 import unittest
+from datetime import date
 from unittest.mock import patch
 
 import pytest
@@ -47,6 +48,13 @@ class EnvSourceTest(unittest.TestCase):
         config = _root(confuse.EnvSource("TEST_"))
         assert config["foo"].get() is None
         assert config["bar"].get() is None
+
+    def test_invalid_date_stays_a_string(self):
+        os.environ["TEST_LEAP_DAY"] = "2024-02-29"
+        os.environ["TEST_LABEL"] = "2025-02-29"
+        config = _root(confuse.EnvSource("TEST_"))
+        assert config["leap_day"].get() == date(2024, 2, 29)
+        assert config["label"].get() == "2025-02-29"
 
     def test_unset_lower_config(self):
         os.environ["TEST_FOO"] = "null"

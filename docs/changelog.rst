@@ -13,9 +13,11 @@ Unreleased
     New features
     ~~~~~~~~~~~~
 
-..
-    Bug fixes
-    ~~~~~~~~~
+Bug fixes
+~~~~~~~~~
+
+- Keep invalid date-like environment values as strings when parsing YAML
+  scalars.
 
 ..
     For plugin developers
